@@ -1,14 +1,6 @@
-export type Vec2 = {
-    x: number
-    y: number
-}
+import type { Rect, Vec2 } from '../core/geometry'
 
-export type Rect = {
-    x: number
-    y: number
-    width: number
-    height: number
-}
+export type { Rect, Vec2 } from '../core/geometry'
 
 type TileRect = readonly [x: number, y: number, width: number, height: number]
 
@@ -23,6 +15,35 @@ export const tileSize = 8
 export const viewport = {
     width: 240,
     height: 135,
+}
+
+function solid(x: number, y: number, width: number, height: number): TileRect {
+    return [x, y, width, height]
+}
+
+function toWorldPoint(point: Vec2): Vec2 {
+    return {
+        x: point.x * tileSize,
+        y: point.y * tileSize,
+    }
+}
+
+function toWorldRect([x, y, width, height]: TileRect): Rect {
+    return {
+        x: x * tileSize,
+        y: y * tileSize,
+        width: width * tileSize,
+        height: height * tileSize,
+    }
+}
+
+function createLevel(level: { width: number; height: number; spawn: Vec2; solids: TileRect[] }): Level {
+    return {
+        width: level.width * tileSize,
+        height: level.height * tileSize,
+        spawn: toWorldPoint(level.spawn),
+        solids: level.solids.map(toWorldRect),
+    }
 }
 
 const levelTiles = {
@@ -57,32 +78,3 @@ const levelTiles = {
 }
 
 export const world = createLevel(levelTiles)
-
-function solid(x: number, y: number, width: number, height: number): TileRect {
-    return [x, y, width, height]
-}
-
-function createLevel(level: { width: number; height: number; spawn: Vec2; solids: TileRect[] }): Level {
-    return {
-        width: level.width * tileSize,
-        height: level.height * tileSize,
-        spawn: toWorldPoint(level.spawn),
-        solids: level.solids.map(toWorldRect),
-    }
-}
-
-function toWorldPoint(point: Vec2): Vec2 {
-    return {
-        x: point.x * tileSize,
-        y: point.y * tileSize,
-    }
-}
-
-function toWorldRect([x, y, width, height]: TileRect): Rect {
-    return {
-        x: x * tileSize,
-        y: y * tileSize,
-        width: width * tileSize,
-        height: height * tileSize,
-    }
-}
