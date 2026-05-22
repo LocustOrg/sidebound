@@ -1,0 +1,221 @@
+import type { Rect, Vec2 } from '../core/geometry'
+import { approach, rectsIntersect } from '../core/geometry'
+import { Animator } from '../sprites/animator'
+import type { SpriteSheet } from '../sprites/sprite-sheet'
+import { MobState, resolveMobState } from './mob-states'
+
+/**
+ * Physics configuration for a Mob.
+ * Subclasses or instances can provide different values for different entity types.
+ */
+export type MobPhysics = {
+    maxSpeed: number
+    groundAcceleration: number
+    airAcceleration: number
+    friction: number
+    gravity: number
+    jumpVelocity: number
+    /** Below this vx the mob transitions from 'stopping' to 'idle' */
+    stoppingThreshold: number
+}
+
+/**
+ * Animation mapping: maps MobState → clip name in the Animator.
+ * Override per-entity to support different sprite sets.
+ */
+export type MobAnimationMap = Record<MobState, string>
+
+const DEFAULT_ANIMATION_MAP: MobAnimationMap = {
+    [MobState.Idle]: 'idle',
+    [MobState.Running]: 'run',
+    [MobState.Stopping]: 'stop',
+    [MobState.Jumping]: 'jump',
+    [MobState.Falling]: 'fall',
+    [MobState.Landing]: 'land',
+}
+
+/**
+ * Base Mob class.
+ * Handles physics, collision, state machine, and sprite animation.
+ * Extend this for players, NPCs, and enemies.
+ */
+export class Mob {
+    // Position & size
+    x: number
+    y: number
+    width: number
+    height: number
+
+    // Velocity
+    vx = 0
+    vy = 0
+
+    // State
+    grounded = false
+    facing = 1
+    mobState: MobState = MobState.Idle
+
+    // Sprite offset from collision box (for centering larger sprites)
+    spriteOffsetX: number
+    spriteOffsetY: number
+
+    // Systems
+    readonly animator: Animator
+    protected readonly physics: MobPhysics
+    protected readonly animationMap: MobAnimationMap
+    protected readonly solids: Rect[]
+
+    constructor(options: {
+        spawn: Vec2
+        width: number
+        height: number
+        spriteSheet: SpriteSheet
+        physics: MobPhysics
+        solids: Rect[]
+        animationMap?: MobAnimationMap
+        spriteOffsetX?: number
+        spriteOffsetY?: number
+    }) {
+        this.x = options.spawn.x
+        this.y = options.spawn.y
+        this.width = options.width
+        this.height = options.height
+        this.physics = options.physics
+        this.solids = options.solids
+        this.animationMap = options.animationMap ?? DEFAULT_ANIMATION_MAP
+        this.animator = new Animator(options.spriteSheet)
+        this.spriteOffsetX = options.spriteOffsetX ?? 0
+        this.spriteOffsetY = options.spriteOffsetY ?? 0
+    }
+
+    /** The collision rect of this mob */
+    getRect(): Rect {
+        return { x: this.x, y: this.y, width: this.width, height: this.height }
+    }
+
+    /** Center position */
+    getCenter(): Vec2 {
+        return { x: this.x + this.width / 2, y: this.y + this.height / 2 }
+    }
+
+    /**
+     * Core physics + state update. Call from subclass update().
+     * `inputHorizontal`: -1, 0, or 1
+     * `jumpRequested`: whether a jump was requested this frame
+     */
+    updatePhysics(deltaSeconds: number, inputHorizontal: number, jumpRequested: boolean): void {
+        const wasGrounded = this.grounded
+        let justJumped = false
+
+        // Horizontal movement
+        const acceleration = this.grounded ? this.physics.groundAcceleration : this.physics.airAcceleration
+        const targetVx = inputHorizontal * this.physics.maxSpeed
+
+        if (inputHorizontal !== 0) {
+            this.facing = inputHorizontal
+            this.vx = approach(this.vx, targetVx, acceleration * deltaSeconds)
+        } else if (this.grounded) {
+            this.vx = approach(this.vx, 0, this.physics.friction * deltaSeconds)
+        } else {
+            this.vx = approach(this.vx, 0, this.physics.airAcceleration * 0.18 * deltaSeconds)
+        }
+
+        // Jump
+        if (jumpRequested && this.grounded) {
+            this.vy = -this.physics.jumpVelocity
+            this.grounded = false
+            justJumped = true
+        }
+
+        // Gravity
+        this.vy += this.physics.gravity * deltaSeconds
+
+        // Move & collide
+        this.moveHorizontal(this.vx * deltaSeconds)
+        this.moveVertical(this.vy * deltaSeconds)
+
+        const justLanded = this.grounded && !wasGrounded
+
+        // Resolve state
+        const nextState = resolveMobState(
+            this.mobState,
+            this.grounded,
+            this.vx,
+            this.vy,
+            inputHorizontal,
+            justLanded,
+            justJumped,
+            this.physics.stoppingThreshold,
+        )
+
+        this.transitionState(nextState)
+    }
+
+    /** Update the animation each frame */
+    updateAnimation(deltaSeconds: number): void {
+        // If landing/stop animation finished, go to idle
+        if (this.animator.finished) {
+            if (this.mobState === MobState.Landing || this.mobState === MobState.Stopping) {
+                this.transitionState(MobState.Idle)
+            }
+        }
+
+        this.animator.update(deltaSeconds)
+    }
+
+    /** Draw the mob's current sprite frame */
+    draw(context: CanvasRenderingContext2D): void {
+        const drawX = Math.round(this.x + this.spriteOffsetX)
+        const drawY = Math.round(this.y + this.spriteOffsetY)
+        const flipX = this.facing < 0
+        this.animator.draw(context, drawX, drawY, flipX)
+    }
+
+    protected transitionState(next: MobState): void {
+        if (next === this.mobState) return
+        this.mobState = next
+        const clipName = this.animationMap[next]
+        if (clipName) {
+            this.animator.play(clipName)
+        }
+    }
+
+    private moveHorizontal(distance: number): void {
+        this.x += distance
+
+        const rect = this.getRect()
+        for (const solid of this.solids) {
+            if (!rectsIntersect(rect, solid)) continue
+
+            if (distance > 0) {
+                this.x = solid.x - this.width
+            } else if (distance < 0) {
+                this.x = solid.x + solid.width
+            }
+
+            this.vx = 0
+            rect.x = this.x
+        }
+    }
+
+    private moveVertical(distance: number): void {
+        this.y += distance
+        this.grounded = false
+
+        const rect = this.getRect()
+        for (const solid of this.solids) {
+            if (!rectsIntersect(rect, solid)) continue
+
+            if (distance > 0) {
+                this.y = solid.y - this.height
+                this.grounded = true
+            } else if (distance < 0) {
+                this.y = solid.y + solid.height
+            }
+
+            this.vy = 0
+            rect.y = this.y
+        }
+    }
+}
+

@@ -7,7 +7,7 @@ import { requireElement } from './core/dom'
 import { smooth } from './core/geometry'
 import { GameInput } from './systems/input'
 import { RayLighting } from './systems/lighting'
-import { getLightOrigin, getPlayerRect, PlayerController } from './systems/player'
+import { PlayerMob } from './entities/player-mob'
 import { DemoRenderer } from './rendering/renderer'
 import './style.css'
 
@@ -15,7 +15,7 @@ const canvas = requireElement<HTMLCanvasElement>('#game')
 const debugPanel = new DebugPanel()
 const input = new GameInput(debugPanel.root)
 const audio = new DemoAudio(debugPanel.soundPreferred)
-const player = new PlayerController(world.spawn, world.solids)
+const player = new PlayerMob(world.spawn, world.solids)
 const camera = new SideViewCamera(world, viewport)
 const lighting = new RayLighting(world.solids)
 const renderer = new DemoRenderer(world)
@@ -33,14 +33,14 @@ debugPanel.setSoundButtonState(audio.state)
 debugPanel.setSoundToggleHandler(() => audio.toggle())
 debugPanel.start()
 input.start()
-camera.snapToPlayer(player.state)
+camera.snapToPlayer(player)
 
 const engine = new PixelEngine({
     canvas,
     width: viewport.width,
     height: viewport.height,
     scale: 'css',
-    background: '#111019',
+    background: '#1e1a2e',
     loop: {
         update(deltaSeconds) {
             const updateStart = performance.now()
@@ -53,7 +53,7 @@ const engine = new PixelEngine({
                 audio.playTone(cue)
             }
 
-            camera.update(safeDeltaSeconds, player.state)
+            camera.update(safeDeltaSeconds, player)
             diagnostics.updateMs = performance.now() - updateStart
         },
         render(context) {
@@ -63,24 +63,26 @@ const engine = new PixelEngine({
             context.save()
             context.translate(-cameraRect.x, -cameraRect.y)
             renderer.drawArea(context)
-            renderer.drawPlayer(context, player.state)
 
             const rayStart = performance.now()
-            const lightOrigin = getLightOrigin(player.state)
-            const light = lighting.cast(lightOrigin, player.state.lightRadius)
+            const lightOrigin = player.getLightOrigin()
+            const light = lighting.cast(lightOrigin, player.lightRadius)
 
             diagnostics.rayMs = performance.now() - rayStart
             diagnostics.rays = light.rays
             diagnostics.rayChecks = light.rayChecks
 
-            renderer.drawLighting(context, light.polygon, lightOrigin, cameraRect, player.state.lightRadius)
+            renderer.drawLighting(context, light.polygon, lightOrigin, cameraRect, player.lightRadius)
+
+            // Draw player on top of lighting so the sprite is always visible
+            renderer.drawMob(context, player)
 
             if (debugPanel.showLighting) {
-                renderer.drawLightingDebug(context, light.polygon, lightOrigin, player.state.lightRadius)
+                renderer.drawLightingDebug(context, light.polygon, lightOrigin, player.lightRadius)
             }
 
             if (debugPanel.showCollision) {
-                renderer.drawCollisionDebug(context, getPlayerRect(player.state))
+                renderer.drawCollisionDebug(context, player.getRect())
             }
 
             context.restore()
@@ -88,10 +90,10 @@ const engine = new PixelEngine({
             diagnostics.renderMs = performance.now() - renderStart
             debugPanel.updateMetrics({
                 ...diagnostics,
-                grounded: player.state.grounded,
+                grounded: player.grounded,
                 velocity: {
-                    x: player.state.vx,
-                    y: player.state.vy,
+                    x: player.vx,
+                    y: player.vy,
                 },
             })
         },

@@ -1,6 +1,16 @@
 import { cameraSettings } from '../core/config'
 import { clamp, smoothDamp, type Rect, type Vec2 } from '../core/geometry'
-import type { PlayerState } from './player'
+
+/** Minimal interface the camera needs from any tracked entity */
+export type CameraTarget = {
+    x: number
+    y: number
+    width: number
+    height: number
+    vx: number
+    vy: number
+    facing: number
+}
 
 export type CameraState = {
     x: number
@@ -43,7 +53,7 @@ export class SideViewCamera {
         this.viewport = viewport
     }
 
-    snapToPlayer(player: PlayerState): void {
+    snapToPlayer(player: CameraTarget): void {
         this.state.lookAhead = player.facing * cameraSettings.lookAheadDistance
         const target = this.getTarget(player)
 
@@ -57,7 +67,7 @@ export class SideViewCamera {
         this.state.wasMovingFast = false
     }
 
-    update(deltaSeconds: number, player: PlayerState): void {
+    update(deltaSeconds: number, player: CameraTarget): void {
         const targetLookAhead = Math.abs(player.vx) > 8 ? player.facing * cameraSettings.lookAheadDistance : 0
         const lookAheadSmoothing = 1 - Math.exp(-deltaSeconds * cameraSettings.lookAheadResponse)
 
@@ -84,7 +94,7 @@ export class SideViewCamera {
         }
     }
 
-    private updateRecoil(deltaSeconds: number, player: PlayerState): void {
+    private updateRecoil(deltaSeconds: number, player: CameraTarget): void {
         const speed = Math.abs(player.vx)
 
         if (speed > cameraSettings.recoilMovingSpeed) {
@@ -101,7 +111,7 @@ export class SideViewCamera {
         this.state.recoilX = clamp(this.state.recoilX + this.state.recoilVelocityX * deltaSeconds, -cameraSettings.maxRecoil, cameraSettings.maxRecoil)
     }
 
-    private getTarget(player: PlayerState): Vec2 {
+    private getTarget(player: CameraTarget): Vec2 {
         const focusX = player.x + player.width / 2 + this.state.lookAhead
         const focusY = player.y + player.height / 2
         const cameraCenterX = this.state.x + this.viewport.width / 2
