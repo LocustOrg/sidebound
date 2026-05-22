@@ -1,0 +1,41 @@
+:root {
+    color: #f7f2e8;
+    background: #100d14;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    min-width: 320px;
+    min-height: 100svh;
+    margin: 0;
+}
+
+#app {
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: linear-gradient(#191424 1px, transparent 1px),
+    linear-gradient(90deg, #191424 1px, transparent 1px),
+    #100d14;
+    background-size: 32px 32px;
+}
+
+#game {
+    display: block;
+    width: min(800px, calc(100vw - 48px));
+    height: auto;
+    aspect-ratio: 16 / 9;
+    image-rendering: pixelated;
+    border: 2px solid #57506d;
+    background: #17121f;
+    box-shadow: 0 18px 60px rgb(0 0 0 / 45%);
+}
