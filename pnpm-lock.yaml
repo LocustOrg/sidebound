@@ -39,6 +39,19 @@ importers:
         specifier: ~6.0.2
         version: 6.0.3
 
+  packages/engine-demo:
+    dependencies:
+      '@strange-path/engine':
+        specifier: workspace:*
+        version: link:../engine
+    devDependencies:
+      typescript:
+        specifier: ~6.0.2
+        version: 6.0.3
+      vite:
+        specifier: ^8.0.12
+        version: 8.0.14(jiti@2.7.0)
+
   packages/game:
     dependencies:
       '@strange-path/engine':

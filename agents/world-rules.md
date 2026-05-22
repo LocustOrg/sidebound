@@ -30,6 +30,10 @@ Avoid explicit objective markers unless a later design decision requires them.
 - The full game should feel huge and interconnected.
 - The first demo should be small and dense.
 - Routes should fold back on themselves through shortcuts.
+- The world is side-view only, with routes shaped by platforms, drops, climbs,
+  doors, ledges, and vertical/horizontal shortcuts.
+- Navigation should be understandable enough to support simple platform-graph
+  pathfinding for enemies and bosses.
 - Bosses or minibosses can act as gates to new regions.
 - Rest points should feel valuable and strategically placed.
 - Every major area should have a readable identity, not just a color palette.

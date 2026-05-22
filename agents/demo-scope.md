@@ -2,11 +2,13 @@
 
 The first demo lives in `packages/engine-demo`. It is not a content vertical
 slice yet. It should be a small, focused engine proving ground for canvas
-rendering, movement feel, basic sound, ray-based lighting, and diagnostics.
+rendering, side-view movement feel, basic sound, ray-based lighting, and
+diagnostics.
 
 ## Demo Goals
 
-- Prove a character can move around one authored area.
+- Prove a character can move through one authored side-view area.
+- Prove gravity, jumping, landing, and solid platform collision.
 - Prove canvas rendering can support crisp pixel-art style presentation.
 - Prove basic sound can be triggered from user input or movement.
 - Prove ray-based lighting or visibility can create atmosphere without hiding
@@ -19,9 +21,9 @@ rendering, movement feel, basic sound, ray-based lighting, and diagnostics.
 
 ## Suggested Content
 
-- One single authored area.
+- One single authored side-view area.
 - One controllable character.
-- A few walls, pillars, or occluders that rays can hit.
+- A few platforms, walls, pillars, or occluders that rays can hit.
 - One dark or partially occluded space with ray-based light, shadow, or reveal.
 - Basic sound feedback such as footsteps, interaction tones, or ambience.
 - One accessible menu or pause/settings surface using native HTML controls if
@@ -31,9 +33,9 @@ rendering, movement feel, basic sound, ray-based lighting, and diagnostics.
 
 ## Acceptance Criteria
 
-- The character can move within the single area.
-- The character cannot pass through solid walls or occluders if collision is
-  included in the demo.
+- The character can run and jump within the single side-view area.
+- The character cannot pass through solid platforms, walls, or occluders.
+- Gravity, landing, and grounded state are visible in debug signals.
 - Sound starts only after a user gesture and can provide basic feedback.
 - Lighting and shadows support the mood without obscuring required telegraphs.
 - The demo runs through canvas rendering without React.
@@ -46,6 +48,7 @@ rendering, movement feel, basic sound, ray-based lighting, and diagnostics.
 ## Out Of Scope
 
 - Multiple areas.
+- Top-down, three-quarter, isometric, or hybrid movement.
 - Enemies.
 - Bosses.
 - Combat.

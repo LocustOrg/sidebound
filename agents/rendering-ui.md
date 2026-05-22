@@ -9,6 +9,7 @@ UI and accessibility handled as a separate engine concern.
 - Keep simulation independent from rendering.
 - Keep pixel-art scaling crisp and predictable.
 - Prefer deterministic camera and draw ordering.
+- Assume a side-view world when framing the camera and layering the scene.
 - Avoid per-frame allocations in renderer hot paths.
 - Batch, cache, and pre-render where it improves measurable performance.
 - Use libraries and packages when they materially improve rendering, asset

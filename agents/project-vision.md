@@ -2,7 +2,8 @@
 
 ## Game Identity
 
-`strange-path` is a pixel-art soulslike where the player explores a humongous,
+`strange-path` is a side-view pixel-art soulslike, closer in camera and
+traversal shape to `Hollow Knight`, where the player explores a humongous,
 interconnected map, fights dangerous enemies and bosses, and gradually pieces
 together the world's history without direct exposition.
 
@@ -16,6 +17,8 @@ truth.
 The player should:
 
 - Read danger from animation, enemy placement, arena shape, and sound.
+- Navigate a side-view world through platforms, drops, gates, vertical routes,
+  and shortcuts.
 - Discover routes through landmarks, locked paths, shortcuts, and odd details.
 - Learn boss behavior through repeated attempts.
 - Feel that death is part of understanding the world, not a random punishment.

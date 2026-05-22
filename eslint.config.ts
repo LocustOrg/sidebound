@@ -3,12 +3,6 @@ import tseslint from 'typescript-eslint'
 import eslintConfigPrettier from 'eslint-config-prettier'
 import { defineConfig } from 'eslint/config'
 
-export default defineConfig(
-    js.configs.recommended,
-    ...tseslint.configs.recommended,
-    eslintConfigPrettier,
-    {
-        ignores: ['dist/'],
-    },
-)
-
+export default defineConfig(js.configs.recommended, ...tseslint.configs.recommended, eslintConfigPrettier, {
+    ignores: ['**/dist/'],
+})

@@ -28,9 +28,12 @@ ray-based lighting, and debug visibility.
 - If a menu is visually represented in canvas, keep a DOM-backed accessibility
   path for equivalent interaction.
 
-### Player Controller
+### Side-View Player Controller
 
-- Directional 2D movement.
+- Horizontal ground and air movement.
+- Gravity, jumping, falling, landing, and grounded state.
+- Platform, wall, ledge, and one-way platform support when the demo grows to
+  need it.
 - Dodge, roll, or dash with invincibility frames.
 - Stamina cost and stamina recovery.
 - Attack commitment with windup, active frames, and recovery.
@@ -50,7 +53,9 @@ ray-based lighting, and debug visibility.
 ### Collision And Physics
 
 - Fixed timestep simulation.
-- Tile or object collision.
+- Side-view tile, platform, and object collision.
+- Gravity and grounded resolution.
+- Reliable horizontal and vertical collision resolution for moving actors.
 - Collision layers for player, enemies, walls, triggers, projectiles, and
   interactables.
 - Reliable dash and lunge collision, avoiding tunneling through walls or targets.
@@ -79,7 +84,22 @@ ray-based lighting, and debug visibility.
 - Required states: idle, patrol, notice, chase, attack, recover, stagger, dead.
 - Attack range checks.
 - Cooldowns and telegraph timing.
-- Local obstacle avoidance or pathfinding appropriate to the final perspective.
+- Side-view navigation around platforms, drops, gaps, ledges, walls, and arena
+  boundaries.
+- Prefer simple platform graphs and authored traversal links over general 2D
+  pathfinding.
+- Early enemies can be constrained to patrol lanes, current platforms, or
+  arena-local movement until a broader traversal graph is needed.
+
+### Pathfinding
+
+- Pathfinding should stay side-view-specific and intentionally simple.
+- Represent navigation as platforms, ledges, ladders or climbs if added later,
+  doors, drops, jumps, and one-way traversal links.
+- Avoid top-down grid, navmesh, or steering systems unless a specific side-view
+  mechanic proves they are necessary.
+- Debug navigation by showing current platform, target platform, selected link,
+  and blocked traversal reason.
 
 ### Boss Framework
 
@@ -102,7 +122,7 @@ ray-based lighting, and debug visibility.
 ### Camera
 
 - Pixel-perfect rendering.
-- Smooth follow with a small deadzone.
+- Side-view camera follow with horizontal lead and a combat-readable deadzone.
 - Boss arena framing.
 - Screen shake or hit shake.
 - Avoid camera behavior that makes enemy attacks unreadable.

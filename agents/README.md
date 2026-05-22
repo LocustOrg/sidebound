@@ -31,15 +31,18 @@ interaction surfaces belong in a separate engine UI module that can use native
 HTML elements for keyboard accessibility, focus behavior, and assistive
 technology support.
 
-## Open High-Level Decision
+## Fixed Perspective
 
-The camera and movement perspective is not finalized yet:
+The engine must be side-view only, in the family of `Hollow Knight`-like action
+platformers.
 
-- Top-down or three-quarter 2D view.
-- Side-view action platformer.
-- Isometric or another hybrid.
+Do not build top-down, three-quarter, isometric, or hybrid movement systems.
+Engine physics, camera, collision, enemy behavior, map layout, combat ranges,
+and ray-based lighting should all assume a side-view world.
 
-Do not overbuild perspective-specific systems until this is decided.
+This side-view constraint should simplify pathfinding. Prefer authored platform
+graphs, patrol lanes, jump/drop/climb links, and arena-local navigation over
+general 2D navmeshes or freeform path search.
 
 ## Non-Goals
 

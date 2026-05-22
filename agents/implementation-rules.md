@@ -10,6 +10,10 @@ These rules apply to agents working in this repository.
 - Prefer small, testable systems over broad rewrites.
 - Add debug visibility when implementing physics, combat, or AI behavior.
 - Build the game renderer around canvas, not React.
+- Treat side-view action-platformer movement as the only engine perspective.
+- Do not add top-down, three-quarter, isometric, or hybrid movement systems.
+- Keep pathfinding side-view-specific: platform graphs, patrol lanes, and
+  authored traversal links before any broader search system.
 - Use libraries and packages when they simplify real engine work.
 - Prefer proven packages for hard subsystems such as rendering, ray casting,
   geometry, pathfinding, asset loading, animation, or audio instead of
@@ -53,5 +57,4 @@ These rules apply to agents working in this repository.
 4. Make ray-based lighting and visibility debuggable.
 5. Make frame rate, memory, subsystem timing, and engine resource usage visible.
 6. Make behavior easy to tune without rewriting systems.
-7. Keep early systems narrow until perspective and final demo direction are
-   decided.
+7. Keep early systems narrow around the side-view engine direction.

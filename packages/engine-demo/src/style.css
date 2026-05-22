@@ -1,0 +1,119 @@
+:root {
+    color: #f6efe4;
+    background: #0d0d11;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    min-width: 320px;
+    min-height: 100svh;
+    margin: 0;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+#app {
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: linear-gradient(#19161d 1px, transparent 1px), linear-gradient(90deg, #19161d 1px, transparent 1px), #0d0d11;
+    background-size: 32px 32px;
+}
+
+.stage {
+    width: min(1180px, 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 960px) minmax(220px, 280px);
+    gap: 16px;
+    align-items: start;
+}
+
+#game {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    image-rendering: pixelated;
+    border: 2px solid #62596c;
+    background: #111019;
+    box-shadow: 0 18px 60px rgb(0 0 0 / 48%);
+}
+
+.panel {
+    display: grid;
+    gap: 14px;
+    padding: 14px;
+    border: 1px solid #4b4654;
+    background: #15131a;
+}
+
+.panel-section {
+    display: grid;
+    gap: 10px;
+}
+
+.panel label {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    line-height: 1.4;
+}
+
+button {
+    min-height: 36px;
+    border: 1px solid #72687d;
+    color: #f6efe4;
+    background: #26202f;
+    cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible {
+    outline: 2px solid #f4c45f;
+    outline-offset: 3px;
+}
+
+.metrics {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+}
+
+.metrics div {
+    display: grid;
+    grid-template-columns: 86px minmax(0, 1fr);
+    gap: 8px;
+}
+
+.metrics dt {
+    color: #afa6ba;
+}
+
+.metrics dd {
+    min-width: 0;
+    margin: 0;
+    color: #f4c45f;
+    overflow-wrap: anywhere;
+}
+
+@media (width <= 840px) {
+    #app {
+        padding: 12px;
+    }
+
+    .stage {
+        grid-template-columns: 1fr;
+    }
+}
