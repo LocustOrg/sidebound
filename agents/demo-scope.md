@@ -7,9 +7,12 @@ diagnostics.
 
 ## Demo Goals
 
-- Prove a character can move through one authored side-view area.
+- Prove a character can move through one authored side-view area that is larger
+  than the visible viewport.
 - Prove gravity, jumping, landing, and solid platform collision.
-- Prove canvas rendering can support crisp pixel-art style presentation.
+- Prove a camera can follow the player through the larger area.
+- Prove fullscreen canvas rendering can support crisp pixel-art style
+  presentation.
 - Prove basic sound can be triggered from user input or movement.
 - Prove ray-based lighting or visibility can create atmosphere without hiding
   fair combat information.
@@ -22,6 +25,8 @@ diagnostics.
 ## Suggested Content
 
 - One single authored side-view area.
+- Keep the map authored in code for now, using simple tile-based helpers rather
+  than a debug map editor.
 - One controllable character.
 - A few platforms, walls, pillars, or occluders that rays can hit.
 - One dark or partially occluded space with ray-based light, shadow, or reveal.

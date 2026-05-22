@@ -6,6 +6,7 @@ UI and accessibility handled as a separate engine concern.
 ## Game Rendering
 
 - Use canvas for the game view.
+- The engine demo canvas should be fullscreen.
 - Keep simulation independent from rendering.
 - Keep pixel-art scaling crisp and predictable.
 - Prefer deterministic camera and draw ordering.

@@ -9,7 +9,13 @@
         <main id="app">
             <section class="stage" aria-label="Engine demo stage">
                 <canvas id="game" aria-label="Single area side-view ray tracing demo viewport"></canvas>
-                <aside class="panel" aria-label="Engine demo controls and diagnostics">
+                <aside id="debug-panel" class="panel" aria-label="Engine demo controls and diagnostics">
+                    <div class="panel-title">
+                        <span id="debug-panel-handle" class="panel-handle" role="button" tabindex="0" aria-label="Move diagnostics window. Drag with pointer or use arrow keys."
+                            >Diagnostics</span
+                        >
+                        <button id="debug-panel-reset" class="panel-reset" type="button">Reset</button>
+                    </div>
                     <div class="panel-section">
                         <button id="sound-toggle" type="button">Enable sound</button>
                     </div>

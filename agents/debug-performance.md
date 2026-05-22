@@ -32,6 +32,8 @@ timing, AI state, rendering cost, ray-based lighting cost, and resource usage.
 - Slow motion.
 - Restart demo state.
 - Toggle subsystem timing panels.
+- Persist every user-controlled debug window setting in local storage during
+  development.
 
 ## Performance Rules
 

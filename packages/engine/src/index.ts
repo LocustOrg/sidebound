@@ -8,7 +8,7 @@ export type PixelEngineOptions = {
     width: number
     height: number
     loop: PixelLoop
-    scale?: number
+    scale?: number | 'css'
     background?: string
 }
 
@@ -38,8 +38,11 @@ export class PixelEngine {
 
         this.canvas.width = width
         this.canvas.height = height
-        this.canvas.style.width = `${width * scale}px`
-        this.canvas.style.height = `${height * scale}px`
+        if (scale !== 'css') {
+            this.canvas.style.width = `${width * scale}px`
+            this.canvas.style.height = `${height * scale}px`
+        }
+
         this.context.imageSmoothingEnabled = false
     }
 
