@@ -203,7 +203,7 @@ function createIdlePose(t: number): CharacterPose {
         torsoLean: sway * 0.05,
         shoulderLift: breath * 0.2,
         headTilt: sway * 0.03,
-        swordAngle: 1.07 + sway * 0.03,
+        swordAngle: -0.82 + sway * 0.035,
         swordReach: -0.2,
         swordLift: breath * 0.12,
         cloakSwing: -1.6 - sway * 0.6,
@@ -232,8 +232,8 @@ function createRunPose(t: number): CharacterPose {
         torsoLean: 0.12 + stride * 0.025,
         shoulderLift: Math.max(0, -stride) * 0.35,
         headTilt: stride * 0.025,
-        swordAngle: 0.72 + stride * 0.13,
-        swordReach: 1.2 + contact * 0.9,
+        swordAngle: -0.82 + stride * 0.05,
+        swordReach: -1.15 + contact * 0.3,
         swordLift: -0.22 + Math.max(0, -stride) * 0.25,
         cloakSwing: -2.7 - stride * 2.4,
         cloakLift: 1.2 + Math.max(0, stride) * 1.25,
@@ -259,7 +259,7 @@ function createJumpPose(t: number): CharacterPose {
         torsoLean: 0.08 + lift * 0.06,
         shoulderLift: -0.1,
         headTilt: 0.02,
-        swordAngle: 0.32 - lift * 0.08,
+        swordAngle: -0.92 - lift * 0.08,
         swordReach: 0.55 + lift * 0.35,
         swordLift: -0.75 - lift * 0.2,
         cloakSwing: -2.2 - lift * 1.05,
@@ -286,7 +286,7 @@ function createFallPose(t: number): CharacterPose {
         torsoLean: -0.05,
         shoulderLift: 0.18,
         headTilt: -0.03,
-        swordAngle: 1.24 - descend * 0.08,
+        swordAngle: -0.64 - descend * 0.08,
         swordReach: -0.2 - descend * 0.15,
         swordLift: 0.65 + descend * 0.25,
         cloakSwing: -3.4 - descend * 0.5,
@@ -314,7 +314,7 @@ function createLandPose(t: number): CharacterPose {
         torsoLean: 0.12 - recover * 0.1,
         shoulderLift: impact * 0.42,
         headTilt: impact * -0.04,
-        swordAngle: 0.45 + recover * 0.38,
+        swordAngle: -0.92 + recover * 0.14,
         swordReach: 0.25 - recover * 0.4,
         swordLift: -0.25 + recover * 0.45,
         cloakSwing: -3.1 + recover * 1.7,
@@ -633,7 +633,7 @@ function drawLeg(context: CanvasRenderingContext2D, hips: Point, knee: Point, fo
 }
 
 function drawSword(context: CanvasRenderingContext2D, hand: Point, angle: number): void {
-    const bladeLength = 8.4
+    const bladeLength = 14.2
     const tipX = hand.x + Math.cos(angle) * bladeLength
     const tipY = hand.y + Math.sin(angle) * bladeLength
     const guardX = hand.x - 0.7
