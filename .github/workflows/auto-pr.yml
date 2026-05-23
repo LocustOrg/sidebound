@@ -1,0 +1,55 @@
+name: Auto Create PR
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'fix/**'
+      - 'chore/**'
+      - 'refactor/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get branch info
+        id: branch
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          # Generate PR title from branch name (e.g., feature/add-lighting -> Add lighting)
+          PR_TITLE=$(echo "$BRANCH_NAME" | sed 's|.*/||' | sed 's/-/ /g' | sed 's/.*/\u&/')
+          echo "branch=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+          echo "title=$PR_TITLE" >> "$GITHUB_OUTPUT"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        id: create-pr
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ steps.branch.outputs.branch }}
+          base: main
+          title: ${{ steps.branch.outputs.title }}
+          body: |
+            ## Summary
+
+            Auto-generated PR for branch `${{ steps.branch.outputs.branch }}`.
+
+            ---
+            *Created automatically by GitHub Actions*
+          draft: true
+          labels: |
+            auto-pr
+
+      - name: Check output
+        if: steps.create-pr.outputs.pull-request-number
+        run: |
+          echo "PR #${{ steps.create-pr.outputs.pull-request-number }} created/updated"
+          echo "URL: ${{ steps.create-pr.outputs.pull-request-url }}"
+
