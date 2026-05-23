@@ -32,7 +32,6 @@ export class PlayerMob extends Mob {
 
     constructor(spawn: Vec2, solids: Rect[]) {
         const sheet = createPlayerSpriteSheet()
-        console.log(sheet)
 
         super({
             spawn,
