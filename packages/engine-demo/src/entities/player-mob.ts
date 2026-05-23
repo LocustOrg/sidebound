@@ -4,7 +4,14 @@ import type { PlayerInputFrame } from '../systems/input'
 import { controls } from '../core/config'
 import { Mob, type MobPhysics } from './mob'
 import { MobState } from './mob-states'
-import { createPlayerSpriteSheet, registerPlayerAnimationClips } from '../sprites/player-sprites'
+import {
+    createPlayerCapeBackOverlaySheet,
+    createPlayerCapeFrontOverlaySheet,
+    createPlayerSpriteSheet,
+    createPlayerSwordOverlaySheet,
+    registerPlayerAnimationClips,
+} from '../sprites/player-sprites'
+import type { SpriteSheet } from '../sprites/sprite-sheet'
 
 const PLAYER_PHYSICS: MobPhysics = {
     maxSpeed: controls.maxSpeed,
@@ -23,11 +30,23 @@ function createStepCue(vx: number): SoundCue {
     return { frequency: 76 + Math.round(Math.abs(vx) % 20), durationSeconds: 0.04, gain: 0.016 }
 }
 
+export type PlayerEquipment = {
+    cape: boolean
+    sword: boolean
+}
+
 /**
- * Player entity — extends Mob with input handling, sound cues, and light source.
+ * Player entity — extends Mob with input handling, sound cues, and equipment visuals.
  */
 export class PlayerMob extends Mob {
     private stepCooldown = 0
+    private readonly capeBackOverlaySheet: SpriteSheet
+    private readonly capeFrontOverlaySheet: SpriteSheet
+    private readonly swordOverlaySheet: SpriteSheet
+    private readonly equipped: PlayerEquipment = {
+        cape: false,
+        sword: false,
+    }
 
     constructor(spawn: Vec2, solids: Rect[]) {
         const sheet = createPlayerSpriteSheet()
@@ -39,12 +58,15 @@ export class PlayerMob extends Mob {
             spriteSheet: sheet,
             physics: PLAYER_PHYSICS,
             solids,
-            // Sprite is 32x32, collision box is 5x10 → keep the feet planted while allowing headroom.
+            // Sprite is 32x32, collision box is 8x28 — offset aligns sprite feet with hitbox bottom.
             spriteOffsetX: -13,
-            spriteOffsetY: -4,
+            spriteOffsetY: -3,
         })
 
         registerPlayerAnimationClips(this.animator)
+        this.capeBackOverlaySheet = createPlayerCapeBackOverlaySheet()
+        this.capeFrontOverlaySheet = createPlayerCapeFrontOverlaySheet()
+        this.swordOverlaySheet = createPlayerSwordOverlaySheet()
     }
 
     /**
@@ -76,6 +98,45 @@ export class PlayerMob extends Mob {
         this.addStepCues(cues, deltaSeconds, input.horizontal)
 
         return cues
+    }
+
+    getEquipment(): PlayerEquipment {
+        return { ...this.equipped }
+    }
+
+    setEquipment(equipment: Partial<PlayerEquipment>): void {
+        this.equipped.cape = equipment.cape ?? this.equipped.cape
+        this.equipped.sword = equipment.sword ?? this.equipped.sword
+    }
+
+    equipCape(): void {
+        this.equipped.cape = true
+    }
+
+    equipSword(): void {
+        this.equipped.sword = true
+    }
+
+    /** Draws optional visual equipment without changing collision or movement. */
+    override draw(context: CanvasRenderingContext2D): void {
+        const drawX = Math.round(this.x + this.spriteOffsetX)
+        const drawY = Math.round(this.y + this.spriteOffsetY)
+        const flipX = this.facing < 0
+        const frame = this.animator.currentFrame
+
+        if (this.equipped.cape) {
+            this.capeBackOverlaySheet.drawFrame(context, frame, drawX, drawY, flipX)
+        }
+
+        super.draw(context)
+
+        if (this.equipped.sword) {
+            this.swordOverlaySheet.drawFrame(context, frame, drawX, drawY, flipX)
+        }
+
+        if (this.equipped.cape) {
+            this.capeFrontOverlaySheet.drawFrame(context, frame, drawX, drawY, flipX)
+        }
     }
 
     private addStepCues(cues: SoundCue[], deltaSeconds: number, horizontal: number): void {
@@ -110,3 +171,9 @@ export class PlayerMob extends Mob {
         }
     }
 }
+
+
+
+
+
+

@@ -67,6 +67,27 @@ type FrameSpec = {
     pose: CharacterPose
 }
 
+type PlayerFrameGeometry = {
+    groundY: number
+    liftY: number
+    hips: Point
+    torsoTop: Point
+    shoulderY: number
+    backShoulder: Point
+    frontShoulder: Point
+    backKnee: Point
+    frontKnee: Point
+    backFoot: Point
+    frontFoot: Point
+    headCenter: Point
+    backElbow: Point
+    backHand: Point
+    frontElbow: Point
+    frontHand: Point
+    swordElbow: Point
+    swordHand: Point
+}
+
 const colors = {
     rim: '#d2cedd',
     outline: '#120f17',
@@ -84,6 +105,8 @@ const colors = {
     eye: '#9be7ff',
     blade: '#d7dce7',
     bladeEdge: '#f8fbff',
+    skin: '#c7a47f',
+    skinShadow: '#8d6a4d',
 }
 
 export function registerPlayerAnimationClips(animator: Animator): Animator {
@@ -96,6 +119,26 @@ export function registerPlayerAnimationClips(animator: Animator): Animator {
 }
 
 export function createPlayerSpriteSheet(): SpriteSheet {
+    return createPlayerFrameSheet(drawPlayerFrame)
+}
+
+export function createPlayerCapeOverlaySheet(): SpriteSheet {
+    return createPlayerCapeFrontOverlaySheet()
+}
+
+export function createPlayerCapeBackOverlaySheet(): SpriteSheet {
+    return createPlayerFrameSheet(drawCapeBackOverlayFrame)
+}
+
+export function createPlayerCapeFrontOverlaySheet(): SpriteSheet {
+    return createPlayerFrameSheet(drawCapeFrontOverlayFrame)
+}
+
+export function createPlayerSwordOverlaySheet(): SpriteSheet {
+    return createPlayerFrameSheet(drawSwordOverlayFrame)
+}
+
+function createPlayerFrameSheet(drawFrame: (context: CanvasRenderingContext2D, pose: CharacterPose, frameWidth: number, frameHeight: number) => void): SpriteSheet {
     const frameSpecs = buildFrameSpecs()
 
     return createProceduralSheet(FRAME_W, FRAME_H, COLS, ROWS, (context, frameWidth, frameHeight) => {
@@ -110,7 +153,7 @@ export function createPlayerSpriteSheet(): SpriteSheet {
             context.rect(ox, oy, frameWidth, frameHeight)
             context.clip()
             context.translate(ox, oy)
-            drawPlayerFrame(context, frame.pose, frameWidth, frameHeight)
+            drawFrame(context, frame.pose, frameWidth, frameHeight)
             context.restore()
         }
     })
@@ -160,7 +203,7 @@ function createIdlePose(t: number): CharacterPose {
         torsoLean: sway * 0.05,
         shoulderLift: breath * 0.2,
         headTilt: sway * 0.03,
-        swordAngle: 1.07 + sway * 0.03,
+        swordAngle: -0.82 + sway * 0.035,
         swordReach: -0.2,
         swordLift: breath * 0.12,
         cloakSwing: -1.6 - sway * 0.6,
@@ -189,8 +232,8 @@ function createRunPose(t: number): CharacterPose {
         torsoLean: 0.12 + stride * 0.025,
         shoulderLift: Math.max(0, -stride) * 0.35,
         headTilt: stride * 0.025,
-        swordAngle: 0.72 + stride * 0.13,
-        swordReach: 1.2 + contact * 0.9,
+        swordAngle: -0.82 + stride * 0.05,
+        swordReach: -1.15 + contact * 0.3,
         swordLift: -0.22 + Math.max(0, -stride) * 0.25,
         cloakSwing: -2.7 - stride * 2.4,
         cloakLift: 1.2 + Math.max(0, stride) * 1.25,
@@ -216,7 +259,7 @@ function createJumpPose(t: number): CharacterPose {
         torsoLean: 0.08 + lift * 0.06,
         shoulderLift: -0.1,
         headTilt: 0.02,
-        swordAngle: 0.32 - lift * 0.08,
+        swordAngle: -0.92 - lift * 0.08,
         swordReach: 0.55 + lift * 0.35,
         swordLift: -0.75 - lift * 0.2,
         cloakSwing: -2.2 - lift * 1.05,
@@ -243,7 +286,7 @@ function createFallPose(t: number): CharacterPose {
         torsoLean: -0.05,
         shoulderLift: 0.18,
         headTilt: -0.03,
-        swordAngle: 1.24 - descend * 0.08,
+        swordAngle: -0.64 - descend * 0.08,
         swordReach: -0.2 - descend * 0.15,
         swordLift: 0.65 + descend * 0.25,
         cloakSwing: -3.4 - descend * 0.5,
@@ -271,7 +314,7 @@ function createLandPose(t: number): CharacterPose {
         torsoLean: 0.12 - recover * 0.1,
         shoulderLift: impact * 0.42,
         headTilt: impact * -0.04,
-        swordAngle: 0.45 + recover * 0.38,
+        swordAngle: -0.92 + recover * 0.14,
         swordReach: 0.25 - recover * 0.4,
         swordLift: -0.25 + recover * 0.45,
         cloakSwing: -3.1 + recover * 1.7,
@@ -318,7 +361,7 @@ function mixPoses(left: CharacterPose, right: CharacterPose, weight: number): Ch
     }
 }
 
-function drawPlayerFrame(context: CanvasRenderingContext2D, pose: CharacterPose, frameWidth: number, frameHeight: number): void {
+function buildPlayerFrameGeometry(pose: CharacterPose, frameWidth: number, frameHeight: number): PlayerFrameGeometry {
     const groundY = frameHeight - 3
     const centerX = frameWidth * 0.5 + pose.pelvisX
     const liftY = pose.airborne * 1.2
@@ -354,9 +397,22 @@ function drawPlayerFrame(context: CanvasRenderingContext2D, pose: CharacterPose,
         x: torsoTop.x + 0.5,
         y: torsoTop.y - 3.35 + pose.headTilt * 3,
     }
+    const armSwing = (pose.frontStep - pose.backStep) * 0.28
+    const backElbow: Point = {
+        x: torsoTop.x - 5.1 - armSwing * 0.45,
+        y: shoulderY + 2.05 - armSwing * 0.12 + pose.backFootLift * 0.1,
+    }
     const backHand: Point = {
-        x: torsoTop.x - 3.1 - pose.cloakSwing * 0.08,
-        y: torsoTop.y + 5.2 + pose.cloakLift * 0.08,
+        x: torsoTop.x - 4.05 - armSwing * 0.82,
+        y: shoulderY + 4.75 - armSwing * 0.18 + pose.backFootLift * 0.12,
+    }
+    const frontElbow: Point = {
+        x: torsoTop.x + 4.45 + armSwing * 0.34,
+        y: shoulderY + 2.3 + armSwing * 0.1 + pose.frontFootLift * 0.08,
+    }
+    const frontHand: Point = {
+        x: torsoTop.x + 3.35 + armSwing * 0.62,
+        y: shoulderY + 4.45 + armSwing * 0.14 + pose.frontFootLift * 0.1,
     }
     const swordElbow: Point = {
         x: torsoTop.x + 3.7 + pose.swordReach * 0.3,
@@ -367,20 +423,70 @@ function drawPlayerFrame(context: CanvasRenderingContext2D, pose: CharacterPose,
         y: shoulderY + 4.35 + pose.swordLift,
     }
 
+    return {
+        groundY,
+        liftY,
+        hips,
+        torsoTop,
+        shoulderY,
+        backShoulder,
+        frontShoulder,
+        backKnee,
+        frontKnee,
+        backFoot,
+        frontFoot,
+        headCenter,
+        backElbow,
+        backHand,
+        frontElbow,
+        frontHand,
+        swordElbow,
+        swordHand,
+    }
+}
+
+function drawPlayerFrame(context: CanvasRenderingContext2D, pose: CharacterPose, frameWidth: number, frameHeight: number): void {
+    const geometry = buildPlayerFrameGeometry(pose, frameWidth, frameHeight)
+
     context.lineJoin = 'round'
     context.lineCap = 'round'
 
-    drawBackGlow(context, headCenter.x - 1.5, torsoTop.y + 3.5, frameWidth * 0.42, pose.eyeGlow)
-    drawCape(context, torsoTop, groundY - liftY, pose, false)
-    drawArm(context, [backShoulder, { x: torsoTop.x - 2.85, y: torsoTop.y + 4.45 }, backHand], 3.1, colors.outline, colors.shadow)
-    drawLeg(context, hips, backKnee, backFoot, 3.1, colors.outline, colors.shadow, colors.leather)
-    drawSword(context, swordHand, pose.swordAngle)
-    drawArm(context, [frontShoulder, swordElbow, swordHand], 3.6, colors.outline, colors.steelMid)
-    drawTorso(context, torsoTop, hips, pose)
-    drawCape(context, torsoTop, groundY - liftY, pose, true)
-    drawHead(context, headCenter, pose)
-    drawLeg(context, hips, frontKnee, frontFoot, 3.5, colors.outline, colors.steelDark, colors.leatherLight)
-    drawFrontTrim(context, torsoTop, hips, pose)
+    drawBackGlow(context, geometry.headCenter.x - 1.5, geometry.torsoTop.y + 3.5, frameWidth * 0.42, pose.eyeGlow)
+    drawPlayerArm(context, geometry.frontShoulder, geometry.frontElbow, geometry.frontHand, colors.steelDark)
+    drawLeg(context, geometry.hips, geometry.backKnee, geometry.backFoot, 3.1, colors.outline, colors.shadow, colors.leather)
+    drawTorso(context, geometry.torsoTop, geometry.hips, pose)
+    drawPlayerArm(context, geometry.backShoulder, geometry.backElbow, geometry.backHand, colors.steelMid)
+    drawHead(context, geometry.headCenter, pose)
+    drawLeg(context, geometry.hips, geometry.frontKnee, geometry.frontFoot, 3.5, colors.outline, colors.steelDark, colors.leatherLight)
+    drawFrontTrim(context, geometry.torsoTop, geometry.hips, pose)
+}
+
+function drawCapeBackOverlayFrame(context: CanvasRenderingContext2D, pose: CharacterPose, frameWidth: number, frameHeight: number): void {
+    const geometry = buildPlayerFrameGeometry(pose, frameWidth, frameHeight)
+
+    context.lineJoin = 'round'
+    context.lineCap = 'round'
+
+    drawCape(context, geometry.torsoTop, geometry.groundY - geometry.liftY, pose, false)
+}
+
+function drawCapeFrontOverlayFrame(context: CanvasRenderingContext2D, pose: CharacterPose, frameWidth: number, frameHeight: number): void {
+    const geometry = buildPlayerFrameGeometry(pose, frameWidth, frameHeight)
+
+    context.lineJoin = 'round'
+    context.lineCap = 'round'
+
+    drawCape(context, geometry.torsoTop, geometry.groundY - geometry.liftY, pose, true)
+}
+
+function drawSwordOverlayFrame(context: CanvasRenderingContext2D, pose: CharacterPose, frameWidth: number, frameHeight: number): void {
+    const geometry = buildPlayerFrameGeometry(pose, frameWidth, frameHeight)
+
+    context.lineJoin = 'round'
+    context.lineCap = 'round'
+
+    drawSword(context, geometry.swordHand, pose.swordAngle)
+    drawArm(context, [geometry.frontShoulder, geometry.swordElbow, geometry.swordHand], 3.6, colors.outline, colors.steelMid)
 }
 
 function drawBackGlow(context: CanvasRenderingContext2D, x: number, y: number, radius: number, intensity: number): void {
@@ -484,6 +590,31 @@ function drawArm(context: CanvasRenderingContext2D, points: [Point, Point, Point
     strokePath(context, points, width, fill)
 }
 
+function drawPlayerArm(context: CanvasRenderingContext2D, shoulder: Point, elbow: Point, fist: Point, sleeve: string): void {
+    const wrist: Point = {
+        x: elbow.x + (fist.x - elbow.x) * 0.78,
+        y: elbow.y + (fist.y - elbow.y) * 0.78,
+    }
+
+    strokePath(context, [shoulder, elbow, wrist], 2.85, colors.outline)
+    strokePath(context, [shoulder, elbow, wrist], 1.9, sleeve)
+
+    context.save()
+    context.fillStyle = colors.outline
+    context.beginPath()
+    context.ellipse(fist.x, fist.y, 1.05, 0.95, -0.2, 0, TAU)
+    context.fill()
+
+    context.fillStyle = colors.skin
+    context.beginPath()
+    context.ellipse(fist.x + 0.1, fist.y - 0.05, 0.68, 0.58, -0.2, 0, TAU)
+    context.fill()
+
+    context.fillStyle = colors.skinShadow
+    context.fillRect(fist.x - 0.25, fist.y + 0.1, 0.5, 0.28)
+    context.restore()
+}
+
 function drawLeg(context: CanvasRenderingContext2D, hips: Point, knee: Point, foot: Point, width: number, outline: string, fill: string, boot: string): void {
     strokePath(context, [hips, knee, foot], width + 1.3, outline)
     strokePath(context, [hips, knee, foot], width, fill)
@@ -502,7 +633,7 @@ function drawLeg(context: CanvasRenderingContext2D, hips: Point, knee: Point, fo
 }
 
 function drawSword(context: CanvasRenderingContext2D, hand: Point, angle: number): void {
-    const bladeLength = 8.4
+    const bladeLength = 14.2
     const tipX = hand.x + Math.cos(angle) * bladeLength
     const tipY = hand.y + Math.sin(angle) * bladeLength
     const guardX = hand.x - 0.7

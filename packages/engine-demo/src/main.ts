@@ -8,13 +8,15 @@ import { smooth } from './core/geometry'
 import { GameInput } from './systems/input'
 import { RayLighting } from './systems/lighting'
 import { PlayerMob } from './entities/player-mob'
+import { ItemSystem } from './systems/item-system'
 import { RenderPipeline } from './rendering/pipeline'
-import { BackgroundLayer } from './rendering/layers/background'
-import { TerrainLayer } from './rendering/layers/terrain'
-import { EntityLayer } from './rendering/layers/entity'
+import { BackgroundLayer } from './rendering/layers'
+import { TerrainLayer } from './rendering/layers'
+import { EntityLayer } from './rendering/layers'
 import { LightingLayer, type SunLight } from './rendering/layers/lighting'
-import { DebugLayer } from './rendering/layers/debug'
+import { DebugLayer } from './rendering/layers'
 import { DebugMinimap } from './debug/debug-minimap'
+import { createCapeItemSpriteSheet, createSwordItemSpriteSheet } from './sprites/item-sprites'
 import './style.css'
 
 const canvas = requireElement<HTMLCanvasElement>('#game')
@@ -22,6 +24,7 @@ const debugPanel = new DebugPanel()
 const input = new GameInput(debugPanel.root)
 const audio = new DemoAudio(debugPanel.soundPreferred)
 const player = new PlayerMob(world.spawn, world.solids)
+const itemSystem = new ItemSystem({ player })
 const camera = new SideViewCamera(world, viewport)
 
 const allOccluders = [...world.solids, ...world.reflectors]
@@ -51,8 +54,31 @@ entityLayer.addMob(player)
 lightingLayer.setSunLights(sunLights)
 lightingLayer.setCameraProvider(() => camera.getRect())
 
+itemSystem.add({
+    id: 'starter-cape',
+    kind: 'cape',
+    x: player.x + 24,
+    y: player.y + player.height - 16,
+    width: 16,
+    height: 16,
+    spriteSheet: createCapeItemSpriteSheet(),
+    effect: { type: 'equip', equipment: 'cape' },
+})
+itemSystem.add({
+    id: 'starter-sword',
+    kind: 'sword',
+    x: player.x + 44,
+    y: player.y + player.height - 16,
+    width: 16,
+    height: 16,
+    spriteSheet: createSwordItemSpriteSheet(),
+    effect: { type: 'equip', equipment: 'sword' },
+})
+
 debugLayer.setPlayerRectProvider(() => player.getRect())
+debugLayer.setItemRectProvider(() => itemSystem.getDebugRects())
 debugLayer.setLightPolygonProvider(() => lightingLayer.activeSunData)
+entityLayer.setItemProvider(() => itemSystem.getItems())
 
 pipeline.addLayer(backgroundLayer)
 pipeline.addLayer(terrainLayer)
@@ -116,6 +142,7 @@ const engine = new PixelEngine({
                 audio.playTone(cue)
             }
 
+            itemSystem.update()
             camera.update(safeDeltaSeconds, player)
 
             debugLayer.showCollision = debugPanel.showCollision
