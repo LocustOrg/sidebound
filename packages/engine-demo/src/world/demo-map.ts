@@ -16,8 +16,8 @@ export type Level = {
 
 export const tileSize = 28
 export const viewport = {
-    width: 240,
-    height: 135,
+    width: 450,
+    height: 250,
 }
 
 const solidGlyph = '#'
