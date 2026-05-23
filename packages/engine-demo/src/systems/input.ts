@@ -1,9 +1,11 @@
-const movementKeys = new Set(['arrowup', 'arrowleft', 'arrowright', 'w', 'a', 'd', ' '])
+const movementKeys = new Set(['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', ' '])
 const jumpKeys = new Set(['arrowup', 'w', ' '])
 
 export type PlayerInputFrame = {
     horizontal: number
     jumpQueued: boolean
+    jumpHeld: boolean
+    downHeld: boolean
 }
 
 export class GameInput {
@@ -23,12 +25,16 @@ export class GameInput {
     readPlayerFrame(): PlayerInputFrame {
         const horizontal = Number(this.pressedKeys.has('arrowright') || this.pressedKeys.has('d')) - Number(this.pressedKeys.has('arrowleft') || this.pressedKeys.has('a'))
         const jumpQueued = this.jumpQueued
+        const jumpHeld = this.pressedKeys.has('arrowup') || this.pressedKeys.has('w') || this.pressedKeys.has(' ')
+        const downHeld = this.pressedKeys.has('arrowdown') || this.pressedKeys.has('s')
 
         this.jumpQueued = false
 
         return {
             horizontal,
             jumpQueued,
+            jumpHeld,
+            downHeld,
         }
     }
 
