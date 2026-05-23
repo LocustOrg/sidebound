@@ -4,7 +4,7 @@ import eslintConfigPrettier from 'eslint-config-prettier'
 import { defineConfig } from 'eslint/config'
 
 export default defineConfig(js.configs.recommended, ...tseslint.configs.recommended, eslintConfigPrettier, {
-    ignores: ['**/dist/'],
+    ignores: ['**/dist/**'],
     rules: {
         'no-use-before-define': 'off',
         '@typescript-eslint/no-use-before-define': 'error',

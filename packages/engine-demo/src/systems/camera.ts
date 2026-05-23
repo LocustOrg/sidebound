@@ -54,7 +54,7 @@ export class SideViewCamera {
     }
 
     snapToPlayer(player: CameraTarget): void {
-        this.state.lookAhead = player.facing * cameraSettings.lookAheadDistance
+        this.state.lookAhead = player.facing * cameraSettings.idleLookAheadDistance
         const target = this.getTarget(player)
 
         this.state.x = target.x
@@ -68,7 +68,9 @@ export class SideViewCamera {
     }
 
     update(deltaSeconds: number, player: CameraTarget): void {
-        const targetLookAhead = Math.abs(player.vx) > 8 ? player.facing * cameraSettings.lookAheadDistance : 0
+        const speedRatio = clamp(Math.abs(player.vx) / 72, 0, 1)
+        const lookAheadDistance = cameraSettings.idleLookAheadDistance + (cameraSettings.movingLookAheadDistance - cameraSettings.idleLookAheadDistance) * speedRatio
+        const targetLookAhead = player.facing * lookAheadDistance
         const lookAheadSmoothing = 1 - Math.exp(-deltaSeconds * cameraSettings.lookAheadResponse)
 
         this.state.lookAhead += (targetLookAhead - this.state.lookAhead) * lookAheadSmoothing
@@ -113,9 +115,9 @@ export class SideViewCamera {
 
     private getTarget(player: CameraTarget): Vec2 {
         const focusX = player.x + player.width / 2 + this.state.lookAhead
-        const focusY = player.y + player.height / 2
+        const focusY = player.y + player.height * cameraSettings.focusHeightRatio
         const cameraCenterX = this.state.x + this.viewport.width / 2
-        const cameraAnchorY = this.state.y + this.viewport.height * 0.58
+        const cameraAnchorY = this.state.y + this.viewport.height * cameraSettings.anchorHeightRatio
         let targetX = this.state.x
         let targetY = this.state.y
 
@@ -126,9 +128,9 @@ export class SideViewCamera {
         }
 
         if (focusY < cameraAnchorY - cameraSettings.verticalDeadZone) {
-            targetY = focusY + cameraSettings.verticalDeadZone - this.viewport.height * 0.58
+            targetY = focusY + cameraSettings.verticalDeadZone - this.viewport.height * cameraSettings.anchorHeightRatio
         } else if (focusY > cameraAnchorY + cameraSettings.verticalDeadZone) {
-            targetY = focusY - cameraSettings.verticalDeadZone - this.viewport.height * 0.58
+            targetY = focusY - cameraSettings.verticalDeadZone - this.viewport.height * cameraSettings.anchorHeightRatio
         }
 
         return {

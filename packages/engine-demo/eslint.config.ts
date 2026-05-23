@@ -1,7 +1,9 @@
 import { defineConfig } from 'eslint/config'
 import baseConfig from '../../eslint.config'
 
-export default defineConfig(...baseConfig, {
+export default defineConfig({
+    ignores: ['dist/**'],
+}, ...baseConfig, {
     files: ['src/**/*.ts', 'vite.config.ts'],
     rules: {
         'no-use-before-define': 'off',

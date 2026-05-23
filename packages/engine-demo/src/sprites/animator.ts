@@ -24,6 +24,7 @@ export class Animator {
     private timer = 0
     private frameIndex = 0
     private _finished = false
+    private _playbackRate = 1
 
     readonly sheet: SpriteSheet
 
@@ -53,8 +54,14 @@ export class Animator {
     update(deltaSeconds: number): void {
         if (!this.currentClip || this._finished) return
 
-        this.timer += deltaSeconds
         const clip = this.currentClip
+        const scaledDeltaSeconds = deltaSeconds * this._playbackRate
+
+        if (scaledDeltaSeconds <= 0 || clip.frameDuration <= 0) {
+            return
+        }
+
+        this.timer += scaledDeltaSeconds
 
         while (this.timer >= clip.frameDuration) {
             this.timer -= clip.frameDuration
@@ -86,6 +93,15 @@ export class Animator {
     /** Whether the current (non-looping) clip has finished */
     get finished(): boolean {
         return this._finished
+    }
+
+    /** Playback rate multiplier applied when advancing the clip */
+    get playbackRate(): number {
+        return this._playbackRate
+    }
+
+    set playbackRate(value: number) {
+        this._playbackRate = Number.isFinite(value) ? Math.max(0, value) : 1
     }
 
     /** Draw the current frame */

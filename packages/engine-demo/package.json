@@ -12,7 +12,8 @@
         "check": "pnpm run typecheck && pnpm run lint"
     },
     "dependencies": {
-        "@strange-path/engine": "workspace:*"
+        "@strange-path/engine": "workspace:*",
+        "bezier-easing": "^3.0.0"
     },
     "devDependencies": {
         "typescript": "~6.0.2",

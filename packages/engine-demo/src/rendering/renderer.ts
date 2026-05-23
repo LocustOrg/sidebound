@@ -39,7 +39,28 @@ export class DemoRenderer {
 
     /** Draw any Mob entity using its sprite animator */
     drawMob(context: CanvasRenderingContext2D, mob: Mob): void {
+        const centerX = mob.x + mob.width / 2
+        const footY = mob.y + mob.height
+
+        context.save()
+        context.fillStyle = 'rgba(8, 6, 14, 0.28)'
+        context.beginPath()
+        context.ellipse(centerX, footY + 1, mob.width * 1.9, 2.3, 0, 0, Math.PI * 2)
+        context.fill()
+        context.restore()
+
         mob.draw(context)
+
+        context.save()
+        context.globalCompositeOperation = 'screen'
+        const aura = context.createRadialGradient(centerX, mob.y + mob.height * 0.35, 0, centerX, mob.y + mob.height * 0.35, 12)
+        aura.addColorStop(0, 'rgba(168, 226, 255, 0.08)')
+        aura.addColorStop(1, 'rgba(168, 226, 255, 0)')
+        context.fillStyle = aura
+        context.beginPath()
+        context.arc(centerX, mob.y + mob.height * 0.35, 12, 0, Math.PI * 2)
+        context.fill()
+        context.restore()
     }
 
     drawLighting(context: CanvasRenderingContext2D, lightPolygon: RayHit[], origin: Vec2, cameraRect: Rect, lightRadius: number): void {

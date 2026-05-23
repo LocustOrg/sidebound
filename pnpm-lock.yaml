@@ -47,6 +47,9 @@ importers:
       '@strange-path/engine':
         specifier: workspace:*
         version: link:../engine
+      bezier-easing:
+        specifier: ^3.0.0
+        version: 3.0.0
     devDependencies:
       typescript:
         specifier: ~6.0.2
@@ -335,6 +338,9 @@ packages:
   balanced-match@4.0.4:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
+
+  bezier-easing@3.0.0:
+    resolution: {integrity: sha512-lE85voPXiK99T8NHOfhaUqCZpJdP1gBbbTEvdBDdPB+phyvPZPNWalBe42eb6lKOYchP0qZrtBiRCARtT4edRQ==}
 
   brace-expansion@5.0.6:
     resolution: {integrity: sha512-kLpxurY4Z4r9sgMsyG0Z9uzsBlgiU/EFKhj/h91/8yHu0edo7XuixOIH3VcJ8kkxs6/jPzoI6U9Vj3WqbMQ94g==}
@@ -995,6 +1001,8 @@ snapshots:
       uri-js: 4.4.1
 
   balanced-match@4.0.4: {}
+
+  bezier-easing@3.0.0: {}
 
   brace-expansion@5.0.6:
     dependencies:

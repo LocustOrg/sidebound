@@ -36,6 +36,7 @@ type DebugPanelElements = {
     handle: HTMLElement
     reset: HTMLButtonElement
     soundToggle: HTMLButtonElement
+    pauseToggle: HTMLButtonElement
     lightingToggle: HTMLInputElement
     collisionToggle: HTMLInputElement
     fpsMetric: HTMLElement
@@ -69,6 +70,7 @@ function createDebugPanelElements(): DebugPanelElements {
         handle: requireElement<HTMLElement>('#debug-panel-handle'),
         reset: requireElement<HTMLButtonElement>('#debug-panel-reset'),
         soundToggle: requireElement<HTMLButtonElement>('#sound-toggle'),
+        pauseToggle: requireElement<HTMLButtonElement>('#pause-toggle'),
         lightingToggle: requireElement<HTMLInputElement>('#debug-lighting'),
         collisionToggle: requireElement<HTMLInputElement>('#debug-collision'),
         fpsMetric: requireElement<HTMLElement>('#metric-fps'),
@@ -143,6 +145,7 @@ export class DebugPanel {
     private nextMetricsUpdate = 0
     private soundButtonState: SoundButtonState
     private soundToggleHandler: SoundToggleHandler
+    private paused = false
 
     constructor() {
         this.elements = createDebugPanelElements()
@@ -170,6 +173,10 @@ export class DebugPanel {
         return this.savedSettings.soundPreferred ?? false
     }
 
+    get isPaused(): boolean {
+        return this.paused
+    }
+
     setSoundToggleHandler(handler: SoundToggleHandler): void {
         this.soundToggleHandler = handler
     }
@@ -183,9 +190,11 @@ export class DebugPanel {
         this.applySavedToggleSettings()
         this.initializeWindow()
         this.elements.soundToggle.addEventListener('click', this.handleSoundToggleClick)
+        this.elements.pauseToggle.addEventListener('click', this.handlePauseToggleClick)
         this.elements.lightingToggle.addEventListener('change', this.handleLightingToggleChange)
         this.elements.collisionToggle.addEventListener('change', this.handleCollisionToggleChange)
         this.updateSoundButton()
+        this.updatePauseButton()
     }
 
     updateMetrics(metrics: DiagnosticsMetrics): void {
@@ -240,6 +249,11 @@ export class DebugPanel {
             soundPreferred: this.soundButtonState.preferred,
         })
         this.updateSoundButton()
+    }
+
+    private readonly handlePauseToggleClick = (): void => {
+        this.paused = !this.paused
+        this.updatePauseButton()
     }
 
     private readonly handleLightingToggleChange = (): void => {
@@ -361,5 +375,10 @@ export class DebugPanel {
         }
 
         this.elements.soundToggle.setAttribute('aria-pressed', String(this.soundButtonState.preferred))
+    }
+
+    private updatePauseButton(): void {
+        this.elements.pauseToggle.textContent = this.paused ? 'Resume game' : 'Pause game'
+        this.elements.pauseToggle.setAttribute('aria-pressed', String(this.paused))
     }
 }

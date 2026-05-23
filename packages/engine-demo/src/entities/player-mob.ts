@@ -4,8 +4,7 @@ import type { PlayerInputFrame } from '../systems/input'
 import { controls } from '../core/config'
 import { Mob, type MobPhysics } from './mob'
 import { MobState } from './mob-states'
-import { createPlayerSpriteSheet } from '../sprites/player-sprites'
-import type { AnimationClip } from '../sprites/animator'
+import { createPlayerSpriteSheet, registerPlayerAnimationClips } from '../sprites/player-sprites'
 
 const PLAYER_PHYSICS: MobPhysics = {
     maxSpeed: controls.maxSpeed,
@@ -40,26 +39,12 @@ export class PlayerMob extends Mob {
             spriteSheet: sheet,
             physics: PLAYER_PHYSICS,
             solids,
-            // Sprite is 16x20, collision box is 5x10 → offset to align feet with hitbox bottom
-            spriteOffsetX: -5,
-            spriteOffsetY: -7,
+            // Sprite is 32x32, collision box is 5x10 → keep the feet planted while allowing headroom.
+            spriteOffsetX: -13,
+            spriteOffsetY: -19,
         })
 
-        // Register animation clips
-        const clips: AnimationClip[] = [
-            { name: 'idle', frames: [0, 1, 2, 3], frameDuration: 0.22, loop: true },
-            { name: 'run', frames: [8, 9, 10, 11, 12, 13], frameDuration: 0.09, loop: true },
-            { name: 'jump', frames: [16, 17], frameDuration: 0.14, loop: false },
-            { name: 'fall', frames: [24, 25], frameDuration: 0.16, loop: true },
-            { name: 'land', frames: [32, 33, 34], frameDuration: 0.06, loop: false },
-            { name: 'stop', frames: [34, 33, 32], frameDuration: 0.07, loop: false },
-        ]
-
-        for (const clip of clips) {
-            this.animator.addClip(clip)
-        }
-
-        this.animator.play('idle')
+        registerPlayerAnimationClips(this.animator)
     }
 
     /**
@@ -70,6 +55,7 @@ export class PlayerMob extends Mob {
         const previousState = this.mobState
 
         this.updatePhysics(deltaSeconds, input.horizontal, input.jumpQueued)
+        this.animator.playbackRate = this.resolvePlaybackRate(input.horizontal)
         this.updateAnimation(deltaSeconds)
 
         // Sound cues
@@ -104,6 +90,25 @@ export class PlayerMob extends Mob {
         if (this.stepCooldown <= 0) {
             cues.push(createStepCue(this.vx))
             this.stepCooldown = 0.16
+        }
+    }
+
+    private resolvePlaybackRate(horizontal: number): number {
+        const speedRatio = Math.min(1, Math.abs(this.vx) / Math.max(1, PLAYER_PHYSICS.maxSpeed))
+
+        switch (this.mobState) {
+            case MobState.Running:
+                return 0.92 + speedRatio * 0.8
+            case MobState.Stopping:
+                return 1.05
+            case MobState.Jumping:
+                return 0.94 + Math.abs(horizontal) * 0.08
+            case MobState.Falling:
+                return 0.9
+            case MobState.Landing:
+                return 1.12
+            default:
+                return 0.98
         }
     }
 }

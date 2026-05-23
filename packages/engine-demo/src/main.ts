@@ -45,11 +45,17 @@ const engine = new PixelEngine({
         update(deltaSeconds) {
             const updateStart = performance.now()
             const safeDeltaSeconds = Math.min(deltaSeconds, 0.05)
+            const playerInput = input.readPlayerFrame()
 
             diagnostics.frameMs = smooth(diagnostics.frameMs, deltaSeconds * 1000, 0.12)
             diagnostics.fps = smooth(diagnostics.fps, 1 / Math.max(deltaSeconds, 0.0001), 0.12)
 
-            for (const cue of player.update(safeDeltaSeconds, input.readPlayerFrame())) {
+            if (debugPanel.isPaused) {
+                diagnostics.updateMs = 0
+                return
+            }
+
+            for (const cue of player.update(safeDeltaSeconds, playerInput)) {
                 audio.playTone(cue)
             }
 
