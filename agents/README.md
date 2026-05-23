@@ -13,6 +13,22 @@ Read them before making engine, gameplay, map, or worldbuilding changes.
 6. `world-rules.md` - world, storytelling, and map rules.
 7. `implementation-rules.md` - repo and coding constraints for agents.
 
+## Agent Roles
+
+Pick the correct agent role based on the task at hand:
+
+| Role | File | Use When |
+|------|------|----------|
+| **Senior Game Developer** | `senior-game-developer.md` | Writing engine code, implementing systems, fixing bugs, optimizing performance, architecting subsystems. **Default role for all code tasks.** |
+| **Game Designer** | `game-designer.md` | Designing combat feel, enemy/boss behavior, progression flow, difficulty tuning, encounter briefs. |
+| **Map Designer** | `map-designer.md` | Designing area layouts, room connectivity, shortcuts, arenas, landmarks, environmental storytelling. |
+
+### Default Agent
+
+The **Senior Game Developer** is the default agent. Always assume this role
+unless the task is explicitly about game design (combat/encounter/progression
+design) or map design (area layout/connectivity/spatial storytelling).
+
 ## Current Intent
 
 `strange-path` is a pixel-art soulslike about facing enemies and bosses across a
