@@ -11,14 +11,14 @@ import type { PickupItemEntity } from '../../entities/item-entity'
 export class EntityLayer implements RenderLayer {
     readonly order = 20
     private mobs: Mob[] = []
-    private items: PickupItemEntity[] = []
+    private itemProvider: () => readonly PickupItemEntity[] = () => []
 
     addMob(mob: Mob): void {
         this.mobs.push(mob)
     }
 
-    addItem(item: PickupItemEntity): void {
-        this.items.push(item)
+    setItemProvider(provider: () => readonly PickupItemEntity[]): void {
+        this.itemProvider = provider
     }
 
     removeMob(mob: Mob): void {
@@ -26,13 +26,8 @@ export class EntityLayer implements RenderLayer {
         if (index !== -1) this.mobs.splice(index, 1)
     }
 
-    removeItem(item: PickupItemEntity): void {
-        const index = this.items.indexOf(item)
-        if (index !== -1) this.items.splice(index, 1)
-    }
-
     render(context: CanvasRenderingContext2D, _camera: Rect): void {
-        for (const item of this.items) {
+        for (const item of this.itemProvider()) {
             this.drawItem(context, item)
         }
 

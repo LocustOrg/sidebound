@@ -4,11 +4,11 @@ import { SideViewCamera } from './systems/camera'
 import { DebugPanel } from './debug/debug-panel'
 import { tileSize, viewport, world } from './world/demo-map'
 import { requireElement } from './core/dom'
-import { rectsIntersect, smooth } from './core/geometry'
+import { smooth } from './core/geometry'
 import { GameInput } from './systems/input'
 import { RayLighting } from './systems/lighting'
 import { PlayerMob } from './entities/player-mob'
-import { getPickupItemRect, type PickupItemEntity } from './entities/item-entity'
+import { ItemSystem } from './systems/item-system'
 import { RenderPipeline } from './rendering/pipeline'
 import { BackgroundLayer } from './rendering/layers'
 import { TerrainLayer } from './rendering/layers'
@@ -24,6 +24,7 @@ const debugPanel = new DebugPanel()
 const input = new GameInput(debugPanel.root)
 const audio = new DemoAudio(debugPanel.soundPreferred)
 const player = new PlayerMob(world.spawn, world.solids)
+const itemSystem = new ItemSystem({ player })
 const camera = new SideViewCamera(world, viewport)
 
 // Lighting uses both solids and reflectors as occluders for ray-casting
@@ -58,29 +59,31 @@ entityLayer.addMob(player)
 lightingLayer.setSunLights(sunLights)
 lightingLayer.setCameraProvider(() => camera.getRect())
 
-const pickupItems: PickupItemEntity[] = [{
+itemSystem.add({
+    id: 'starter-cape',
     kind: 'cape',
     x: player.x + 24,
     y: player.y + player.height - 16,
     width: 16,
     height: 16,
     spriteSheet: createCapeItemSpriteSheet(),
-}, {
+    effect: { type: 'equip', equipment: 'cape' },
+})
+itemSystem.add({
+    id: 'starter-sword',
     kind: 'sword',
     x: player.x + 44,
     y: player.y + player.height - 16,
     width: 16,
     height: 16,
     spriteSheet: createSwordItemSpriteSheet(),
-}]
-
-for (const item of pickupItems) {
-    entityLayer.addItem(item)
-}
+    effect: { type: 'equip', equipment: 'sword' },
+})
 
 debugLayer.setPlayerRectProvider(() => player.getRect())
-debugLayer.setItemRectProvider(() => pickupItems.map(getPickupItemRect))
+debugLayer.setItemRectProvider(() => itemSystem.getDebugRects())
 debugLayer.setLightPolygonProvider(() => lightingLayer.activeSunData)
+entityLayer.setItemProvider(() => itemSystem.getItems())
 
 pipeline.addLayer(backgroundLayer)
 pipeline.addLayer(terrainLayer)
@@ -147,7 +150,7 @@ const engine = new PixelEngine({
                 audio.playTone(cue)
             }
 
-            resolveItemPickups()
+            itemSystem.update()
             camera.update(safeDeltaSeconds, player)
 
             // Sync debug toggles
@@ -192,26 +195,5 @@ const engine = new PixelEngine({
         },
     },
 })
-
-function resolveItemPickups(): void {
-    const playerRect = player.getRect()
-
-    for (let index = pickupItems.length - 1; index >= 0; index -= 1) {
-        const item = pickupItems[index]
-
-        if (!rectsIntersect(playerRect, getPickupItemRect(item))) {
-            continue
-        }
-
-        if (item.kind === 'cape') {
-            player.equipCape()
-        } else {
-            player.equipSword()
-        }
-
-        pickupItems.splice(index, 1)
-        entityLayer.removeItem(item)
-    }
-}
 
 engine.start()
