@@ -21,7 +21,7 @@ const canvas = requireElement<HTMLCanvasElement>('#game')
 const debugPanel = new DebugPanel()
 const input = new GameInput(debugPanel.root)
 const audio = new DemoAudio(debugPanel.soundPreferred)
-const player = new PlayerMob(world.spawn, world.solids, world.width, world.height)
+const player = new PlayerMob(world.spawn, world.solids)
 const camera = new SideViewCamera(world, viewport)
 
 // Lighting uses both solids and reflectors as occluders for ray-casting
@@ -96,7 +96,9 @@ const minimap = new DebugMinimap({
 // Log map info
 const mapTilesW = Math.round(world.width / tileSize)
 const mapTilesH = Math.round(world.height / tileSize)
-console.log(`[Map] ${mapTilesW}×${mapTilesH} tiles (${world.width}×${world.height}px), ${world.solids.length} solids, ${world.reflectors.length} reflectors, ${sunLights.length} suns`)
+console.log(
+    `[Map] ${mapTilesW}×${mapTilesH} tiles (${world.width}×${world.height}px), ${world.solids.length} solids, ${world.reflectors.length} reflectors, ${sunLights.length} suns`,
+)
 
 const engine = new PixelEngine({
     canvas,
@@ -162,10 +164,7 @@ const engine = new PixelEngine({
             })
 
             // Update minimap
-            minimap.render(
-                { x: player.x, y: player.y },
-                cameraRect,
-            )
+            minimap.render({ x: player.x, y: player.y }, cameraRect)
         },
     },
 })
