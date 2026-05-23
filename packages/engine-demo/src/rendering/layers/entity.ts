@@ -1,7 +1,14 @@
 import type { RenderLayer } from '../pipeline'
-import type { Rect } from '../../core/geometry'
+import type { Rect, Vec2 } from '../../core/geometry'
 import { clamp } from '../../core/geometry'
 import type { Mob } from '../../entities/mob'
+import type { SpriteSheet } from '../../sprites/sprite-sheet'
+
+export type ItemEntity = Vec2 & {
+    spriteSheet: SpriteSheet
+    frameIndex?: number
+    flipX?: boolean
+}
 
 /**
  * Draws all mob entities with shadow and aura effects.
@@ -10,9 +17,14 @@ import type { Mob } from '../../entities/mob'
 export class EntityLayer implements RenderLayer {
     readonly order = 20
     private mobs: Mob[] = []
+    private items: ItemEntity[] = []
 
     addMob(mob: Mob): void {
         this.mobs.push(mob)
+    }
+
+    addItem(item: ItemEntity): void {
+        this.items.push(item)
     }
 
     removeMob(mob: Mob): void {
@@ -20,10 +32,23 @@ export class EntityLayer implements RenderLayer {
         if (index !== -1) this.mobs.splice(index, 1)
     }
 
+    removeItem(item: ItemEntity): void {
+        const index = this.items.indexOf(item)
+        if (index !== -1) this.items.splice(index, 1)
+    }
+
     render(context: CanvasRenderingContext2D, _camera: Rect): void {
+        for (const item of this.items) {
+            this.drawItem(context, item)
+        }
+
         for (const mob of this.mobs) {
             this.drawMob(context, mob)
         }
+    }
+
+    private drawItem(context: CanvasRenderingContext2D, item: ItemEntity): void {
+        item.spriteSheet.drawFrame(context, item.frameIndex ?? 0, Math.round(item.x), Math.round(item.y), item.flipX ?? false)
     }
 
     private drawMob(context: CanvasRenderingContext2D, mob: Mob): void {

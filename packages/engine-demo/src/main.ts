@@ -9,12 +9,13 @@ import { GameInput } from './systems/input'
 import { RayLighting } from './systems/lighting'
 import { PlayerMob } from './entities/player-mob'
 import { RenderPipeline } from './rendering/pipeline'
-import { BackgroundLayer } from './rendering/layers/background'
-import { TerrainLayer } from './rendering/layers/terrain'
-import { EntityLayer } from './rendering/layers/entity'
+import { BackgroundLayer } from './rendering/layers'
+import { TerrainLayer } from './rendering/layers'
+import { EntityLayer } from './rendering/layers'
 import { LightingLayer, type SunLight } from './rendering/layers/lighting'
-import { DebugLayer } from './rendering/layers/debug'
+import { DebugLayer } from './rendering/layers'
 import { DebugMinimap } from './debug/debug-minimap'
+import { createCapeItemSpriteSheet, createSwordItemSpriteSheet } from './sprites/item-sprites'
 import './style.css'
 
 const canvas = requireElement<HTMLCanvasElement>('#game')
@@ -56,6 +57,16 @@ entityLayer.addMob(player)
 lightingLayer.setSunLights(sunLights)
 lightingLayer.setCameraProvider(() => camera.getRect())
 
+entityLayer.addItem({
+    x: player.x + 24,
+    y: player.y + player.height - 16,
+    spriteSheet: createCapeItemSpriteSheet(),
+})
+entityLayer.addItem({
+    x: player.x + 44,
+    y: player.y + player.height - 16,
+    spriteSheet: createSwordItemSpriteSheet(),
+})
 debugLayer.setPlayerRectProvider(() => player.getRect())
 debugLayer.setLightPolygonProvider(() => lightingLayer.activeSunData)
 
