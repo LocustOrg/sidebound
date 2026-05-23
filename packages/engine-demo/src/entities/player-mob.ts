@@ -27,12 +27,9 @@ function createStepCue(vx: number): SoundCue {
  * Player entity — extends Mob with input handling, sound cues, and light source.
  */
 export class PlayerMob extends Mob {
-    lightRadius = 88
     private stepCooldown = 0
-    private readonly worldWidth: number
-    private readonly worldHeight: number
 
-    constructor(spawn: Vec2, solids: Rect[], worldWidth: number, worldHeight: number) {
+    constructor(spawn: Vec2, solids: Rect[]) {
         const sheet = createPlayerSpriteSheet()
 
         super({
@@ -47,8 +44,6 @@ export class PlayerMob extends Mob {
             spriteOffsetY: -4,
         })
 
-        this.worldWidth = worldWidth
-        this.worldHeight = worldHeight
         registerPlayerAnimationClips(this.animator)
     }
 
@@ -62,7 +57,7 @@ export class PlayerMob extends Mob {
         this.updatePhysics(deltaSeconds, input.horizontal, input.jumpQueued, input.jumpHeld, input.downHeld)
 
         // Respawn if player falls out of world bounds
-        if (this.y > this.worldHeight + 100 || this.y < -200 || this.x < -200 || this.x > this.worldWidth + 200) {
+        if (this.y < -200 || this.x < -200) {
             this.respawn()
         }
 
@@ -81,14 +76,6 @@ export class PlayerMob extends Mob {
         this.addStepCues(cues, deltaSeconds, input.horizontal)
 
         return cues
-    }
-
-    /** Light source origin (slightly ahead of facing) */
-    getLightOrigin(): Vec2 {
-        return {
-            x: this.x + this.width / 2 + this.facing * 2,
-            y: this.y + 6,
-        }
     }
 
     private addStepCues(cues: SoundCue[], deltaSeconds: number, horizontal: number): void {
@@ -123,9 +110,3 @@ export class PlayerMob extends Mob {
         }
     }
 }
-
-
-
-
-
-
