@@ -2,6 +2,7 @@ import type { RenderLayer } from '../pipeline'
 import type { Rect } from '../../core/geometry'
 import { clamp } from '../../core/geometry'
 import type { Mob } from '../../entities/mob'
+import type { PickupItemEntity } from '../../entities/item-entity'
 
 /**
  * Draws all mob entities with shadow and aura effects.
@@ -10,9 +11,14 @@ import type { Mob } from '../../entities/mob'
 export class EntityLayer implements RenderLayer {
     readonly order = 20
     private mobs: Mob[] = []
+    private itemProvider: () => readonly PickupItemEntity[] = () => []
 
     addMob(mob: Mob): void {
         this.mobs.push(mob)
+    }
+
+    setItemProvider(provider: () => readonly PickupItemEntity[]): void {
+        this.itemProvider = provider
     }
 
     removeMob(mob: Mob): void {
@@ -21,9 +27,17 @@ export class EntityLayer implements RenderLayer {
     }
 
     render(context: CanvasRenderingContext2D, _camera: Rect): void {
+        for (const item of this.itemProvider()) {
+            this.drawItem(context, item)
+        }
+
         for (const mob of this.mobs) {
             this.drawMob(context, mob)
         }
+    }
+
+    private drawItem(context: CanvasRenderingContext2D, item: PickupItemEntity): void {
+        item.spriteSheet.drawFrame(context, item.frameIndex ?? 0, Math.round(item.x), Math.round(item.y), item.flipX ?? false)
     }
 
     private drawMob(context: CanvasRenderingContext2D, mob: Mob): void {

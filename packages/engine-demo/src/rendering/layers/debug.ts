@@ -16,6 +16,7 @@ export class DebugLayer implements RenderLayer {
 
     private readonly solids: Rect[]
     private playerRectProvider: (() => Rect) | null = null
+    private itemRectProvider: (() => Rect[]) | null = null
     private lightPolygonProvider: (() => LightDebugEntry[]) | null = null
 
     constructor(solids: Rect[]) {
@@ -24,6 +25,10 @@ export class DebugLayer implements RenderLayer {
 
     setPlayerRectProvider(provider: () => Rect): void {
         this.playerRectProvider = provider
+    }
+
+    setItemRectProvider(provider: () => Rect[]): void {
+        this.itemRectProvider = provider
     }
 
     setLightPolygonProvider(provider: () => LightDebugEntry[]): void {
@@ -52,6 +57,13 @@ export class DebugLayer implements RenderLayer {
             const rect = this.playerRectProvider()
             context.strokeStyle = 'rgba(115, 255, 153, 0.9)'
             context.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.width - 1, rect.height - 1)
+        }
+
+        if (this.itemRectProvider) {
+            context.strokeStyle = 'rgba(246, 211, 101, 0.9)'
+            for (const rect of this.itemRectProvider()) {
+                context.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.width - 1, rect.height - 1)
+            }
         }
 
         context.restore()
