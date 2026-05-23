@@ -24,23 +24,19 @@ const audio = new DemoAudio(debugPanel.soundPreferred)
 const player = new PlayerMob(world.spawn, world.solids)
 const camera = new SideViewCamera(world, viewport)
 
-// Lighting uses both solids and reflectors as occluders for ray-casting
 const allOccluders = [...world.solids, ...world.reflectors]
 const lighting = new RayLighting(allOccluders)
 
-// --- Generate sun lights distributed across the map ---
-// Suns are placed in a grid: horizontally every 16 tiles, vertically every 20 tiles
 const sunLights: SunLight[] = []
-const sunSpacingX = tileSize * 16
-const sunSpacingY = tileSize * 20
-const sunRadius = tileSize * 12
+const sunSpacingX = tileSize * 12
+const sunSpacingY = tileSize * 14
+const sunRadius = tileSize * 10
 for (let y = tileSize * 2; y < world.height - tileSize * 4; y += sunSpacingY) {
     for (let x = sunSpacingX; x < world.width - sunSpacingX / 2; x += sunSpacingX) {
         sunLights.push({ x, y, radius: sunRadius })
     }
 }
 
-// --- Layered Render Pipeline ---
 const pipeline = new RenderPipeline()
 
 const backgroundLayer = new BackgroundLayer(world)
@@ -52,7 +48,6 @@ const debugLayer = new DebugLayer(world.solids)
 
 entityLayer.addMob(player)
 
-// Configure sun-based lighting (no player light)
 lightingLayer.setSunLights(sunLights)
 lightingLayer.setCameraProvider(() => camera.getRect())
 
@@ -65,7 +60,6 @@ pipeline.addLayer(entityLayer)
 pipeline.addLayer(lightingLayer)
 pipeline.addLayer(debugLayer)
 
-// --- Diagnostics ---
 const diagnostics = {
     fps: 0,
     frameMs: 0,
@@ -82,7 +76,6 @@ debugPanel.start()
 input.start()
 camera.snapToPlayer(player)
 
-// --- Debug Minimap ---
 const minimapCanvas = requireElement<HTMLCanvasElement>('#debug-minimap')
 const minimap = new DebugMinimap({
     canvas: minimapCanvas,
@@ -93,7 +86,6 @@ const minimap = new DebugMinimap({
     sunLights,
 })
 
-// Log map info
 const mapTilesW = Math.round(world.width / tileSize)
 const mapTilesH = Math.round(world.height / tileSize)
 console.log(
@@ -126,12 +118,10 @@ const engine = new PixelEngine({
 
             camera.update(safeDeltaSeconds, player)
 
-            // Sync debug toggles
             debugLayer.showCollision = debugPanel.showCollision
             debugLayer.showLighting = debugPanel.showLighting
             player.noClip = debugPanel.noClip
 
-            // Update pipeline layers (lighting ray-cast happens here)
             pipeline.update(safeDeltaSeconds)
 
             diagnostics.rayMs = lightingLayer.lastRayMs
@@ -163,7 +153,6 @@ const engine = new PixelEngine({
                 reflectors: world.reflectors.length,
             })
 
-            // Update minimap
             minimap.render({ x: player.x, y: player.y }, cameraRect)
         },
     },
