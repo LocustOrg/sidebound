@@ -7,16 +7,15 @@ export default defineConfig({
     files: ['src/**/*.ts', 'vite.config.ts'],
     rules: {
         'no-use-before-define': 'off',
-        '@typescript-eslint/no-use-before-define': [
-            'error',
-            {
-                functions: true,
-                classes: true,
-                variables: true,
-                enums: false,
-                typedefs: false,
-                ignoreTypeReferences: true,
-            },
-        ],
+        'no-unused-expressions': 'off',
+        'no-unused-vars': 'off',
+
+        // Rules
+        '@typescript-eslint/no-use-before-define': 'error',
+        '@typescript-eslint/no-unused-expressions': 'error',
+        '@typescript-eslint/no-unused-vars': ['error', {
+            // ignore what starts with _
+            'argsIgnorePattern': '^_',
+        }],
     },
 })

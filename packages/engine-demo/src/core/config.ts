@@ -4,7 +4,7 @@ export const controls = {
     airAcceleration: 430,
     friction: 920,
     gravity: 420,
-    jumpVelocity: 176,
+    jumpVelocity: 287,
 }
 
 export const cameraSettings = {

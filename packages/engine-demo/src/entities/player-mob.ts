@@ -32,16 +32,18 @@ export class PlayerMob extends Mob {
 
     constructor(spawn: Vec2, solids: Rect[]) {
         const sheet = createPlayerSpriteSheet()
+        console.log(sheet)
+
         super({
             spawn,
-            width: 5,
-            height: 10,
+            width: 8,
+            height: 28,
             spriteSheet: sheet,
             physics: PLAYER_PHYSICS,
             solids,
             // Sprite is 32x32, collision box is 5x10 → keep the feet planted while allowing headroom.
             spriteOffsetX: -13,
-            spriteOffsetY: -19,
+            spriteOffsetY: -4,
         })
 
         registerPlayerAnimationClips(this.animator)

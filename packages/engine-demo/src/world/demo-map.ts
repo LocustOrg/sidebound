@@ -1,8 +1,11 @@
 import type { Rect, Vec2 } from '../core/geometry'
 
-export type { Rect, Vec2 } from '../core/geometry'
-
-type TileRect = readonly [x: number, y: number, width: number, height: number]
+type TileArea = {
+    x: number
+    y: number
+    width: number
+    height: number
+}
 
 export type Level = {
     width: number
@@ -11,70 +14,222 @@ export type Level = {
     solids: Rect[]
 }
 
-export const tileSize = 8
+export const tileSize = 28
 export const viewport = {
     width: 240,
     height: 135,
 }
 
-function solid(x: number, y: number, width: number, height: number): TileRect {
-    return [x, y, width, height]
+const solidGlyph = '#'
+const spawnGlyph = '@'
+const emptyGlyphs = new Set([' ', '.'])
+const demoPlayerBounds = {
+    width: 5 / tileSize,
+    height: 10 / tileSize,
 }
 
-function toWorldPoint(point: Vec2): Vec2 {
+function toWorldRect(area: TileArea): Rect {
     return {
-        x: point.x * tileSize,
-        y: point.y * tileSize,
+        x: area.x * tileSize,
+        y: area.y * tileSize,
+        width: area.width * tileSize,
+        height: area.height * tileSize,
     }
 }
 
-function toWorldRect([x, y, width, height]: TileRect): Rect {
+function toSpawnPoint(tile: Vec2): Vec2 {
     return {
-        x: x * tileSize,
-        y: y * tileSize,
-        width: width * tileSize,
-        height: height * tileSize,
+        x: (tile.x + 0.5 - demoPlayerBounds.width / 2) * tileSize,
+        y: (tile.y + 1 - demoPlayerBounds.height) * tileSize,
     }
 }
 
-function createLevel(level: { width: number; height: number; spawn: Vec2; solids: TileRect[] }): Level {
-    return {
-        width: level.width * tileSize,
-        height: level.height * tileSize,
-        spawn: toWorldPoint(level.spawn),
-        solids: level.solids.map(toWorldRect),
+function parseLevelSketch(sketch: string): string[] {
+    const rows = sketch
+        .trim()
+        .split('\n')
+        .map((row) => row.trim())
+    const width = rows[0]?.length ?? 0
+
+    if (width === 0) {
+        throw new Error('Map sketch must include at least one row.')
+    }
+
+    rows.forEach((row, y) => {
+        if (row.length !== width) {
+            throw new Error(`Map sketch row ${y} is ${row.length} tiles wide, but the first row is ${width}.`)
+        }
+    })
+
+    return rows
+}
+
+function createSolidGrid(width: number, height: number): boolean[][] {
+    return Array.from({ length: height }, () => Array<boolean>(width).fill(false))
+}
+
+function addBoundary(grid: boolean[][]): void {
+    const width = grid[0].length
+    const lastRow = grid.length - 1
+    const lastColumn = width - 1
+
+    for (let x = 0; x < width; x += 1) {
+        grid[0][x] = true
+        grid[lastRow][x] = true
+    }
+
+    for (let y = 0; y < grid.length; y += 1) {
+        grid[y][0] = true
+        grid[y][lastColumn] = true
     }
 }
 
-const levelTiles = {
-    width: 120,
-    height: 28,
-    spawn: { x: 4, y: 22.75 },
-    solids: [
-        solid(0, 0, 120, 1),
-        solid(0, 27, 120, 1),
-        solid(0, 0, 1, 28),
-        solid(119, 0, 1, 28),
+function findRowRuns(row: readonly boolean[]): TileArea[] {
+    const runs: TileArea[] = []
+    let x = 0
 
-        solid(1, 24, 18, 3),
-        solid(23, 24, 21, 3),
-        solid(49, 24, 20, 3),
-        solid(76, 24, 18, 3),
-        solid(101, 24, 18, 3),
+    while (x < row.length) {
+        while (x < row.length && !row[x]) {
+            x += 1
+        }
 
-        solid(18, 20, 22, 1),
-        solid(46, 18, 24, 1),
-        solid(78, 16, 22, 1),
-        solid(15, 14, 14, 1),
-        solid(37, 12, 18, 1),
-        solid(62, 10, 16, 1),
-        solid(91, 13, 18, 1),
+        const start = x
 
-        solid(30, 7, 2, 14),
-        solid(66, 6, 2, 19),
-        solid(86, 16, 2, 9),
-        solid(111, 9, 2, 16),
-    ],
+        while (x < row.length && row[x]) {
+            x += 1
+        }
+
+        if (x > start) {
+            runs.push({ x: start, y: 0, width: x - start, height: 1 })
+        }
+    }
+
+    return runs
 }
 
-export const world = createLevel(levelTiles)
+function mergeSolidTiles(grid: readonly (readonly boolean[])[]): TileArea[] {
+    const areas: TileArea[] = []
+    let activeAreas = new Map<string, TileArea>()
+
+    for (let y = 0; y < grid.length; y += 1) {
+        const nextActiveAreas = new Map<string, TileArea>()
+        const runs = findRowRuns(grid[y])
+
+        for (const run of runs) {
+            const key = `${run.x}:${run.width}`
+            const activeArea = activeAreas.get(key)
+
+            if (activeArea !== undefined) {
+                activeArea.height += 1
+                nextActiveAreas.set(key, activeArea)
+            } else {
+                nextActiveAreas.set(key, { ...run, y, height: 1 })
+            }
+        }
+
+        for (const [key, area] of activeAreas) {
+            if (!nextActiveAreas.has(key)) {
+                areas.push(area)
+            }
+        }
+
+        activeAreas = nextActiveAreas
+    }
+
+    areas.push(...activeAreas.values())
+
+    return areas
+}
+
+function createLevelFromRows(rows: readonly string[], width: number): Level {
+    const height = rows.length + 2
+    const grid = createSolidGrid(width + 2, height)
+    let spawn: Vec2 | undefined
+
+    addBoundary(grid)
+
+    rows.forEach((row, sourceY) => {
+        if (row.length > width) {
+            throw new Error(`Map sketch row ${sourceY} is ${row.length} tiles wide, but the level width is ${width}.`)
+        }
+
+        for (let sourceX = 0; sourceX < row.length; sourceX += 1) {
+            const glyph = row[sourceX]
+            const x = sourceX + 1
+            const y = sourceY + 1
+
+            if (glyph === solidGlyph) {
+                grid[y][x] = true
+                continue
+            }
+
+            if (glyph === spawnGlyph) {
+                if (spawn !== undefined) {
+                    throw new Error('Map sketch can only contain one player spawn marker.')
+                }
+
+                spawn = toSpawnPoint({ x, y })
+                continue
+            }
+
+            if (!emptyGlyphs.has(glyph)) {
+                throw new Error(`Unsupported map sketch glyph "${glyph}" at ${sourceX}, ${sourceY}.`)
+            }
+        }
+    })
+
+    if (spawn === undefined) {
+        throw new Error('Map sketch must include one player spawn marker.')
+    }
+
+    return {
+        width: grid[0].length * tileSize,
+        height: grid.length * tileSize,
+        spawn,
+        solids: mergeSolidTiles(grid).map(toWorldRect),
+    }
+}
+
+function createLevelFromSketch(sketch: string): Level {
+    const rows = parseLevelSketch(sketch)
+
+    return createLevelFromRows(rows, rows[0].length)
+}
+
+const levelSketch = `
+........................................................................................................................................................................................
+........................................................................................................................................................................................
+........................................................................................................................................................................................
+........................................................................................................................................................................................
+........................................................................................................................................................................................
+........................................................................................................................................................................................
+........................................................................................................................................................................................
+........................................................................................................................................................................................
+........................................................................................................................................................................................
+..............................########............................##########............................................................................................................
+........................................................................................................................................................................................
+................##############......................################....................................................................................................................
+........................................................................................................................................................................................
+............................................................................##..........................................................................................................
+............................................................................##..........................................................................................................
+........................................############........................##..........................................................................................................
+........................................##........##....................................................................................................................................
+........................................##........##..........##################........................................................................................................
+........................................##........##....................................................................................................................................
+.................................##########################.............................................................................................................................
+........................................................................................................................................................................................
+..........................................................####################..........................................................................................................
+........................................................................................................................................................................................
+.............................##########################.................................................................................................................................
+........................................................................############....................................................................................................
+........................................................................................................................................................................................
+............######################....................##########################........................................................................................................
+........................................................................................................................................................................................
+........######################..........................................................................................................................................................
+.....@..................................................................................................................................................................................
+########################################################################################################################################################################################
+########################################################################################################################################################################################
+########################################################################################################################################################################################
+`
+
+export const world = createLevelFromSketch(levelSketch)

@@ -38,6 +38,7 @@ export class PixelEngine {
 
         this.canvas.width = width
         this.canvas.height = height
+
         if (scale !== 'css') {
             this.canvas.style.width = `${width * scale}px`
             this.canvas.style.height = `${height * scale}px`

@@ -1,8 +1,18 @@
 # Project Vision
 
+## Engine Identity
+
+`strange-path` is an open-source 2D side-view pixel-art engine inspired by
+**Risk of Rain (Returns)**. It is designed to be easy to use and focuses on
+**interaction physics** — entities pushing, riding, bouncing off, hooking to,
+and stacking on each other — rather than destruction physics.
+
+The engine should power games that feel responsive, juicy, and physically
+tangible without requiring a full rigid-body solver.
+
 ## Game Identity
 
-`strange-path` is a side-view pixel-art soulslike, closer in camera and
+The demo game is a side-view pixel-art soulslike, closer in camera and
 traversal shape to `Hollow Knight`, where the player explores a humongous,
 interconnected map, fights dangerous enemies and bosses, and gradually pieces
 together the world's history without direct exposition.

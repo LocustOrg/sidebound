@@ -2,13 +2,18 @@ import { PixelEngine } from '@strange-path/engine'
 import { DemoAudio } from './systems/audio'
 import { SideViewCamera } from './systems/camera'
 import { DebugPanel } from './debug/debug-panel'
-import { world, viewport } from './world/demo-map'
+import { viewport, world } from './world/demo-map'
 import { requireElement } from './core/dom'
 import { smooth } from './core/geometry'
 import { GameInput } from './systems/input'
 import { RayLighting } from './systems/lighting'
 import { PlayerMob } from './entities/player-mob'
-import { DemoRenderer } from './rendering/renderer'
+import { RenderPipeline } from './rendering/pipeline'
+import { BackgroundLayer } from './rendering/layers/background'
+import { TerrainLayer } from './rendering/layers/terrain'
+import { EntityLayer } from './rendering/layers/entity'
+import { LightingLayer } from './rendering/layers/lighting'
+import { DebugLayer } from './rendering/layers/debug'
 import './style.css'
 
 const canvas = requireElement<HTMLCanvasElement>('#game')
@@ -18,7 +23,35 @@ const audio = new DemoAudio(debugPanel.soundPreferred)
 const player = new PlayerMob(world.spawn, world.solids)
 const camera = new SideViewCamera(world, viewport)
 const lighting = new RayLighting(world.solids)
-const renderer = new DemoRenderer(world)
+
+// --- Layered Render Pipeline ---
+const pipeline = new RenderPipeline()
+
+const backgroundLayer = new BackgroundLayer(world)
+const terrainLayer = new TerrainLayer(world)
+const entityLayer = new EntityLayer()
+const lightingLayer = new LightingLayer(lighting, viewport.width, viewport.height)
+const debugLayer = new DebugLayer(world.solids)
+
+entityLayer.addMob(player)
+lightingLayer.setOriginProvider(() => ({
+    origin: player.getLightOrigin(),
+    radius: player.lightRadius,
+}))
+debugLayer.setPlayerRectProvider(player.getRect)
+debugLayer.setLightPolygonProvider(() => ({
+    polygon: lightingLayer['cachedPolygon'],
+    origin: lightingLayer['cachedOrigin'],
+    radius: lightingLayer['cachedRadius'],
+}))
+
+pipeline.addLayer(backgroundLayer)
+pipeline.addLayer(terrainLayer)
+pipeline.addLayer(entityLayer)
+pipeline.addLayer(lightingLayer)
+pipeline.addLayer(debugLayer)
+
+// --- Diagnostics ---
 const diagnostics = {
     fps: 0,
     frameMs: 0,
@@ -60,6 +93,17 @@ const engine = new PixelEngine({
             }
 
             camera.update(safeDeltaSeconds, player)
+
+            // Sync debug toggles
+            debugLayer.showCollision = debugPanel.showCollision
+            debugLayer.showLighting = debugPanel.showLighting
+
+            // Update pipeline layers (lighting ray-cast happens here)
+            pipeline.update(safeDeltaSeconds)
+
+            diagnostics.rayMs = lightingLayer.lastRayMs
+            diagnostics.rays = lightingLayer.lastRays
+            diagnostics.rayChecks = lightingLayer.lastRayChecks
             diagnostics.updateMs = performance.now() - updateStart
         },
         render(context) {
@@ -68,29 +112,7 @@ const engine = new PixelEngine({
 
             context.save()
             context.translate(-cameraRect.x, -cameraRect.y)
-            renderer.drawArea(context)
-
-            const rayStart = performance.now()
-            const lightOrigin = player.getLightOrigin()
-            const light = lighting.cast(lightOrigin, player.lightRadius)
-
-            diagnostics.rayMs = performance.now() - rayStart
-            diagnostics.rays = light.rays
-            diagnostics.rayChecks = light.rayChecks
-
-            renderer.drawLighting(context, light.polygon, lightOrigin, cameraRect, player.lightRadius)
-
-            // Draw player on top of lighting so the sprite is always visible
-            renderer.drawMob(context, player)
-
-            if (debugPanel.showLighting) {
-                renderer.drawLightingDebug(context, light.polygon, lightOrigin, player.lightRadius)
-            }
-
-            if (debugPanel.showCollision) {
-                renderer.drawCollisionDebug(context, player.getRect())
-            }
-
+            pipeline.render(context, cameraRect)
             context.restore()
 
             diagnostics.renderMs = performance.now() - renderStart
