@@ -2,6 +2,8 @@ import type { RenderLayer } from '../pipeline'
 import type { Rect, Vec2 } from '../../core/geometry'
 import type { RayHit } from '../../systems/lighting'
 
+type LightDebugEntry = { polygon: RayHit[]; origin: Vec2; radius: number }
+
 /**
  * Debug overlay layer: draws collision boxes, lighting rays, and radius.
  * Controlled by toggle flags exposed to the debug panel.
@@ -14,7 +16,7 @@ export class DebugLayer implements RenderLayer {
 
     private readonly solids: Rect[]
     private playerRectProvider: (() => Rect) | null = null
-    private lightPolygonProvider: (() => { polygon: RayHit[]; origin: Vec2; radius: number }) | null = null
+    private lightPolygonProvider: (() => LightDebugEntry[]) | null = null
 
     constructor(solids: Rect[]) {
         this.solids = solids
@@ -24,7 +26,7 @@ export class DebugLayer implements RenderLayer {
         this.playerRectProvider = provider
     }
 
-    setLightPolygonProvider(provider: () => { polygon: RayHit[]; origin: Vec2; radius: number }): void {
+    setLightPolygonProvider(provider: () => LightDebugEntry[]): void {
         this.lightPolygonProvider = provider
     }
 
@@ -58,26 +60,28 @@ export class DebugLayer implements RenderLayer {
     private drawLightingDebug(context: CanvasRenderingContext2D): void {
         if (!this.lightPolygonProvider) return
 
-        const { polygon, origin, radius } = this.lightPolygonProvider()
+        const entries = this.lightPolygonProvider()
 
         context.save()
-        context.strokeStyle = 'rgba(97, 210, 255, 0.28)'
         context.lineWidth = 1
 
-        for (const hit of polygon) {
+        for (const { polygon, origin, radius } of entries) {
+            // Rays
+            context.strokeStyle = 'rgba(97, 210, 255, 0.28)'
+            for (const hit of polygon) {
+                context.beginPath()
+                context.moveTo(origin.x, origin.y)
+                context.lineTo(hit.x, hit.y)
+                context.stroke()
+            }
+
+            // Radius circle
+            context.strokeStyle = 'rgba(244, 196, 95, 0.65)'
             context.beginPath()
-            context.moveTo(origin.x, origin.y)
-            context.lineTo(hit.x, hit.y)
+            context.arc(origin.x, origin.y, radius, 0, Math.PI * 2)
             context.stroke()
         }
 
-        context.strokeStyle = 'rgba(244, 196, 95, 0.65)'
-        context.beginPath()
-        context.arc(origin.x, origin.y, radius, 0, Math.PI * 2)
-        context.stroke()
         context.restore()
     }
 }
-
-
-

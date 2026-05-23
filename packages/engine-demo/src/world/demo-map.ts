@@ -12,6 +12,8 @@ export type Level = {
     height: number
     spawn: Vec2
     solids: Rect[]
+    reflectors: Rect[]
+    sunY: number
 }
 
 export const tileSize = 28
@@ -22,10 +24,12 @@ export const viewport = {
 
 const solidGlyph = '#'
 const spawnGlyph = '@'
-const emptyGlyphs = new Set([' ', '.'])
+const reflectorGlyph = '|'
+const platformGlyph = '='
+const emptyGlyphs = new Set([' ', '.', '~'])
 const demoPlayerBounds = {
-    width: 5 / tileSize,
-    height: 10 / tileSize,
+    width: 8 / tileSize,
+    height: 28 / tileSize,
 }
 
 function toWorldRect(area: TileArea): Rect {
@@ -144,6 +148,7 @@ function mergeSolidTiles(grid: readonly (readonly boolean[])[]): TileArea[] {
 function createLevelFromRows(rows: readonly string[], width: number): Level {
     const height = rows.length + 2
     const grid = createSolidGrid(width + 2, height)
+    const reflectorGrid = createSolidGrid(width + 2, height)
     let spawn: Vec2 | undefined
 
     addBoundary(grid)
@@ -160,6 +165,16 @@ function createLevelFromRows(rows: readonly string[], width: number): Level {
 
             if (glyph === solidGlyph) {
                 grid[y][x] = true
+                continue
+            }
+
+            if (glyph === platformGlyph) {
+                grid[y][x] = true
+                continue
+            }
+
+            if (glyph === reflectorGlyph) {
+                reflectorGrid[y][x] = true
                 continue
             }
 
@@ -182,11 +197,47 @@ function createLevelFromRows(rows: readonly string[], width: number): Level {
         throw new Error('Map sketch must include one player spawn marker.')
     }
 
+    // Validate spawn is above solid ground and within bounds
+    const playerPixelWidth = demoPlayerBounds.width * tileSize
+    const playerPixelHeight = demoPlayerBounds.height * tileSize
+
+    // Clamp X to be within the world boundaries (inside the boundary walls)
+    spawn = {
+        x: Math.max(tileSize + 2, Math.min(spawn.x, (grid[0].length - 1) * tileSize - playerPixelWidth - 2)),
+        y: spawn.y,
+    }
+
+    const spawnTileX = Math.floor(spawn.x / tileSize)
+    const spawnTileY = Math.floor(spawn.y / tileSize)
+    // Search downward for ground to ensure player doesn't fall out of bounds
+    let groundFound = false
+    for (let checkY = spawnTileY; checkY < height; checkY++) {
+        if (grid[checkY] && grid[checkY][spawnTileX]) {
+            groundFound = true
+            // Place player directly above the ground tile
+            spawn = {
+                x: spawn.x,
+                y: checkY * tileSize - playerPixelHeight,
+            }
+            break
+        }
+    }
+
+    if (!groundFound) {
+        // Fallback: place on the bottom boundary
+        spawn = {
+            x: spawn.x,
+            y: (height - 2) * tileSize - playerPixelHeight,
+        }
+    }
+
     return {
         width: grid[0].length * tileSize,
         height: grid.length * tileSize,
         spawn,
         solids: mergeSolidTiles(grid).map(toWorldRect),
+        reflectors: mergeSolidTiles(reflectorGrid).map(toWorldRect),
+        sunY: tileSize, // Sun sits at top boundary
     }
 }
 
@@ -196,40 +247,141 @@ function createLevelFromSketch(sketch: string): Level {
     return createLevelFromRows(rows, rows[0].length)
 }
 
-const levelSketch = `
-........................................................................................................................................................................................
-........................................................................................................................................................................................
-........................................................................................................................................................................................
-........................................................................................................................................................................................
-........................................................................................................................................................................................
-........................................................................................................................................................................................
-........................................................................................................................................................................................
-........................................................................................................................................................................................
-........................................................................................................................................................................................
-..............................########............................##########............................................................................................................
-........................................................................................................................................................................................
-................##############......................################....................................................................................................................
-........................................................................................................................................................................................
-............................................................................##..........................................................................................................
-............................................................................##..........................................................................................................
-........................................############........................##..........................................................................................................
-........................................##........##....................................................................................................................................
-........................................##........##..........##################........................................................................................................
-........................................##........##....................................................................................................................................
-.................................##########################.............................................................................................................................
-........................................................................................................................................................................................
-..........................................................####################..........................................................................................................
-........................................................................................................................................................................................
-.............................##########################.................................................................................................................................
-........................................................................############....................................................................................................
-........................................................................................................................................................................................
-............######################....................##########################........................................................................................................
-........................................................................................................................................................................................
-........######################..........................................................................................................................................................
-.....@..................................................................................................................................................................................
-########################################################################################################################################################################################
-########################################################################################################################################################################################
-########################################################################################################################################################################################
-`
+/**
+ * Programmatically generates a humongous map for performance testing.
+ * Width: 400 tiles, Height: 120 tiles
+ * Features: platforms, reflectors, varied terrain patterns, safe spawn.
+ */
+function generateHumongousMap(): string {
+    const W = 400
+    const H = 120
+    const grid: string[][] = Array.from({ length: H }, () => Array(W).fill('.'))
+
+    // Bottom solid floor (last 3 rows)
+    for (let y = H - 3; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+            grid[y][x] = '#'
+        }
+    }
+
+    // Spawn point near bottom-left, above the floor
+    grid[H - 4][6] = '@'
+
+    // Create repeating platform sections every ~18 rows going upward
+    const sectionHeight = 18
+    const numSections = Math.floor((H - 8) / sectionHeight)
+
+    for (let section = 0; section < numSections; section++) {
+        const baseY = H - 4 - (section + 1) * sectionHeight
+
+        if (baseY < 3) break
+
+        const pattern = section % 6
+
+        switch (pattern) {
+            case 0: {
+                // Scattered platforms with reflector columns
+                for (let x = 10; x < W - 10; x += 22) {
+                    const pLen = 8 + (x % 5)
+                    for (let px = 0; px < pLen && x + px < W - 2; px++) {
+                        grid[baseY][x + px] = '#'
+                    }
+                }
+                for (let x = 6; x < W - 6; x += 34) {
+                    for (let ry = baseY - 4; ry < baseY; ry++) {
+                        if (ry >= 0) grid[ry][x] = '|'
+                    }
+                }
+                break
+            }
+            case 1: {
+                // Platform bridges with gaps
+                for (let x = 8; x < W - 8; x += 28) {
+                    for (let px = 0; px < 12 && x + px < W - 2; px++) {
+                        grid[baseY][x + px] = '='
+                    }
+                }
+                break
+            }
+            case 2: {
+                // Dense reflector wall with platform below
+                for (let x = 4; x < W - 4; x += 6) {
+                    if (baseY + 2 < H - 3) {
+                        grid[baseY + 2][x] = '|'
+                        if (x + 1 < W) grid[baseY + 2][x + 1] = '|'
+                    }
+                }
+                for (let x = 14; x < W - 14; x += 30) {
+                    for (let px = 0; px < 16 && x + px < W - 2; px++) {
+                        grid[baseY][x + px] = '#'
+                    }
+                }
+                break
+            }
+            case 3: {
+                // Staircase pattern
+                for (let step = 0; step < 8; step++) {
+                    const sx = 10 + step * 18
+                    const sy = baseY - step
+                    if (sy < 1 || sx + 6 >= W - 2) break
+                    for (let px = 0; px < 6; px++) {
+                        grid[sy][sx + px] = '#'
+                    }
+                }
+                for (let step = 0; step < 8; step++) {
+                    const sx = W - 16 - step * 18
+                    const sy = baseY - step
+                    if (sy < 1 || sx < 2) break
+                    for (let px = 0; px < 6; px++) {
+                        if (sx + px < W) grid[sy][sx + px] = '#'
+                    }
+                }
+                break
+            }
+            case 4: {
+                // Large platforms with reflector curtains above
+                for (let x = 8; x < W - 8; x += 40) {
+                    for (let px = 0; px < 20 && x + px < W - 2; px++) {
+                        grid[baseY][x + px] = '#'
+                    }
+                    for (let rx = x + 2; rx < x + 18 && rx < W - 2; rx += 3) {
+                        for (let ry = baseY - 6; ry < baseY; ry++) {
+                            if (ry >= 0) grid[ry][rx] = '|'
+                        }
+                    }
+                }
+                break
+            }
+            case 5: {
+                // Alternating thin and wide platforms
+                for (let x = 6; x < W - 6; x += 16) {
+                    const isWide = (x / 16) % 2 === 0
+                    const pLen = isWide ? 10 : 4
+                    for (let px = 0; px < pLen && x + px < W - 2; px++) {
+                        grid[baseY][x + px] = '='
+                    }
+                }
+                for (let x = 12; x < W - 12; x += 24) {
+                    for (let dy = 1; dy <= 3; dy++) {
+                        if (baseY - dy >= 0) grid[baseY - dy][x] = '|'
+                    }
+                }
+                break
+            }
+        }
+    }
+
+    // Tall reflector columns near top for sun interaction
+    for (let x = 20; x < W - 20; x += 50) {
+        for (let y = 2; y < 8; y++) {
+            grid[y][x] = '|'
+            if (x + 1 < W) grid[y][x + 1] = '|'
+        }
+    }
+
+    return grid.map((row) => row.join('')).join('\n')
+}
+
+const levelSketch = generateHumongousMap()
 
 export const world = createLevelFromSketch(levelSketch)

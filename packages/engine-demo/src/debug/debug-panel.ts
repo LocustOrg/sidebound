@@ -20,6 +20,11 @@ export type DiagnosticsMetrics = {
     rayChecks: number
     grounded: boolean
     velocity: Vec2
+    activeSuns: number
+    totalSuns: number
+    mapSize: string
+    solids: number
+    reflectors: number
 }
 
 type MemoryPerformance = Performance & {
@@ -39,6 +44,7 @@ type DebugPanelElements = {
     pauseToggle: HTMLButtonElement
     lightingToggle: HTMLInputElement
     collisionToggle: HTMLInputElement
+    noclipToggle: HTMLInputElement
     fpsMetric: HTMLElement
     frameMetric: HTMLElement
     updateMetric: HTMLElement
@@ -49,6 +55,10 @@ type DebugPanelElements = {
     memoryMetric: HTMLElement
     groundedMetric: HTMLElement
     velocityMetric: HTMLElement
+    mapSizeMetric: HTMLElement
+    solidsMetric: HTMLElement
+    reflectorsMetric: HTMLElement
+    sunsMetric: HTMLElement
 }
 
 type PanelDrag = {
@@ -73,6 +83,7 @@ function createDebugPanelElements(): DebugPanelElements {
         pauseToggle: requireElement<HTMLButtonElement>('#pause-toggle'),
         lightingToggle: requireElement<HTMLInputElement>('#debug-lighting'),
         collisionToggle: requireElement<HTMLInputElement>('#debug-collision'),
+        noclipToggle: requireElement<HTMLInputElement>('#debug-noclip'),
         fpsMetric: requireElement<HTMLElement>('#metric-fps'),
         frameMetric: requireElement<HTMLElement>('#metric-frame'),
         updateMetric: requireElement<HTMLElement>('#metric-update'),
@@ -83,6 +94,10 @@ function createDebugPanelElements(): DebugPanelElements {
         memoryMetric: requireElement<HTMLElement>('#metric-memory'),
         groundedMetric: requireElement<HTMLElement>('#metric-grounded'),
         velocityMetric: requireElement<HTMLElement>('#metric-velocity'),
+        mapSizeMetric: requireElement<HTMLElement>('#metric-map-size'),
+        solidsMetric: requireElement<HTMLElement>('#metric-solids'),
+        reflectorsMetric: requireElement<HTMLElement>('#metric-reflectors'),
+        sunsMetric: requireElement<HTMLElement>('#metric-suns'),
     }
 }
 
@@ -169,6 +184,10 @@ export class DebugPanel {
         return this.elements.collisionToggle.checked
     }
 
+    get noClip(): boolean {
+        return this.elements.noclipToggle.checked
+    }
+
     get soundPreferred(): boolean {
         return this.savedSettings.soundPreferred ?? false
     }
@@ -215,6 +234,10 @@ export class DebugPanel {
         this.elements.memoryMetric.textContent = formatMemory()
         this.elements.groundedMetric.textContent = String(metrics.grounded)
         this.elements.velocityMetric.textContent = `${metrics.velocity.x.toFixed(1)}, ${metrics.velocity.y.toFixed(1)}`
+        this.elements.mapSizeMetric.textContent = metrics.mapSize
+        this.elements.solidsMetric.textContent = String(metrics.solids)
+        this.elements.reflectorsMetric.textContent = String(metrics.reflectors)
+        this.elements.sunsMetric.textContent = `${metrics.activeSuns} / ${metrics.totalSuns}`
     }
 
     private applySavedToggleSettings(): void {

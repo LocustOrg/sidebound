@@ -52,6 +52,9 @@ export class Mob {
     width: number
     height: number
 
+    // Spawn point for respawn
+    readonly spawnPoint: Vec2
+
     // Velocity
     vx = 0
     vy = 0
@@ -60,6 +63,7 @@ export class Mob {
     grounded = false
     facing = 1
     mobState: MobState = MobState.Idle
+    noClip = false
 
     // Sprite offset from collision box (for centering larger sprites)
     spriteOffsetX: number
@@ -84,6 +88,7 @@ export class Mob {
     }) {
         this.x = options.spawn.x
         this.y = options.spawn.y
+        this.spawnPoint = { x: options.spawn.x, y: options.spawn.y }
         this.width = options.width
         this.height = options.height
         this.physics = options.physics
@@ -102,6 +107,16 @@ export class Mob {
     /** Center position */
     getCenter(): Vec2 {
         return { x: this.x + this.width / 2, y: this.y + this.height / 2 }
+    }
+
+    /** Reset mob to spawn point */
+    respawn(): void {
+        this.x = this.spawnPoint.x
+        this.y = this.spawnPoint.y
+        this.vx = 0
+        this.vy = 0
+        this.grounded = false
+        this.mobState = MobState.Falling
     }
 
     /** Ground point directly below this mob, used for rendering projected shadows. */
@@ -131,8 +146,29 @@ export class Mob {
      * Core physics + state update. Call from subclass update().
      * `inputHorizontal`: -1, 0, or 1
      * `jumpRequested`: whether a jump was requested this frame
+     * `jumpHeld`: whether jump key is currently held (for no-clip flight up)
+     * `downHeld`: whether down key is currently held (for no-clip flight down)
      */
-    updatePhysics(deltaSeconds: number, inputHorizontal: number, jumpRequested: boolean): void {
+    updatePhysics(deltaSeconds: number, inputHorizontal: number, jumpRequested: boolean, jumpHeld = false, downHeld = false): void {
+        // No-clip mode: free flight, no gravity, no collision
+        if (this.noClip) {
+            const noclipSpeed = this.physics.maxSpeed * 2.5
+            this.vx = inputHorizontal * noclipSpeed
+
+            if (jumpHeld && !downHeld) {
+                this.vy = -noclipSpeed
+            } else if (downHeld && !jumpHeld) {
+                this.vy = noclipSpeed
+            } else {
+                this.vy = 0
+            }
+
+            this.x += this.vx * deltaSeconds
+            this.y += this.vy * deltaSeconds
+            this.grounded = false
+            return
+        }
+
         const wasGrounded = this.grounded
         let justJumped = false
 

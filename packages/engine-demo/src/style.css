@@ -150,3 +150,17 @@ input:focus-visible,
         width: min(280px, calc(100vw - 24px));
     }
 }
+
+.minimap-section {
+    border-top: 1px solid #4b4654;
+    padding-top: 10px;
+}
+
+#debug-minimap {
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    border: 1px solid #4b4654;
+    background: #1a1628;
+}
+

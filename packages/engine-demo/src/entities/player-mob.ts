@@ -29,8 +29,10 @@ function createStepCue(vx: number): SoundCue {
 export class PlayerMob extends Mob {
     lightRadius = 88
     private stepCooldown = 0
+    private readonly worldWidth: number
+    private readonly worldHeight: number
 
-    constructor(spawn: Vec2, solids: Rect[]) {
+    constructor(spawn: Vec2, solids: Rect[], worldWidth: number, worldHeight: number) {
         const sheet = createPlayerSpriteSheet()
 
         super({
@@ -45,6 +47,8 @@ export class PlayerMob extends Mob {
             spriteOffsetY: -4,
         })
 
+        this.worldWidth = worldWidth
+        this.worldHeight = worldHeight
         registerPlayerAnimationClips(this.animator)
     }
 
@@ -55,7 +59,13 @@ export class PlayerMob extends Mob {
         const cues: SoundCue[] = []
         const previousState = this.mobState
 
-        this.updatePhysics(deltaSeconds, input.horizontal, input.jumpQueued)
+        this.updatePhysics(deltaSeconds, input.horizontal, input.jumpQueued, input.jumpHeld, input.downHeld)
+
+        // Respawn if player falls out of world bounds
+        if (this.y > this.worldHeight + 100 || this.y < -200 || this.x < -200 || this.x > this.worldWidth + 200) {
+            this.respawn()
+        }
+
         this.animator.playbackRate = this.resolvePlaybackRate(input.horizontal)
         this.updateAnimation(deltaSeconds)
 
