@@ -371,7 +371,6 @@ function drawPlayerFrame(context: CanvasRenderingContext2D, pose: CharacterPose,
     context.lineCap = 'round'
 
     drawBackGlow(context, headCenter.x - 1.5, torsoTop.y + 3.5, frameWidth * 0.42, pose.eyeGlow)
-    drawGroundShadow(context, centerX + pose.torsoLean * 1.6, groundY + 0.75, 7.1 - pose.airborne * 1.2, 2.2 - pose.airborne * 0.25, 0.22 - pose.airborne * 0.06)
     drawCape(context, torsoTop, groundY - liftY, pose, false)
     drawArm(context, [backShoulder, { x: torsoTop.x - 2.85, y: torsoTop.y + 4.45 }, backHand], 3.1, colors.outline, colors.shadow)
     drawLeg(context, hips, backKnee, backFoot, 3.1, colors.outline, colors.shadow, colors.leather)
@@ -393,15 +392,6 @@ function drawBackGlow(context: CanvasRenderingContext2D, x: number, y: number, r
     context.fillStyle = gradient
     context.beginPath()
     context.arc(x, y, radius, 0, TAU)
-    context.fill()
-    context.restore()
-}
-
-function drawGroundShadow(context: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, alpha: number): void {
-    context.save()
-    context.fillStyle = `rgba(6, 4, 10, ${Math.max(0, alpha)})`
-    context.beginPath()
-    context.ellipse(x, y, rx, ry, 0, 0, TAU)
     context.fill()
     context.restore()
 }

@@ -25,6 +25,12 @@ export type MobPhysics = {
  */
 export type MobAnimationMap = Record<MobState, string>
 
+export type MobShadowProjection = {
+    x: number
+    y: number
+    distance: number
+}
+
 const DEFAULT_ANIMATION_MAP: MobAnimationMap = {
     [MobState.Idle]: 'idle',
     [MobState.Running]: 'run',
@@ -96,6 +102,29 @@ export class Mob {
     /** Center position */
     getCenter(): Vec2 {
         return { x: this.x + this.width / 2, y: this.y + this.height / 2 }
+    }
+
+    /** Ground point directly below this mob, used for rendering projected shadows. */
+    getShadowProjection(): MobShadowProjection | null {
+        const footY = this.y + this.height
+        let groundY = Number.POSITIVE_INFINITY
+
+        for (const solid of this.solids) {
+            const overlapsFootprint = this.x < solid.x + solid.width && this.x + this.width > solid.x
+            if (!overlapsFootprint || solid.y < footY - 0.5) continue
+
+            groundY = Math.min(groundY, solid.y)
+        }
+
+        if (!Number.isFinite(groundY)) {
+            return null
+        }
+
+        return {
+            x: this.x + this.width / 2,
+            y: groundY,
+            distance: Math.max(0, groundY - footY),
+        }
     }
 
     /**
