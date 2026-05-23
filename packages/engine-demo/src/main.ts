@@ -51,11 +51,6 @@ pipeline.addLayer(entityLayer)
 pipeline.addLayer(lightingLayer)
 pipeline.addLayer(debugLayer)
 
-/*
-Add several new types of the objects to the map editor part. First I want to remove light from player but map must be still dark. Second I want to add sun the the top of the map. Third I want to add new type of tiles, that reflect light but player can go through them. And make map more pleasant to walk trough, add better spawning logic (sometimes player get sent to out-of-bounce), and make map editing with more elements, so that it is easier to create more complex layouts.
-With that in mind, and dramatically better map, before implementing map optimization, let's create humongous map and see what is the rendering speed and whether we need optimization
-* */
-
 // --- Diagnostics ---
 const diagnostics = {
     fps: 0,
