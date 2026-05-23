@@ -72,7 +72,7 @@ const engine = new PixelEngine({
     canvas,
     width: viewport.width,
     height: viewport.height,
-    scale: 6,
+    scale: 'css',
     background: '#1e1a2e',
     loop: {
         update(deltaSeconds) {
