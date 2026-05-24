@@ -143,14 +143,22 @@ function toMegabytes(bytes: number): string {
     return (bytes / 1024 / 1024).toFixed(1)
 }
 
-function formatMemory(): string {
-    const memory = (performance as MemoryPerformance).memory
+function isMemoryPerformance(value: Performance): value is MemoryPerformance {
+    const candidate = value as MemoryPerformance
 
-    if (!memory) {
+    return (
+        typeof candidate.memory?.usedJSHeapSize === 'number' &&
+        typeof candidate.memory.totalJSHeapSize === 'number' &&
+        typeof candidate.memory.jsHeapSizeLimit === 'number'
+    )
+}
+
+function formatMemory(): string {
+    if (!isMemoryPerformance(performance) || !performance.memory) {
         return 'n/a'
     }
 
-    return `${toMegabytes(memory.usedJSHeapSize)} / ${toMegabytes(memory.jsHeapSizeLimit)} MB`
+    return `${toMegabytes(performance.memory.usedJSHeapSize)} / ${toMegabytes(performance.memory.jsHeapSizeLimit)} MB`
 }
 
 export class DebugPanel {
