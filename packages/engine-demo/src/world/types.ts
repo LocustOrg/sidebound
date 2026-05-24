@@ -47,3 +47,10 @@ export type TileDefinition = {
     onPlace?: (ctx: TilePlaceContext) => PlacementResult | undefined
 }
 
+export type LightSource = {
+    getPosition(): Vec2
+    getLightRadius(): number
+    getLightColor(): { r: number; g: number; b: number }
+    getLightIntensity(): number
+    isLightActive(): boolean
+}
