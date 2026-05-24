@@ -2,7 +2,7 @@ import { assertValidWorldDefinition, chunkedTilemap, defineLocation, defineRegio
 import type { Level, TileMaterial, Viewport } from './types'
 
 export const tileSize = 28
-export const viewport: Viewport = { width: 650, height: 450 }
+export const viewport: Viewport = { width: 450, height: 250 }
 
 const mapWidth = 50
 
