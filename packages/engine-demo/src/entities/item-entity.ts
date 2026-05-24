@@ -1,20 +1,13 @@
 import type { Rect, Vec2 } from '../core/geometry'
-import type { SpriteSheet } from '../sprites/sprite-sheet'
-
-export type EquipmentItemKind = 'cape' | 'sword'
-
-export type PickupEffect = {
-    type: 'equip'
-    equipment: EquipmentItemKind
-}
+import type { ItemEffectDefinition, SpriteSheet } from '@strange-path/engine'
 
 export type PickupItemEntity = Vec2 & {
     id: string
-    kind: EquipmentItemKind
+    kind: string
     width: number
     height: number
     spriteSheet: SpriteSheet
-    effect: PickupEffect
+    effects: readonly ItemEffectDefinition[]
     frameIndex?: number
     flipX?: boolean
 }
