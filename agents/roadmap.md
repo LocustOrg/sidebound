@@ -1,336 +1,425 @@
-# Roadmap: Risk of Rain–Style Engine
+# Roadmap
 
-## Goal
+## Roadmap Intent
 
-Build an open-source 2D side-view engine inspired by **Risk of Rain (Returns)** rendering and capabilities. The primary differentiator is **interaction physics** (entities pushing, pulling, hooking, stacking, riding, bouncing off each other) rather than destruction physics. The engine should be easy to adopt, performant, and provide a clear rendering pipeline.
+This project is an engine project first.
 
----
+`@strange-path/engine` is the product being built. `packages/game` is only a
+demo harness used to refactor, debug, profile, and prove engine behavior in a
+real browser canvas. It should not become the game yet.
 
-## Current State Assessment
+The demo harness may contain placeholder art, temporary rooms, test actors, and
+debug controls, but only to validate engine APIs. Avoid lore, progression,
+inventory, quests, procedural content, polished level design, or any feature
+whose main purpose is to make the demo feel like a finished game.
 
-### What exists today
+## Current State
 
-| System | Status | Notes |
-|--------|--------|-------|
-| Core loop | ✅ Working | `PixelEngine` with update/render split |
-| Player movement | ✅ Working | Gravity, jump, friction, state machine |
-| Collision | ⚠️ Basic | AABB sweep against static rects only |
-| Camera | ✅ Good | Smooth damp, dead-zone, look-ahead, recoil |
-| Lighting | ⚠️ Expensive | Ray-cast per frame, no spatial index, runs in render pass |
-| Sprite system | ✅ Working | Procedural sheet, animator, clips |
-| Rendering | ⚠️ Monolithic | Single class mixes scene, lighting, debug, mob drawing |
-| Input | ✅ Basic | Keyboard only, no buffering |
-| Audio | ✅ Placeholder | Oscillator tones |
-| Debug panel | ✅ Good | Metrics, toggles |
-| Engine package | ⚠️ Thin | Only owns the canvas loop |
-| World/map | ✅ Basic | Static text sketch → merged rects |
+The engine package (`@strange-path/engine`) is currently a thin canvas loop. Most
+reusable systems still live in `engine-demo`, which is being removed.
 
-### Critical issues and inconsistencies
+Reusable systems move into `@strange-path/engine`. Demo-specific wiring moves
+into `packages/game`, where it becomes the engine validation harness.
 
-1. **Rendering pipeline is not layered.** `DemoRenderer` draws background, solids, lighting, mobs, and debug in one flat class with no concept of layers, draw order, or batching. Every frame re-draws the entire world regardless of camera movement.
+The old demo proves these behaviors and should keep proving them during the
+extraction:
 
-2. **Lighting runs inside `render()`.** Ray-casting is a simulation concern that mutates light polygons. Putting it in the render callback means the cost is tied to frame rate, not tick rate, and cannot be cached across identical frames.
+- Player movement.
+- Gravity.
+- AABB collision against static rectangles.
+- Smooth side-view camera follow.
+- Ray-based lighting.
+- Layered canvas rendering.
+- Sprite animation.
+- Debug panel and minimap.
 
-3. **No fixed timestep.** `update()` uses variable delta clamped to 50 ms. This causes non-determinism and makes future replay/netcode impossible. Risk of Rain Returns uses a fixed 60 Hz tick.
+## Phase Rules
 
-4. **No spatial partitioning.** Collision and lighting iterate all solids every frame. Fine for the demo map, but O(n²) for real levels.
+Every phase should produce three things:
 
-5. **Engine package is too thin.** All interesting logic lives in `engine-demo`. Nothing is reusable. Types like `Vec2`, `Rect`, `Animator`, `SpriteSheet`, collision helpers should be engine-owned.
+- Engine API: reusable code exported from `@strange-path/engine`.
+- Demo harness proof: a small scenario in `packages/game` that exercises the API.
+- Debug visibility: enough overlay, logging, counters, or controls to make the
+  system refactorable.
 
-6. **No entity system.** Only one `PlayerMob` exists. No entity list, no generic update loop, no spawn/despawn lifecycle.
-
-7. **No interaction physics.** Entities cannot push, stack on, ride, bounce off, or hook to each other. This is the stated primary goal.
-
-8. **No tilemap renderer.** World is drawn as raw fillRects with magic colors. Risk of Rain style uses tiled terrain with auto-tiling and parallax backgrounds.
-
-9. **No parallax / background layers.** RoR Returns uses 3–5 parallax planes for depth.
-
-10. **Player sprite is fully procedural at 605 lines.** Impressive, but hard to iterate on for non-programmers and expensive to generate at startup. Should be a build-time asset or a loaded sprite sheet.
-
-11. **`createBitmapSheet` uses `fillRect` per pixel.** Should use `ImageData` + `putImageData` for bulk writes.
-
-12. **No gamepad / touch support.** RoR supports controllers natively.
-
-13. **No screen shake.** Listed in engine-capabilities but not implemented.
-
-14. **No hitbox/hurtbox system.** Combat is listed as mandatory but has zero implementation.
-
-15. **Audio is oscillator-only.** No sample playback, no spatial panning.
+Do not add game content unless it directly proves an engine feature. Prefer
+small, artificial test rooms over authored gameplay.
 
 ---
 
-## Architecture Plan
+## Phase 0 - Engine Core Extraction
 
-### Phase 0 — Rendering Pipeline Simplification (immediate)
+Move reusable systems from `engine-demo` into `@strange-path/engine`, then move
+demo-specific setup into `packages/game`. Delete `engine-demo` after parity is
+restored.
 
-**Problem:** The renderer is a monolithic class that re-draws everything every frame with no concept of layers or caching.
+### Engine Deliverables
 
-**Solution — Layered Render Pipeline:**
+- `Vec2`, `Rect`, `Segment`, and numeric helpers (`clamp`, `approach`,
+  `smoothDamp`).
+- Canvas bootstrap helpers: canvas lookup, resize handling, pixel-art scaling,
+  and device-pixel-ratio support.
+- `GameLoop` or equivalent rAF wrapper with `start()`, `stop()`, and
+  `dispose()`.
+- `RenderPipeline` and `RenderLayer` interface.
+- Sprite primitives: `SpriteSheet`, `AnimationClip`, `Animator`.
+- `SideViewCamera` with bounds, smoothing, integer pixel snapping, and viewport
+  conversion helpers.
+- `InputManager` for keyboard input and a typed `PlayerInputFrame`.
+- Ray-lighting primitives: `RayLighting`, `PointLight`, occluder segments, and
+  spatial query helpers.
+- Minimal diagnostics primitives used by the demo: frame counters, debug flags,
+  and overlay hooks.
+- Clean public exports from `@strange-path/engine`.
 
-```
-RenderPipeline
-├── Layer 0: ParallaxBackground (multiple planes, scroll factor)
-├── Layer 1: TileMap (terrain, only dirty tiles redrawn)
-├── Layer 2: Entities (sorted by y or explicit z-order)
-├── Layer 3: Lighting (composited via offscreen canvas)
-├── Layer 4: Particles / FX
-├── Layer 5: UI / HUD (fixed to camera)
-└── Layer 6: Debug Overlay
-```
+### Demo Harness Proof
 
-Each layer implements:
-```ts
-interface RenderLayer {
-  order: number
-  update(dt: number): void           // optional per-layer sim (particles)
-  render(ctx: CanvasRenderingContext2D, camera: Rect): void
-  dirty?: boolean                    // skip redraw when nothing changed
-}
-```
+- `packages/game` imports engine systems instead of copying or redefining them.
+- The old demo behavior still works after extraction.
+- Player sprite, demo map, debug panel DOM wiring, and temporary assets live in
+  `packages/game`.
+- `engine-demo` package, workspace entry, scripts, and stale dist output are
+  removed.
 
-**Key changes:**
-- Move lighting ray-cast into `update()` and cache the polygon.
-- Introduce an offscreen canvas for the light mask; composite once.
-- Background layers only redraw on camera move.
-- Tile layer uses a tile buffer canvas, redraws only scrolled-in tiles.
-- Entities batch their draws; no per-entity `save()/restore()`.
+### Done When
 
-### Phase 1 — Engine Core Extraction
-
-Move reusable primitives from `engine-demo` into `@strange-path/engine`:
-
-- `Vec2`, `Rect`, `Segment`, math helpers
-- `SpriteSheet`, `Animator`, `AnimationClip`
-- `RenderPipeline` and `RenderLayer` interface
-- `FixedTimestep` (decouple sim rate from frame rate)
-- `InputManager` (keyboard + gamepad + touch abstraction)
-- `CollisionWorld` (spatial hash or grid, AABB queries)
-- `Camera` (generic side-view camera with shake)
-- `EntityPool` (spawn, despawn, iterate, query by tag/component)
-
-### Phase 2 — Interaction Physics
-
-This is the **primary goal** — entities that physically interact:
-
-| Feature | Description |
-|---------|-------------|
-| Push/block | Entities push each other horizontally when overlapping |
-| Ride/carry | Entity standing on another moves with it |
-| Bounce | Configurable restitution on entity-entity collision |
-| Hook/tether | Attach point-to-point constraints between entities |
-| Conveyor/wind | Area forces that affect all overlapping entities |
-| Knockback | Directional impulse applied on hit |
-| Weight/mass | Heavier entities are harder to push |
-| One-way platforms | Entities can stand on each other from above only |
-
-**Implementation approach:**
-- Each entity has a `Body` component: position, velocity, mass, friction, bounciness, `isKinematic`, `isPlatform`.
-- `PhysicsWorld.step(dt)` resolves entity-entity overlaps using separation + impulse.
-- Collision layers: `PLAYER`, `ENEMY`, `PROJECTILE`, `PLATFORM`, `TRIGGER`.
-- Collision response is configurable per layer pair (push, bounce, ignore, trigger-only).
-
-### Phase 3 — Tilemap & Auto-Tiling
-
-Risk of Rain Returns uses authored tile maps with rule-based auto-tiling for edges, corners, and overhangs.
-
-- Implement a `TileMap` class backed by a 2D `Uint8Array` (layer per terrain type).
-- Auto-tile rules select the correct sub-tile from a tileset atlas.
-- Render to an offscreen buffer; only re-render dirty chunks.
-- Collision geometry generated from the tile grid (merged rects, same approach as today but engine-owned).
-- Support one-way (drop-through) platform tiles.
-
-### Phase 4 — Combat Framework
-
-- Hitbox/hurtbox rectangles attached to animation frames.
-- Attack phases: `windup → active → recovery`.
-- Hitstop (freeze both attacker and target for N frames on contact).
-- Invincibility frames (i-frames) on dodge/hit.
-- Stagger accumulation and stagger-break.
-- Knockback as interaction-physics impulse.
-
-### Phase 5 — Enemy AI & Spawning
-
-- Finite state machine: `idle → patrol → notice → chase → attack → recover → stagger → dead`.
-- Patrol between authored waypoints on a platform.
-- Chase with simple edge-detection (don't walk off ledges).
-- Attack range and cooldown.
-- Spawn/despawn tied to camera proximity or room triggers.
-
-### Phase 6 — World Structure
-
-- Room/chunk system with transitions.
-- Parallax backgrounds per room.
-- Persistent world flags (boss killed, door opened).
-- Checkpoints / respawn points.
-- Trigger volumes (boss arena lock, item pickup, NPC dialogue).
+`engine-demo` no longer exists, `packages/game` runs through engine APIs, and the
+demo still proves movement, collision, camera, lighting, sprites, debug panel,
+and minimap.
 
 ---
 
-## Tasks (Priority Order)
+## Phase 1 - Time, Lifecycle, and Determinism
 
-### T1 — Fixed Timestep ⬅️ DO FIRST
-- Add `FixedTimestep` class to engine: accumulates real time, calls `update()` at fixed 60 Hz, interpolates render.
-- Decouple `update()` and `render()` rates.
-- Why first: every other system depends on deterministic simulation.
+Make simulation timing explicit before adding more systems.
 
-### T2 — Layered Render Pipeline
-- Create `RenderLayer` interface.
-- Create `RenderPipeline` that owns an ordered list of layers.
-- Refactor `DemoRenderer` into: `BackgroundLayer`, `TerrainLayer`, `EntityLayer`, `LightingLayer`, `DebugLayer`.
-- Move ray-cast into `update()`; `LightingLayer.render()` only composites the cached polygon.
+### Engine Deliverables
 
-### T3 — Offscreen Light Buffer
-- Allocate an offscreen canvas at viewport size.
-- Draw the darkness + light-polygon cutout to the offscreen canvas.
-- Composite onto the main canvas with a single `drawImage`.
-- Eliminates multiple composite-mode switches per frame.
+- `FixedTimestep` with accumulator-based simulation at 60 Hz by default.
+- Configurable max updates per rendered frame, defaulting to 4.
+- Separate lifecycle callbacks: `beforeUpdate`, `update`, `afterUpdate`,
+  `render`, `afterRender`.
+- Pause, resume, single-step, and slow-motion controls at the loop level.
+- Interpolation support for rendering between simulation states.
+- Deterministic tick counter exposed to systems and diagnostics.
+- Runtime assertions or warnings when gameplay code tries to use raw frame delta.
 
-### T4 — Spatial Hash for Collision & Lighting
-- Implement a 2D grid spatial hash (`CellSize` = 64 or 128 px).
-- Insert all static solids at init; query only cells near the entity/light.
-- Reduces ray-cast checks from O(segments) to O(nearby segments).
+### Demo Harness Proof
 
-### T5 — Engine Core Extraction
-- Move `Vec2`, `Rect`, `Segment`, math to `@strange-path/engine`.
-- Move `SpriteSheet`, `Animator` to engine.
-- Move `Camera` to engine.
-- Move `InputManager` to engine (add gamepad).
-- Export a `createEngine()` factory that wires pipeline + loop + input.
+- Debug panel can pause, resume, step one tick, and run slow motion.
+- Movement and gravity behave the same at 60 Hz, 120 Hz, and throttled frame
+  rates.
+- Render interpolation keeps visual motion smooth while simulation remains fixed.
+- Debug overlay shows frame dt, sim tick, accumulated time, update count, and
+  dropped-update warnings.
 
-### T6 — Entity System
-- `Entity` base: id, position, velocity, tags, components.
-- `World` manages entity lifecycle: `spawn()`, `despawn()`, `query()`.
-- `System` interface: `update(entities, dt)`.
-- Mob becomes an entity with `PhysicsBody`, `Sprite`, `StateMachine` components.
+### Done When
 
-### T7 — Interaction Physics
-- `PhysicsBody` component: mass, restitution, friction, layers.
-- `PhysicsWorld.step(dt)`: broad-phase (spatial hash) → narrow-phase (AABB) → response.
-- Response types per layer-pair: `push`, `bounce`, `ride`, `trigger`, `ignore`.
-- Test: two entities pushing each other, one riding another.
-
-### T8 — Tilemap Renderer
-- `TileMap` class with `Uint8Array` storage.
-- Auto-tile rule evaluator (4-bit or 8-bit neighbor mask).
-- Chunked offscreen rendering (e.g. 16×16 tile chunks).
-- Collision rect generation from tile data.
-
-### T9 — Parallax Backgrounds
-- `ParallaxLayer`: image, scroll factor X/Y, repeat mode.
-- Render before terrain layer.
-- Support multiple planes (sky, far mountains, near trees, fog).
-
-### T10 — Combat Hitbox System
-- `HitboxComponent`: rect relative to entity, active frames, damage, knockback.
-- `HurtboxComponent`: rect relative to entity, i-frame timer.
-- `CombatSystem` checks hitbox-hurtbox overlap each tick.
-- On hit: apply damage, knockback impulse, hitstop, i-frames.
-
-### T11 — Screen Shake & Juice
-- Camera shake: amplitude, frequency, decay.
-- Hitstop: freeze simulation for N frames.
-- Flash entity white on damage.
-- Particle burst on hit.
-
-### T12 — Gamepad Support
-- Map gamepad axes/buttons to the same `PlayerInputFrame`.
-- Dead-zone handling.
-- Vibration on hit (if supported).
-
-### T13 — Audio Upgrade
-- Load `.ogg`/`.mp3` samples via `AudioBuffer`.
-- Spatial panning based on entity-to-camera distance.
-- Music layer with crossfade on room transition.
+The demo simulation is deterministic at fixed 60 Hz regardless of display refresh
+rate, and timing behavior is visible enough to debug.
 
 ---
 
-## Step-by-Step Problem Solving
+## Phase 2 - Rendering, Assets, and Camera
 
-### Problem 1: Rendering is too slow and monolithic
+Turn rendering from demo code into a reusable side-view rendering module.
 
-**Steps:**
-1. Profile current frame time breakdown (already have `renderMs`, `rayMs`).
-2. Identify the biggest cost (likely lighting ray-cast + gradient creation every frame).
-3. Cache the light polygon between frames when origin hasn't moved.
-4. Move gradient creation out of the hot path (create once, reuse).
-5. Introduce offscreen canvas for light mask.
-6. Split renderer into layers, each with independent dirty tracking.
-7. Background/terrain layers only re-render on camera scroll delta > 0.
+### Engine Deliverables
 
-### Problem 2: No fixed timestep causes physics jitter
+- Stable layer order: background, terrain, entities, lighting, particles/FX, UI,
+  debug.
+- `RenderContext` with canvas size, camera transform, elapsed time, and debug
+  flags.
+- Offscreen canvas helpers for cached terrain and light buffers.
+- Dirty tracking hooks for layers that can avoid full redraws.
+- Pixel-perfect scaling and camera snapping rules.
+- Asset loader for images and JSON sprite manifests.
+- Camera APIs for follow target, look-ahead, deadzone, bounds, shake, and world
+  to screen conversion.
+- Basic render stats: draw calls where measurable, layer timings, cache hits,
+  canvas dimensions, and DPR.
 
-**Steps:**
-1. Implement an accumulator-based fixed timestep (60 Hz).
-2. `update()` runs 0–N times per frame at fixed dt.
-3. `render()` interpolates entity positions between last and current state for smooth visuals.
-4. Cap accumulator to prevent spiral of death (max 4 updates per frame).
-5. Ensure all gameplay code uses the fixed dt, never raw frame delta.
+### Demo Harness Proof
 
-### Problem 3: No entity-entity interaction
+- One debug screen shows all render layers toggled independently.
+- Camera can follow the player, clamp to room bounds, lead horizontally, and
+  shake from a test button.
+- Terrain can be cached offscreen and invalidated from debug controls.
+- Sprite manifests load at runtime instead of being hardcoded in the demo.
 
-**Steps:**
-1. Define `PhysicsBody` interface (position, velocity, mass, bbox, layers, response type).
-2. Implement broad-phase: spatial hash query for overlapping entity pairs.
-3. Implement narrow-phase: AABB overlap test with penetration depth + normal.
-4. Implement response: separate entities by penetration, apply impulse based on mass ratio.
-5. Special-case "ride" response: if entity B is standing on entity A, B inherits A's velocity.
-6. Special-case "bounce": apply restitution coefficient to relative velocity along normal.
-7. Test with player + moving platform, player + pushable crate, two enemies colliding.
+### Done When
 
-### Problem 4: Engine is not reusable
-
-**Steps:**
-1. Identify all code in `engine-demo` that is generic (math, sprite, camera, input).
-2. Move to `@strange-path/engine` with proper exports.
-3. Keep demo-specific code (player-sprites, demo-map, debug-panel) in demo.
-4. Ensure engine has zero demo dependencies.
-5. Write a minimal "getting started" example that uses only engine exports.
-
-### Problem 5: Lighting is O(n) per ray, O(rays × segments) total
-
-**Steps:**
-1. Implement spatial hash for segments (bucket by grid cell they pass through).
-2. On cast, only test segments in cells the ray passes through.
-3. Cache corner-angle set when occluder geometry hasn't changed (static map).
-4. Reduce `radialRaySamples` from 128 to ~64 + endpoint rays (corners already add precision).
-5. Consider resolution-scaled light buffer (render at half resolution, upscale).
-
-### Problem 6: Sprite pipeline is programmer-only
-
-**Steps:**
-1. Support loading external `.png` sprite sheets via `Image` + async load.
-2. Keep procedural generation as a fallback/dev tool.
-3. Define a JSON manifest format: `{ image, frameWidth, frameHeight, clips: [...] }`.
-4. Build a tiny sprite-sheet preview tool (canvas that plays clips on click).
+Rendering is engine-owned, the demo only supplies assets and layer instances, and
+rendering behavior can be inspected layer by layer.
 
 ---
 
-## Risk of Rain Returns — Reference Capabilities
+## Phase 3 - Input and Action Mapping
 
-For parity with RoR Returns rendering style, we need:
+Separate physical inputs from gameplay intent.
 
-- [x] Pixel-art upscaling (nearest-neighbor)
-- [ ] Parallax scrolling backgrounds (3–5 layers)
-- [ ] Tile-based terrain with auto-tiling
-- [ ] Large entity counts (20+ enemies on screen)
-- [ ] Particle systems (hit sparks, dust, explosions)
-- [ ] Screen shake on big hits
-- [ ] Weather / ambient effects (rain, fog, ash)
-- [x] Dynamic lighting (point lights)
-- [ ] Entity stacking / riding (interaction physics)
-- [ ] Knockback / launch physics
-- [ ] Proc-gen item stacking (visual + mechanical)
-- [ ] HUD overlay (health bars, item display)
-- [ ] Minimap
+### Engine Deliverables
+
+- Keyboard and gamepad input sources behind one `InputManager`.
+- `InputFrame` snapshot consumed once per fixed tick.
+- Action mapping layer (`left`, `right`, `jump`, `attack`, `dodge`, `interact`,
+  `debugToggle`, etc.).
+- Analog deadzone and axis normalization.
+- Input buffering for actions such as jump, attack, dodge, and interact.
+- Edge detection: pressed, held, released, repeated.
+- Optional vibration API for supported gamepads.
+- Input recording and replay format for debugging deterministic behavior.
+
+### Demo Harness Proof
+
+- Debug panel shows live physical inputs and mapped actions.
+- Keyboard and gamepad can both drive the same player controller.
+- Buffered jump or attack can be verified with a tiny timing test.
+- A recorded input sequence can replay the same movement path.
+
+### Done When
+
+Player control uses action frames from the engine, not direct browser events, and
+input can be recorded, inspected, and replayed.
 
 ---
 
-## Non-Goals (Explicitly Out of Scope)
+## Phase 4 - Entity World and Components
 
-- Destruction physics (terrain deformation, breakable walls)
-- Full rigid-body simulation (Box2D-style)
-- 3D rendering of any kind
-- Procedural world generation
-- Networking / multiplayer (deferred)
-- React-based UI
+Introduce a lightweight world model before adding deeper physics and combat.
 
+### Engine Deliverables
+
+- `Entity` identity: id, name/debug label, tags, enabled flag, and lifecycle.
+- `World` manager: `spawn()`, `despawn()`, `get()`, `query()`, `forEach()`, and
+  deferred mutation during system updates.
+- Component storage for common components without committing to a heavy ECS
+  framework.
+- Core components: `Transform`, `PhysicsBody`, `Sprite`, `AnimatorState`,
+  `Controller`, `LightEmitter`, and `DebugLabel`.
+- `System` interface with fixed update ordering.
+- Entity pooling hooks for future hot-path optimization.
+- Serialization-friendly entity definitions for demo fixtures.
+- Debug entity inspector with counts, tags, components, and selected entity data.
+
+### Demo Harness Proof
+
+- Player becomes an entity with transform, physics, sprite, and controller data.
+- Test blocks, crates, lights, and debug markers are spawned from data.
+- Entity render layer draws from world queries instead of hardcoded arrays.
+- Debug panel can select an entity and inspect its component state.
+
+### Done When
+
+The demo scene is built from engine entities and components, and systems operate
+on world queries rather than demo-specific objects.
+
+---
+
+## Phase 5 - Collision and Interaction Physics
+
+Build the engine's defining feature: tangible side-view interaction physics.
+
+### Engine Deliverables
+
+- `PhysicsBody` component with mass, friction, restitution, gravity scale,
+  kinematic flag, platform flag, and collision layer.
+- `Collider` shapes, starting with AABB and segment/static terrain support.
+- `SpatialHash` broad phase with configurable cell size, defaulting to 64 px.
+- `PhysicsWorld.step(dt)`: broad phase, narrow phase, contact generation,
+  response, and post-step events.
+- Collision layer matrix with response types: block, push, bounce, ride,
+  trigger, and ignore.
+- Grounding and surface data: normal, slope policy, platform velocity, and
+  contact duration.
+- One-way platforms and pass-through rules.
+- Moving platforms that carry riders.
+- Pushable bodies with mass ratios.
+- Knockback and impulse helpers.
+- Trigger volumes and contact event stream.
+- Physics debug overlay for bodies, broad-phase cells, contact normals, and
+  collision pairs.
+
+### Demo Harness Proof
+
+- Player can stand on terrain, jump, fall, and collide without tunneling in the
+  expected speed range.
+- Player can push a crate.
+- Player can ride a moving platform.
+- Two dynamic entities can bounce.
+- Trigger volume logs enter, stay, and exit events.
+- A knockback test source applies directional impulse.
+
+### Done When
+
+Interaction physics is reusable from the engine and the demo can visibly prove
+push, ride, bounce, trigger, one-way platform, and knockback behavior.
+
+---
+
+## Phase 6 - Lighting and Visibility
+
+Move ray lighting into the engine as a debuggable rendering and query system.
+
+### Engine Deliverables
+
+- Point lights with radius, color, intensity, falloff, and dirty state.
+- Occluder model generated from static terrain, dynamic bodies, or explicit
+  segments.
+- Spatial partitioning for ray queries.
+- Cached static occluder geometry with invalidation.
+- Lower-resolution light buffer composited into the main scene.
+- Ambient light and per-layer composition settings.
+- Light culling by camera viewport and bounds.
+- Debug views for rays, occluders, light bounds, visibility polygons, and mask
+  buffers.
+
+### Demo Harness Proof
+
+- Static walls block a moving point light.
+- Dynamic crate or entity can optionally act as an occluder.
+- Debug controls can toggle occluders, rays, light buffers, and ambient level.
+- Lighting stats show ray count, occluder count, and light pass timing.
+
+### Done When
+
+Lighting is engine-owned, performant enough for the demo scene, and transparent
+enough to debug geometry mistakes.
+
+---
+
+## Phase 7 - Animation, State, and Feel
+
+Make gameplay timing data explicit and separate it from visual animation.
+
+### Engine Deliverables
+
+- Animation graph or state machine primitives for side-view actors.
+- Data-driven clips with frame duration, loop policy, tags, and events.
+- Gameplay event timeline independent of rendered sprite frames.
+- Actor controller helpers for acceleration, deceleration, coyote time, jump
+  buffer, variable jump height, and wall/platform policies.
+- State debugging: current state, previous state, elapsed frames, transition
+  reason, and queued actions.
+- Event hooks for footstep, landing, jump, attack-start, active-frame, recovery,
+  and custom timeline events.
+
+### Demo Harness Proof
+
+- Player movement states are visible in the debug overlay.
+- Sprite animation follows state without owning gameplay timing.
+- Jump buffer and coyote time can be toggled or tuned live.
+- Animation events can spawn a temporary visual marker or debug log entry.
+
+### Done When
+
+The demo player feels responsive because of engine-level controller primitives,
+and state/timing decisions are inspectable frame by frame.
+
+---
+
+## Phase 8 - Combat Primitives
+
+Add combat as an engine framework, not as final game design.
+
+### Engine Deliverables
+
+- `HitboxComponent` with local rect, active frame range, damage payload,
+  knockback vector, owner id, and collision layer.
+- `HurtboxComponent` with local rect, receiver filters, i-frame timer, and
+  enabled state.
+- `CombatSystem` that checks hitbox and hurtbox overlap through spatial data.
+- Hit events with attacker, defender, hitbox id, hurtbox id, point, normal, and
+  payload.
+- Hitstop that can freeze attacker, defender, or world groups for N ticks.
+- I-frame helpers and repeated-hit suppression.
+- Stagger accumulation and stagger-break hooks.
+- Attack timeline helpers: windup, active, recovery, cancel windows.
+- Combat debug overlay for hitboxes, hurtboxes, active frames, i-frames, and
+  hit events.
+
+### Demo Harness Proof
+
+- Player has one placeholder attack with visible active frames.
+- Test dummy receives damage, knockback, hitstop, and temporary i-frames.
+- Repeated-hit suppression can be verified by holding an overlapping hitbox.
+- Debug overlay shows all active combat boxes and recent hit events.
+
+### Done When
+
+The engine can express basic side-view hitbox combat, and the demo validates the
+framework without becoming a real combat game.
+
+---
+
+## Phase 9 - Engine DX, Testing, and Tooling
+
+Make the engine easier to use, refactor, and trust.
+
+### Engine Deliverables
+
+- `createEngine()` factory that wires loop, renderer, input, world, physics,
+  camera, assets, and debug options from one config object.
+- Stable package exports grouped by subsystem.
+- Headless tests for math, fixed timestep, input buffering, entity queries,
+  collision, combat overlap, and serialization.
+- Browser smoke test for the demo harness.
+- Debug settings persisted in localStorage.
+- Minimal profiling helpers for subsystem timing and allocation-sensitive paths.
+- Error boundaries or fatal-error reporting for demo boot failures.
+- Starter scene/data format documented by example.
+- Public API notes for each subsystem as it stabilizes.
+
+### Demo Harness Proof
+
+- Demo boot code is small and mostly declarative.
+- A new test scene can be added without changing engine internals.
+- CI can typecheck, lint, run headless tests, and build the demo.
+- Debug panel can reset the scene, switch test rooms, and export/import a small
+  diagnostic snapshot.
+
+### Done When
+
+A new demo can be bootstrapped quickly with engine APIs, and refactoring engine
+internals is protected by tests and browser smoke coverage.
+
+---
+
+## Phase 10 - Deferred Game Layer
+
+Only start real game iteration after the engine has passed the earlier phases.
+This phase is intentionally not the current focus.
+
+Candidate game-layer features:
+
+- Tilemap authoring and auto-tiling using engine collision and rendering APIs.
+- Room/chunk transitions and persistent world flags.
+- Enemy AI built on engine FSM, physics, and combat primitives.
+- Boss framework with arenas, phase changes, telegraphs, and pattern selection.
+- Inventory, progression, pickups, economy, or loot.
+- Save/load format for actual game state.
+- Audio direction beyond engine primitives: music identity, sound palette, mix.
+- Polished UI, menus, settings, pause flow, and accessibility pass.
+- Real content pipeline: sprites, maps, animation data, and tuning data.
+- Narrative, lore, quest, biome, or world-building work.
+
+### Done When
+
+The engine is good enough that game features can be implemented as users of the
+engine, not as hidden engine work inside the game package.
+
+---
+
+## Success Metric
+
+The engine is ready for real game iteration when a developer can:
+
+1. Start from a small `@strange-path/engine` setup.
+2. Define a side-view scene, spawn a player entity, and add physics, lighting,
+   animation, and combat components.
+3. Inspect timing, rendering, input, physics, lighting, entities, and combat from
+   debug tools.
+4. Build a playable ARPG or roguelite prototype within an afternoon using engine
+   APIs instead of copying demo code.
+
+Until then, `packages/game` remains a demo harness for making the engine better.

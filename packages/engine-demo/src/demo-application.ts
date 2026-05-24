@@ -5,7 +5,7 @@ import { DebugMinimap } from './debug/debug-minimap'
 import { DebugPanel } from './debug/debug-panel'
 import { PlayerMob } from './entities/player-mob'
 import { BackgroundLayer, DebugLayer, EntityLayer, TerrainLayer } from './rendering/layers'
-import { LightingLayer, type SunLight } from './rendering/layers/lighting'
+import { LightingLayer } from './rendering/layers/lighting'
 import { RenderPipeline } from './rendering/pipeline'
 import { ItemFactory } from './content/item-factory'
 import { loadDemoContent, type LoadedDemoContent } from './content/load-demo-content'
@@ -14,6 +14,7 @@ import { DemoAudio } from './systems/audio'
 import { SideViewCamera } from './systems/camera'
 import { GameInput } from './systems/input'
 import { ItemSystem } from './systems/item-system'
+import { AttachedLight, PointLight } from './systems/light-source'
 import { RayLighting } from './systems/lighting'
 import { tileSize, viewport, world } from './world/demo-map'
 
@@ -41,7 +42,8 @@ export class EngineDemoApplication {
     private readonly engine: PixelEngine
     private readonly loadedContent: LoadedDemoContent
     private readonly itemFactory: ItemFactory
-    private readonly sunLights: SunLight[]
+    private readonly sunLights: PointLight[]
+    private readonly playerLight: AttachedLight
     private readonly mapTilesW = Math.round(world.width / tileSize)
     private readonly mapTilesH = Math.round(world.height / tileSize)
     private readonly diagnostics: Diagnostics = {
@@ -74,6 +76,12 @@ export class EngineDemoApplication {
         this.camera = new SideViewCamera(world, viewport)
         this.pipeline = new RenderPipeline()
         this.sunLights = EngineDemoApplication.createSunLights()
+        this.playerLight = new AttachedLight({
+            positionProvider: () => ({ x: this.player.x + this.player.width / 2, y: this.player.y + this.player.height / 2 }),
+            radius: 120,
+            color: { r: 200, g: 220, b: 255 },
+            intensity: 0.85,
+        })
         this.lightingLayer = new LightingLayer(lighting, viewport.width, viewport.height)
         this.debugLayer = new DebugLayer(world.solids)
         this.minimap = new DebugMinimap({
@@ -82,7 +90,7 @@ export class EngineDemoApplication {
             worldHeight: world.height,
             solids: world.solids,
             reflectors: world.reflectors,
-            sunLights: this.sunLights,
+            sunLights: this.sunLights.map((sun) => ({ x: sun.getPosition().x, y: sun.getPosition().y, radius: sun.getLightRadius() })),
         })
 
         this.configureRenderPipeline()
@@ -110,15 +118,25 @@ export class EngineDemoApplication {
         this.engine.start()
     }
 
-    private static createSunLights(): SunLight[] {
-        const sunLights: SunLight[] = []
-        const sunSpacingX = tileSize * 16
-        const sunSpacingY = tileSize * 20
-        const sunRadius = tileSize * 12
+    private static createSunLights(): PointLight[] {
+        const sunLights: PointLight[] = []
+        const sunSpacingX = tileSize * 12
+        const sunSpacingY = tileSize * 14
+        const sunRadius = tileSize * 10
 
         for (let y = tileSize * 2; y < world.height - tileSize * 4; y += sunSpacingY) {
             for (let x = sunSpacingX; x < world.width - sunSpacingX / 2; x += sunSpacingX) {
-                sunLights.push({ x, y, radius: sunRadius })
+                const insideSolid = world.solids.some((solid) => x >= solid.x && x <= solid.x + solid.width && y >= solid.y && y <= solid.y + solid.height)
+                if (insideSolid) continue
+
+                sunLights.push(
+                    new PointLight({
+                        position: { x, y },
+                        radius: sunRadius,
+                        color: { r: 255, g: 240, b: 180 },
+                        intensity: 0.9,
+                    }),
+                )
             }
         }
 
@@ -130,11 +148,13 @@ export class EngineDemoApplication {
         const terrainLayer = new TerrainLayer(world)
         const entityLayer = new EntityLayer()
 
-        backgroundLayer.setSunLights(this.sunLights)
         entityLayer.addMob(this.player)
         entityLayer.setItemProvider(() => this.itemSystem.getItems())
-        this.lightingLayer.setSunLights(this.sunLights)
         this.lightingLayer.setCameraProvider(() => this.camera.getRect())
+        this.lightingLayer.addLight(this.playerLight)
+        for (const sun of this.sunLights) {
+            this.lightingLayer.addLight(sun)
+        }
         this.debugLayer.setPlayerRectProvider(() => this.player.getRect())
         this.debugLayer.setItemRectProvider(() => this.itemSystem.getDebugRects())
         this.debugLayer.setLightPolygonProvider(() => this.lightingLayer.activeSunData)
