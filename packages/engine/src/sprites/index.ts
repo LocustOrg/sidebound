@@ -119,14 +119,7 @@ export class SpriteSheet {
     }
 }
 
-export async function loadSpriteSheet(
-    assetStore: AssetStore,
-    assetId: AssetId,
-    frameWidth: number,
-    frameHeight: number,
-    columns: number,
-    rows: number,
-): Promise<SpriteSheet> {
+export async function loadSpriteSheet(assetStore: AssetStore, assetId: AssetId, frameWidth: number, frameHeight: number, columns: number, rows: number): Promise<SpriteSheet> {
     const image = await assetStore.loadImage(assetId)
     const layout = new TextureAtlasLayout({ frameWidth, frameHeight, columns, rows })
 
@@ -223,6 +216,43 @@ export type SpriteClipDefinition = {
     readonly loop: boolean
 }
 
+export function resolveSpriteClipFrameDuration(clip: SpriteClipDefinition): number {
+    if (clip.frameDuration !== undefined) {
+        return clip.frameDuration
+    }
+
+    if (clip.fps !== undefined && clip.fps > 0) {
+        return 1 / clip.fps
+    }
+
+    throw new Error('Animation clip must define a positive fps or frameDuration')
+}
+
+export function createAnimationClip(name: string, clip: SpriteClipDefinition): AnimationClip {
+    return {
+        name,
+        frames: clip.frames,
+        frameDuration: resolveSpriteClipFrameDuration(clip),
+        loop: clip.loop,
+    }
+}
+
+export function createAnimationClips(clips: Readonly<Record<string, SpriteClipDefinition>>): AnimationClip[] {
+    return Object.entries(clips).map(([name, clip]) => createAnimationClip(name, clip))
+}
+
+export function registerSpriteAnimationClips(
+    animator: { addClip(clip: AnimationClip): unknown; play(name: string): void },
+    clips: Readonly<Record<string, SpriteClipDefinition>>,
+    initialClip = 'idle',
+): void {
+    for (const clip of createAnimationClips(clips)) {
+        animator.addClip(clip)
+    }
+
+    animator.play(initialClip)
+}
+
 export class SpriteAnimator {
     private readonly clips = new Map<string, AnimationClip>()
     private currentClip: AnimationClip | null = null
@@ -313,4 +343,3 @@ export class SpriteAnimator {
 }
 
 export { SpriteAnimator as Animator }
-

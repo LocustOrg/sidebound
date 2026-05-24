@@ -54,11 +54,10 @@ export type EquipmentDefinition<TId extends ContentId = ContentId, TSlot extends
     readonly layers: readonly EquipmentLayerDefinition[]
 }
 
-export type ItemEffectDefinition =
-    | {
-          readonly type: 'equip'
-          readonly equipment: ContentId
-      }
+export type ItemEffectDefinition = {
+    readonly type: 'equip'
+    readonly equipment: ContentId
+}
 
 export type ItemDefinition<TId extends ContentId = ContentId> = {
     readonly id: TId
@@ -260,4 +259,3 @@ export function resolveEquipmentLayerOrder(order: EquipmentLayerOrder): number {
             return order
     }
 }
-
