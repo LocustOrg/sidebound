@@ -5,9 +5,10 @@ Read them before making engine or demo changes.
 
 ## Files
 
-1. `engine.md` - what the engine is, its constraints, mandatory systems, and implementation rules.
-2. `roadmap.md` - what to build next, in priority order.
-3. `sprite-content-architecture.md` - sprite assets, content registration, and character/item architecture.
+1. `engine.md` — what the engine is, its constraints, mandatory systems, and implementation rules.
+2. `roadmap.md` — what to build next, in priority order.
+3. `sprite-content-architecture.md` — sprite assets, content registration, and character/item architecture.
+4. `north-star-engine.md` — the target Deno-first, code-first developer experience and ideal API shape.
 
 ## Default Behavior
 

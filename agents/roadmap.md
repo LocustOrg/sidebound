@@ -5,8 +5,8 @@
 This project is an engine project first.
 
 `@strange-path/engine` is the product being built. `packages/game` is only a
-demo harness used to refactor, debug, profile, and prove engine behavior in a
-real browser canvas. It should not become the game yet.
+demo harness used to refactor, debug, profile, and prove engine behavior on a
+real runtime surface. It should not become the game yet.
 
 The demo harness may contain placeholder art, temporary rooms, test actors, and
 debug controls, but only to validate engine APIs. Avoid lore, progression,
@@ -29,7 +29,7 @@ extraction:
 - AABB collision against static rectangles.
 - Smooth side-view camera follow.
 - Ray-based lighting.
-- Layered canvas rendering.
+- Layered rendering.
 - Sprite animation.
 - Debug panel and minimap.
 
@@ -57,12 +57,15 @@ restored.
 
 - `Vec2`, `Rect`, `Segment`, and numeric helpers (`clamp`, `approach`,
   `smoothDamp`).
-- Canvas bootstrap helpers: canvas lookup, resize handling, pixel-art scaling,
-  and device-pixel-ratio support.
-- `GameLoop` or equivalent rAF wrapper with `start()`, `stop()`, and
+- Renderer/platform bootstrap helpers: surface creation, resize handling,
+  pixel-art scaling, and platform-scale support.
+- `EngineLoop` or equivalent platform-clock wrapper with `start()`, `stop()`, and
   `dispose()`.
 - `RenderPipeline` and `RenderLayer` interface.
 - Sprite primitives: `SpriteSheet`, `AnimationClip`, `Animator`.
+- Content primitives from `sprite-content-architecture.md`: `AssetStore`,
+  `TextureAtlasLayout`, `ContentRegistry`, `defineCharacter`,
+  `defineEquipment`, and `defineItem`.
 - `SideViewCamera` with bounds, smoothing, integer pixel snapping, and viewport
   conversion helpers.
 - `InputManager` for keyboard input and a typed `PlayerInputFrame`.
@@ -128,16 +131,19 @@ Turn rendering from demo code into a reusable side-view rendering module.
 
 - Stable layer order: background, terrain, entities, lighting, particles/FX, UI,
   debug.
-- `RenderContext` with canvas size, camera transform, elapsed time, and debug
+- `RenderContext` with surface size, camera transform, elapsed time, and debug
   flags.
-- Offscreen canvas helpers for cached terrain and light buffers.
+- Offscreen render-target helpers for cached terrain and light buffers.
 - Dirty tracking hooks for layers that can avoid full redraws.
 - Pixel-perfect scaling and camera snapping rules.
-- Asset loader for images and JSON sprite manifests.
+- Asset loader for images, sprite sheets, texture atlas layouts, sounds, and JSON
+  sprite manifests.
+- Startup validation for duplicate content ids, missing asset references, invalid
+  frame indices, unknown equipment references, and incompatible atlas sizes.
 - Camera APIs for follow target, look-ahead, deadzone, bounds, shake, and world
   to screen conversion.
 - Basic render stats: draw calls where measurable, layer timings, cache hits,
-  canvas dimensions, and DPR.
+  surface dimensions, and pixel scale.
 
 ### Demo Harness Proof
 
@@ -145,7 +151,8 @@ Turn rendering from demo code into a reusable side-view rendering module.
 - Camera can follow the player, clamp to room bounds, lead horizontally, and
   shake from a test button.
 - Terrain can be cached offscreen and invalidated from debug controls.
-- Sprite manifests load at runtime instead of being hardcoded in the demo.
+- Sprite/content definitions load through `ContentRegistry` instead of being
+  hardcoded in the demo.
 
 ### Done When
 
@@ -179,7 +186,7 @@ Separate physical inputs from gameplay intent.
 
 ### Done When
 
-Player control uses action frames from the engine, not direct browser events, and
+Player control uses action frames from the engine, not direct platform events, and
 input can be recorded, inspected, and replayed.
 
 ---
@@ -196,7 +203,8 @@ Introduce a lightweight world model before adding deeper physics and combat.
 - Component storage for common components without committing to a heavy ECS
   framework.
 - Core components: `Transform`, `PhysicsBody`, `Sprite`, `AnimatorState`,
-  `Controller`, `LightEmitter`, and `DebugLabel`.
+  `CharacterAppearance`, `EquipmentHolder`, `Controller`, `LightEmitter`, and
+  `DebugLabel`.
 - `System` interface with fixed update ordering.
 - Entity pooling hooks for future hot-path optimization.
 - Serialization-friendly entity definitions for demo fixtures.
@@ -204,7 +212,8 @@ Introduce a lightweight world model before adding deeper physics and combat.
 
 ### Demo Harness Proof
 
-- Player becomes an entity with transform, physics, sprite, and controller data.
+- Player becomes an entity with transform, physics, character appearance, and
+  controller data.
 - Test blocks, crates, lights, and debug markers are spawned from data.
 - Entity render layer draws from world queries instead of hardcoded arrays.
 - Debug panel can select an entity and inspect its component state.
@@ -296,6 +305,8 @@ Make gameplay timing data explicit and separate it from visual animation.
 
 - Animation graph or state machine primitives for side-view actors.
 - Data-driven clips with frame duration, loop policy, tags, and events.
+- Character appearance rendering with layered equipment, sockets, and resolved
+  atlas handles.
 - Gameplay event timeline independent of rendered sprite frames.
 - Actor controller helpers for acceleration, deceleration, coyote time, jump
   buffer, variable jump height, and wall/platform policies.
@@ -363,8 +374,8 @@ Make the engine easier to use, refactor, and trust.
 - Stable package exports grouped by subsystem.
 - Headless tests for math, fixed timestep, input buffering, entity queries,
   collision, combat overlap, and serialization.
-- Browser smoke test for the demo harness.
-- Debug settings persisted in localStorage.
+- Deno/platform smoke test for the demo harness.
+- Debug settings persisted through platform storage.
 - Minimal profiling helpers for subsystem timing and allocation-sensitive paths.
 - Error boundaries or fatal-error reporting for demo boot failures.
 - Starter scene/data format documented by example.
@@ -381,7 +392,7 @@ Make the engine easier to use, refactor, and trust.
 ### Done When
 
 A new demo can be bootstrapped quickly with engine APIs, and refactoring engine
-internals is protected by tests and browser smoke coverage.
+internals is protected by tests and platform smoke coverage.
 
 ---
 

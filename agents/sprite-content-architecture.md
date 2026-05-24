@@ -6,7 +6,9 @@ systems consume loaded appearances and resolved asset handles.
 
 ## Principles
 
-- Keep sprite rendering canvas-first and pixel-crisp.
+- Keep sprite rendering platform-renderer-first and pixel-crisp.
+- Keep game/content code free of direct browser APIs; renderer-specific handles
+  belong behind the Deno platform adapter and engine asset layer.
 - Keep simulation state separate from render state.
 - Resolve content, assets, frame layouts, and equipment layers during startup.
 - Avoid stringly-typed lookups inside hot render loops.

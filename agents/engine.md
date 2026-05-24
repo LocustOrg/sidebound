@@ -21,10 +21,10 @@ Do not build top-down, three-quarter, isometric, or hybrid movement systems.
 
 ## Current Architecture
 
-| Package | Role | State |
-|---------|------|-------|
-| `@strange-path/engine` | All engine systems | Thin today — only owns the rAF loop and canvas scaling. Will absorb all reusable systems. |
-| `game` | Game demo | Will use engine APIs to prove the feel. Currently minimal. |
+| Package                | Role               | State                                                                                                                  |
+| ---------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `@strange-path/engine` | All engine systems | Thin today — only owns the old browser rAF loop and canvas scaling. Will absorb reusable systems behind platform APIs. |
+| `game`                 | Game demo          | Will use engine APIs to prove the feel. Currently minimal.                                                             |
 
 `engine-demo` is being deleted. All reusable systems move into `@strange-path/engine`;
 game-specific demo code moves into `game`.
@@ -33,13 +33,28 @@ game-specific demo code moves into `game`.
 
 ### Rendering
 
-- Canvas-based.
+- 2D renderer behind an engine-owned interface.
+- Browser canvas can exist as a preview adapter, but game code never depends on
+  canvas or DOM APIs directly.
 - Layered pipeline: background → terrain → entities → lighting → particles/FX → UI/HUD → debug.
 - Each layer implements `RenderLayer` interface with optional dirty tracking.
 - Pixel-art scaling must stay crisp (nearest-neighbor).
-- Offscreen canvases for light masks and cached terrain.
+- Offscreen render targets for light masks and cached terrain.
 - No per-frame garbage in hot paths; batch and cache where measurable.
 - Use libraries when they materially improve rendering, batching, or lighting.
+
+### Content & Appearance
+
+- `AssetStore` owns preloadable image, atlas, sprite, and sound assets.
+- `TextureAtlasLayout`, `SpriteSheet`, `AnimationClip`, and `SpriteAnimator`
+  are separate concepts.
+- `ContentRegistry` validates startup content definitions.
+- `defineCharacter`, `defineEquipment`, and `defineItem` register game content
+  without mutating global state at import time.
+- `CharacterRenderer` draws resolved `CharacterAppearance` data with
+  deterministic paper-doll layering.
+- Render systems consume resolved handles, not raw content modules or string
+  lookups in hot loops.
 
 ### Entity System
 
@@ -87,12 +102,12 @@ game-specific demo code moves into `game`.
 - Spatial partitioning for ray queries (grid or BVH).
 - Cached static occluder geometry; dirty flags for moved lights.
 - Lower-resolution light buffer composited into the main scene.
-- Offscreen canvas for masks and compositing.
+- Offscreen render targets for masks and compositing.
 - Debug: show ray hits, occluders, light bounds, visibility masks.
 
 ### Audio
 
-- Sample playback (`.ogg`/`.mp3`) via `AudioBuffer`.
+- Sample playback (`.ogg`/`.mp3`) via engine audio buffers.
 - Spatial panning based on entity-to-camera distance.
 - Music layer with crossfade.
 - Oscillator fallback for placeholder sounds.
@@ -104,11 +119,14 @@ game-specific demo code moves into `game`.
 - Toggle: collision boxes, hitboxes/hurtboxes, lighting debug, AI state labels.
 - Controls: pause, step one frame, slow motion, restart state.
 - Memory signals and engine-owned estimates (pool usage, resource cache sizes).
-- Persist debug settings in localStorage.
+- Persist debug settings through platform storage.
 
 ## Implementation Rules
 
-- Canvas owns game world rendering; native HTML elements own menus and debug UI.
+- Engine code targets Deno-compatible TypeScript first; native browser APIs stay
+  behind platform adapters.
+- A platform adapter owns the window, renderer surface, input source, audio
+  backend, storage, timers, and debug UI.
 - Performance is an engine feature, not a late cleanup task.
 - Fixed timestep (60 Hz sim) — never use raw frame delta for gameplay.
 - Spatial acceleration for collision and ray queries.
@@ -124,7 +142,8 @@ game-specific demo code moves into `game`.
 ## UI & Accessibility
 
 - Menus, settings, pause screens, debug controls → separate engine UI module.
-- Canvas visual menus keep DOM-backed accessibility path for equivalent interaction.
+- Accessibility is exposed through the platform adapter; DOM is only a
+  browser-preview implementation detail.
 - Engine exposes state to UI through explicit APIs/events; UI never mutates simulation directly.
 
 ## Non-Goals
@@ -136,21 +155,23 @@ game-specific demo code moves into `game`.
 - Networking / multiplayer (deferred indefinitely).
 - Top-down, isometric, or hybrid perspectives.
 
-## Future Direction: Beyond the Browser
+## Platform Direction: Deno First
 
-The browser is the stable development platform for now. The engine should
-eventually run outside the browser as a native application via **Deno** (native
-TypeScript execution, built-in WebGPU via wgpu, FFI for system libraries).
+The intended runtime platform is **Deno**. Browser preview can remain useful for
+development, but browser APIs must not define the engine architecture. The
+future desktop app path should not require rewriting game code.
 
 To enable this:
 
 - Keep all game logic (physics, entities, combat, input processing) as pure
   TypeScript with zero DOM/browser dependencies.
-- Renderer is behind an interface — `CanvasRenderingContext2D` today, swappable
-  for a WebGPU pass via Deno later.
-- Input source is behind an abstraction — browser keyboard/gamepad today, native
-  event loop later.
-- Audio is behind an interface — Web Audio API today, native audio backend later.
-- No `document`, `window`, or DOM access in engine core. Platform bindings live
-  in a thin adapter layer.
-
+- Renderer is behind an interface; Canvas, WebGPU, SDL, or any native surface is
+  a platform implementation detail.
+- Input source is behind an abstraction; keyboard, gamepad, pointer, and touch
+  events are normalized before systems see them.
+- Audio is behind an interface; sample playback, spatial panning, and buses do
+  not depend on Web Audio directly.
+- Storage, timers, debug UI, and file access are behind explicit platform
+  services.
+- No `document`, `window`, DOM, Web Audio, `localStorage`, or
+  `requestAnimationFrame` access in engine core or game code.
