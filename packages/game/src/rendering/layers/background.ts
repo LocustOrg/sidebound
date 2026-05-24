@@ -1,4 +1,4 @@
-import type { RenderLayer } from '@strange-path/engine'
+import type { RenderLayer, RenderContext } from '@strange-path/engine'
 import type { Level } from '../../world/types'
 import type { Rect } from '@strange-path/engine'
 
@@ -10,7 +10,7 @@ export class BackgroundLayer implements RenderLayer {
         this.world = world
     }
 
-    render(context: CanvasRenderingContext2D, _camera: Rect): void {
+    render(context: RenderContext, _camera: Rect): void {
         const { width, height } = this.world
 
         const gradient = context.createLinearGradient(0, 0, 0, height)

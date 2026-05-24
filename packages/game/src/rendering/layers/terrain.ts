@@ -1,4 +1,4 @@
-import type { RenderLayer } from '@strange-path/engine'
+import type { RenderLayer, RenderContext } from '@strange-path/engine'
 import type { Level } from '../../world/types'
 import type { Rect } from '@strange-path/engine'
 
@@ -12,7 +12,7 @@ export class TerrainLayer implements RenderLayer {
         this.reflectors = world.reflectors
     }
 
-    render(context: CanvasRenderingContext2D, _camera: Rect): void {
+    render(context: RenderContext, _camera: Rect): void {
         for (const solid of this.solids) {
             context.fillStyle = '#4e4668'
             context.fillRect(solid.x, solid.y, solid.width, solid.height)

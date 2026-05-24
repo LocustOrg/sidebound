@@ -1,4 +1,4 @@
-import type { RenderLayer } from '@strange-path/engine'
+import type { RenderLayer, RenderContext } from '@strange-path/engine'
 import type { Rect } from '@strange-path/engine'
 import { clamp } from '@strange-path/engine'
 import type { Mob } from '../../entities/mob'
@@ -26,7 +26,7 @@ export class EntityLayer implements RenderLayer {
         if (index !== -1) this.mobs.splice(index, 1)
     }
 
-    render(context: CanvasRenderingContext2D, _camera: Rect): void {
+    render(context: RenderContext, _camera: Rect): void {
         for (const item of this.itemProvider()) {
             this.drawItem(context, item)
         }
@@ -36,11 +36,11 @@ export class EntityLayer implements RenderLayer {
         }
     }
 
-    private drawItem(context: CanvasRenderingContext2D, item: PickupItemEntity): void {
+    private drawItem(context: RenderContext, item: PickupItemEntity): void {
         item.spriteSheet.drawFrame(context, item.frameIndex ?? 0, Math.round(item.x), Math.round(item.y), item.flipX ?? false)
     }
 
-    private drawMob(context: CanvasRenderingContext2D, mob: Mob): void {
+    private drawMob(context: RenderContext, mob: Mob): void {
         const centerX = mob.x + mob.width / 2
 
         this.drawGroundShadow(context, mob)
@@ -61,19 +61,18 @@ export class EntityLayer implements RenderLayer {
         context.restore()
     }
 
-    private drawGroundShadow(context: CanvasRenderingContext2D, mob: Mob): void {
+    private drawGroundShadow(context: RenderContext, mob: Mob): void {
         const projection = mob.getShadowProjection()
         if (projection === null) return
 
         const heightFactor = clamp(projection.distance / 80, 0, 1)
         const radiusX = mob.width * 1.9 * (1 - heightFactor * 0.45)
-        const radiusY = 2.3 * (1 - heightFactor * 0.35)
         const alpha = 0.28 * (1 - heightFactor * 0.72)
 
         context.save()
         context.fillStyle = `rgba(8, 6, 14, ${alpha})`
         context.beginPath()
-        context.ellipse(projection.x, projection.y + 1, radiusX, radiusY, 0, 0, Math.PI * 2)
+        context.arc(projection.x, projection.y + 1, radiusX, 0, Math.PI * 2)
         context.fill()
         context.restore()
     }

@@ -1,4 +1,4 @@
-import type { Rect, Vec2 } from '@strange-path/engine'
+import type { Rect, Vec2, RenderContext } from '@strange-path/engine'
 import { approach, rectsIntersect } from '@strange-path/engine'
 import { Animator, type SpriteSheet } from '@strange-path/engine'
 import { MobState, resolveMobState } from './mob-states'
@@ -221,7 +221,7 @@ export class Mob {
     }
 
     /** Draw the mob's current sprite frame */
-    draw(context: CanvasRenderingContext2D): void {
+    draw(context: RenderContext): void {
         const drawX = Math.round(this.x + this.spriteOffsetX)
         const drawY = Math.round(this.y + this.spriteOffsetY)
         const flipX = this.facing < 0

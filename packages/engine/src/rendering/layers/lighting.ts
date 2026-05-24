@@ -1,4 +1,6 @@
 import type { Rect, Vec2 } from '../../core'
+import type { RenderContext } from '../../platform/render-context'
+import type { OffscreenSurface, PlatformAdapter } from '../../platform/adapter'
 import { type LightSource, type RayHit, RayLighting } from '../../lighting'
 import type { RenderLayer } from '../pipeline'
 
@@ -20,25 +22,17 @@ type CachedLight = LightDebugEntry & {
 }
 
 export type LightingLayerOptions = {
-    readonly createCanvas?: (width: number, height: number) => HTMLCanvasElement
+    readonly platform: PlatformAdapter
     readonly ambientColor?: string
     readonly cullPadding?: number
-}
-
-function createBrowserCanvas(width: number, height: number): HTMLCanvasElement {
-    const canvas = document.createElement('canvas')
-
-    canvas.width = width
-    canvas.height = height
-    return canvas
 }
 
 export class LightingLayer implements RenderLayer {
     readonly order = 30
 
     private readonly lighting: RayLighting
-    private readonly offscreen: HTMLCanvasElement
-    private readonly offCtx: CanvasRenderingContext2D
+    private readonly offscreen: OffscreenSurface
+    private readonly offCtx: RenderContext
     private readonly viewportWidth: number
     private readonly viewportHeight: number
     private readonly ambientColor: string
@@ -55,21 +49,15 @@ export class LightingLayer implements RenderLayer {
     lastRays = 0
     lastRayChecks = 0
 
-    constructor(lighting: RayLighting, viewportWidth: number, viewportHeight: number, options: LightingLayerOptions = {}) {
+    constructor(lighting: RayLighting, viewportWidth: number, viewportHeight: number, options: LightingLayerOptions) {
         this.lighting = lighting
         this.viewportWidth = viewportWidth
         this.viewportHeight = viewportHeight
         this.ambientColor = options.ambientColor ?? 'rgba(8, 6, 18, 0.82)'
         this.cullPadding = options.cullPadding ?? 300
 
-        this.offscreen = (options.createCanvas ?? createBrowserCanvas)(viewportWidth, viewportHeight)
-        const offCtx = this.offscreen.getContext('2d')
-
-        if (!offCtx) {
-            throw new Error('LightingLayer requires a 2D canvas context')
-        }
-
-        this.offCtx = offCtx
+        this.offscreen = options.platform.createOffscreenSurface(viewportWidth, viewportHeight)
+        this.offCtx = this.offscreen.context
         this.offCtx.imageSmoothingEnabled = false
     }
 
@@ -152,7 +140,7 @@ export class LightingLayer implements RenderLayer {
         }
     }
 
-    render(context: CanvasRenderingContext2D, camera: Rect): void {
+    render(context: RenderContext, camera: Rect): void {
         this.lastCamera = camera
         this.offCtx.clearRect(0, 0, this.viewportWidth, this.viewportHeight)
 
@@ -161,7 +149,7 @@ export class LightingLayer implements RenderLayer {
             this.offCtx.fillRect(0, 0, this.viewportWidth, this.viewportHeight)
             context.save()
             context.translate(camera.x, camera.y)
-            context.drawImage(this.offscreen, 0, 0)
+            context.drawImage(this.offscreen.toImageSource(), 0, 0)
             context.restore()
             return
         }
@@ -188,7 +176,7 @@ export class LightingLayer implements RenderLayer {
 
         context.save()
         context.translate(camera.x, camera.y)
-        context.drawImage(this.offscreen, 0, 0)
+        context.drawImage(this.offscreen.toImageSource(), 0, 0)
         context.restore()
 
         context.save()
@@ -208,7 +196,7 @@ export class LightingLayer implements RenderLayer {
         context.restore()
     }
 
-    private drawLightWedges(context: CanvasRenderingContext2D, polygon: RayHit[], origin: Vec2): void {
+    private drawLightWedges(context: RenderContext, polygon: RayHit[], origin: Vec2): void {
         if (polygon.length < 2) return
 
         for (let index = 0; index < polygon.length; index += 1) {

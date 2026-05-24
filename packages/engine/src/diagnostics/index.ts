@@ -1,5 +1,6 @@
 import { smooth } from '../core'
 import type { Rect } from '../core'
+import type { RenderContext } from '../platform/render-context'
 import type { RenderLayer } from '../rendering'
 
 export type FrameDiagnostics = {
@@ -18,7 +19,7 @@ export type DebugFlags = {
 export type DebugOverlayHook = {
     readonly id: string
     readonly order?: number
-    render(context: CanvasRenderingContext2D, camera: Rect, flags: DebugFlags): void
+    render(context: RenderContext, camera: Rect, flags: DebugFlags): void
 }
 
 export function createFrameDiagnostics(): FrameDiagnostics {
@@ -64,7 +65,7 @@ export class DebugOverlayLayer implements RenderLayer {
         }
     }
 
-    render(context: CanvasRenderingContext2D, camera: Rect): void {
+    render(context: RenderContext, camera: Rect): void {
         this.ensureSorted()
 
         for (const hook of this.hooks) {

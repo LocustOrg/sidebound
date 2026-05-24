@@ -1,4 +1,4 @@
-import { registerSpriteAnimationClips, type CharacterAppearance, type EquipmentLoadout, type PlayerInputFrame, type Rect, type Vec2 } from '@strange-path/engine'
+import { registerSpriteAnimationClips, type CharacterAppearance, type EquipmentLoadout, type PlayerInputFrame, type Rect, type Vec2, type RenderContext } from '@strange-path/engine'
 import type { SoundCue } from '../systems/audio'
 import { controls } from '../core/config'
 import { CharacterRenderComponent } from './character-render-component'
@@ -100,7 +100,7 @@ export class PlayerMob extends Mob {
     }
 
     /** Draws optional visual equipment without changing collision or movement. */
-    override draw(context: CanvasRenderingContext2D): void {
+    override draw(context: RenderContext): void {
         const drawX = Math.round(this.x + this.spriteOffsetX)
         const drawY = Math.round(this.y + this.spriteOffsetY)
         const flipX = this.facing < 0

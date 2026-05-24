@@ -1,5 +1,6 @@
 import {
     AttachedLight,
+    BrowserPlatformAdapter,
     createFrameDiagnostics,
     InputManager,
     LightingLayer,
@@ -11,6 +12,7 @@ import {
     updateFrameDiagnostics,
     type FrameDiagnostics,
     type KeyboardInputSource,
+    type RenderContext,
 } from '@strange-path/engine'
 import { requireElement } from './core/dom'
 import { DebugMinimap } from './debug/debug-minimap'
@@ -75,6 +77,7 @@ export class DemoApplication {
         const minimapCanvas = requireElement<HTMLCanvasElement>('#debug-minimap')
         const allOccluders = [...world.solids, ...world.reflectors]
         const lighting = new RayLighting(allOccluders)
+        const platform = new BrowserPlatformAdapter()
 
         this.loadedContent = loadedContent
         this.debugPanel = new DebugPanel()
@@ -97,7 +100,7 @@ export class DemoApplication {
             color: { r: 200, g: 220, b: 255 },
             intensity: 0.85,
         })
-        this.lightingLayer = new LightingLayer(lighting, viewport.width, viewport.height)
+        this.lightingLayer = new LightingLayer(lighting, viewport.width, viewport.height, { platform })
         this.debugLayer = new DebugLayer(world.solids)
         this.minimap = new DebugMinimap({
             canvas: minimapCanvas,
@@ -234,7 +237,7 @@ export class DemoApplication {
         this.diagnostics.updateMs = performance.now() - updateStart
     }
 
-    private render(context: CanvasRenderingContext2D): void {
+    private render(context: RenderContext): void {
         const renderStart = performance.now()
         const cameraRect = this.camera.getRect()
 

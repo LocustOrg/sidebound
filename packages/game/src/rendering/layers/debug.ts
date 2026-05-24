@@ -1,4 +1,4 @@
-import type { RenderLayer } from '@strange-path/engine'
+import type { RenderLayer, RenderContext } from '@strange-path/engine'
 import type { Rect, Vec2 } from '@strange-path/engine'
 import type { RayHit } from '@strange-path/engine'
 
@@ -35,7 +35,7 @@ export class DebugLayer implements RenderLayer {
         this.lightPolygonProvider = provider
     }
 
-    render(context: CanvasRenderingContext2D, _camera: Rect): void {
+    render(context: RenderContext, _camera: Rect): void {
         if (this.showCollision) {
             this.drawCollision(context)
         }
@@ -44,7 +44,7 @@ export class DebugLayer implements RenderLayer {
         }
     }
 
-    private drawCollision(context: CanvasRenderingContext2D): void {
+    private drawCollision(context: RenderContext): void {
         context.save()
         context.strokeStyle = 'rgba(255, 106, 106, 0.9)'
         context.lineWidth = 1
@@ -69,7 +69,7 @@ export class DebugLayer implements RenderLayer {
         context.restore()
     }
 
-    private drawLightingDebug(context: CanvasRenderingContext2D): void {
+    private drawLightingDebug(context: RenderContext): void {
         if (!this.lightPolygonProvider) return
 
         const entries = this.lightPolygonProvider()

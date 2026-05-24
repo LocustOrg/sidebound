@@ -1,7 +1,7 @@
-import { CharacterRenderer, type CharacterAppearance, type EquipmentLoadout } from '@strange-path/engine'
+import { CharacterRenderer, type CharacterAppearance, type EquipmentLoadout, type RenderContext } from '@strange-path/engine'
 
 export type CharacterRenderFrame = {
-    readonly context: CanvasRenderingContext2D
+    readonly context: RenderContext
     readonly frame: number
     readonly x: number
     readonly y: number

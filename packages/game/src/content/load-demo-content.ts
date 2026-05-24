@@ -1,5 +1,6 @@
 import {
     AssetStore,
+    BrowserPlatformAdapter,
     createLoadedEquipmentDefinition,
     loadSpriteSheet,
     type CharacterAppearance,
@@ -60,7 +61,8 @@ async function loadItemIconSheets(registry: ContentRegistry, assets: AssetStore)
 export async function loadDemoContent(): Promise<LoadedDemoContent> {
     demoContent.assertValid()
 
-    const assets = new AssetStore()
+    const platform = new BrowserPlatformAdapter()
+    const assets = new AssetStore(platform)
     assets.registerImages(demoContent.getImageAssets())
     await assets.preloadAll()
 

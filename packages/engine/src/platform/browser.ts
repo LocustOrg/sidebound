@@ -1,8 +1,10 @@
 import { EngineLoop, type EngineClock } from './loop'
+import type { ImageSource, RenderContext } from './render-context'
+import type { OffscreenSurface, PlatformAdapter, PlatformClock, PlatformImageAsset } from './adapter'
 
 export type PixelLoop = {
     update(deltaSeconds: number): void
-    render(context: CanvasRenderingContext2D): void
+    render(context: RenderContext): void
 }
 
 export type PixelScale = number | 'css'
@@ -18,7 +20,7 @@ export type PixelCanvasSurfaceOptions = {
 
 export type PixelCanvasSurface = {
     readonly canvas: HTMLCanvasElement
-    readonly context: CanvasRenderingContext2D
+    readonly context: RenderContext
     readonly width: number
     readonly height: number
     readonly platformScale: number
@@ -29,9 +31,17 @@ export type PixelCanvasSurface = {
 export type PixelEngineOptions = PixelCanvasSurfaceOptions & {
     readonly loop: PixelLoop
     readonly clock?: EngineClock
+    readonly platform?: PlatformAdapter
 }
 
-export class BrowserAnimationFrameClock implements EngineClock {
+/**
+ * Wraps a CanvasRenderingContext2D as a platform-agnostic RenderContext.
+ */
+export function wrapCanvasContext(ctx: CanvasRenderingContext2D): RenderContext {
+    return ctx as unknown as RenderContext
+}
+
+export class BrowserAnimationFrameClock implements EngineClock, PlatformClock {
     now(): number {
         return performance.now()
     }
@@ -42,6 +52,51 @@ export class BrowserAnimationFrameClock implements EngineClock {
 
     cancelFrame(frameId: number): void {
         cancelAnimationFrame(frameId)
+    }
+}
+
+/**
+ * Browser implementation of the PlatformAdapter interface.
+ */
+export class BrowserPlatformAdapter implements PlatformAdapter {
+    readonly clock: PlatformClock = new BrowserAnimationFrameClock()
+
+    loadImage(url: string): Promise<PlatformImageAsset> {
+        return new Promise((resolve, reject) => {
+            const image = new Image()
+            image.onload = () =>
+                resolve({
+                    id: url,
+                    width: image.naturalWidth,
+                    height: image.naturalHeight,
+                    // The HTMLImageElement itself serves as the ImageSource for browser canvas
+                } as PlatformImageAsset & HTMLImageElement)
+            image.onerror = () => reject(new Error(`Failed to load image from ${url}`))
+            image.src = url
+        })
+    }
+
+    createOffscreenSurface(width: number, height: number): OffscreenSurface {
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+
+        if (!ctx) {
+            throw new Error('Failed to create offscreen canvas context')
+        }
+
+        ctx.imageSmoothingEnabled = false
+        const context = wrapCanvasContext(ctx)
+
+        return {
+            context,
+            width,
+            height,
+            toImageSource(): ImageSource {
+                return canvas as unknown as ImageSource
+            },
+        }
     }
 }
 
@@ -75,15 +130,17 @@ export function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement, platformSca
 export function createPixelCanvasSurface(options: PixelCanvasSurfaceOptions): PixelCanvasSurface {
     const { canvas, width, height, scale = 4, background = '#101018' } = options
     const platformScale = Math.max(1, Math.floor(options.platformScale ?? 1))
-    const context = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d')
 
-    if (!context) {
+    if (!ctx) {
         throw new Error('Pixel canvas surface requires a 2D canvas context')
     }
 
     configurePixelCanvas(canvas, width, height, scale, platformScale)
-    context.imageSmoothingEnabled = false
-    context.setTransform(platformScale, 0, 0, platformScale, 0, 0)
+    ctx.imageSmoothingEnabled = false
+    ctx.setTransform(platformScale, 0, 0, platformScale, 0, 0)
+
+    const context = wrapCanvasContext(ctx)
 
     return {
         canvas,
@@ -92,14 +149,14 @@ export function createPixelCanvasSurface(options: PixelCanvasSurfaceOptions): Pi
         height,
         platformScale,
         clear() {
-            context.save()
-            context.setTransform(platformScale, 0, 0, platformScale, 0, 0)
-            context.fillStyle = background
-            context.fillRect(0, 0, width, height)
-            context.restore()
+            ctx.save()
+            ctx.setTransform(platformScale, 0, 0, platformScale, 0, 0)
+            ctx.fillStyle = background
+            ctx.fillRect(0, 0, width, height)
+            ctx.restore()
         },
         dispose() {
-            context.setTransform(1, 0, 0, 1, 0, 0)
+            ctx.setTransform(1, 0, 0, 1, 0, 0)
         },
     }
 }
