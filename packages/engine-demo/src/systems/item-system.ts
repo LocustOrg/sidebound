@@ -1,17 +1,14 @@
 import type { Rect } from '../core/geometry'
 import { rectsIntersect } from '../core/geometry'
-import type { PlayerMob } from '../entities/player-mob'
-import { getPickupItemRect, type EquipmentItemKind, type PickupItemEntity } from '../entities/item-entity'
+import { getPickupItemRect, type PickupItemEntity } from '../entities/item-entity'
 
-type PickupContext = {
-    player: PlayerMob
+export type EquipmentHolder = {
+    getRect(): Rect
+    equip(equipmentId: string): void
 }
 
-type PickupEffectResolver = (context: PickupContext) => void
-
-const equipmentResolvers: Record<EquipmentItemKind, PickupEffectResolver> = {
-    cape: ({ player }) => player.setEquipment({ cape: true }),
-    sword: ({ player }) => player.setEquipment({ sword: true }),
+type PickupContext = {
+    equipmentHolder: EquipmentHolder
 }
 
 export class ItemSystem {
@@ -32,12 +29,12 @@ export class ItemSystem {
     }
 
     update(): void {
-        const playerRect = this.context.player.getRect()
+        const holderRect = this.context.equipmentHolder.getRect()
 
         for (let index = this.items.length - 1; index >= 0; index -= 1) {
             const item = this.items[index]
 
-            if (!rectsIntersect(playerRect, getPickupItemRect(item))) {
+            if (!rectsIntersect(holderRect, getPickupItemRect(item))) {
                 continue
             }
 
@@ -55,8 +52,10 @@ export class ItemSystem {
     }
 
     private applyPickupEffect(item: PickupItemEntity): void {
-        if (item.effect.type === 'equip') {
-            equipmentResolvers[item.effect.equipment](this.context)
+        for (const effect of item.effects) {
+            if (effect.type === 'equip') {
+                this.context.equipmentHolder.equip(effect.equipment)
+            }
         }
     }
 }

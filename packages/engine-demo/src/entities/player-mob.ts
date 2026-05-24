@@ -2,16 +2,10 @@ import type { Rect, Vec2 } from '../core/geometry'
 import type { SoundCue } from '../systems/audio'
 import type { PlayerInputFrame } from '../systems/input'
 import { controls } from '../core/config'
+import { CharacterRenderComponent } from './character-render-component'
 import { Mob, type MobPhysics } from './mob'
 import { MobState } from './mob-states'
-import {
-    createPlayerCapeBackOverlaySheet,
-    createPlayerCapeFrontOverlaySheet,
-    createPlayerSpriteSheet,
-    createPlayerSwordOverlaySheet,
-    registerPlayerAnimationClips,
-} from '../sprites/player-sprites'
-import type { SpriteSheet } from '../sprites/sprite-sheet'
+import type { AnimationClip, CharacterAppearance, EquipmentLoadout, SpriteClipDefinition } from '@strange-path/engine'
 
 const PLAYER_PHYSICS: MobPhysics = {
     maxSpeed: controls.maxSpeed,
@@ -30,43 +24,57 @@ function createStepCue(vx: number): SoundCue {
     return { frequency: 76 + Math.round(Math.abs(vx) % 20), durationSeconds: 0.04, gain: 0.016 }
 }
 
-export type PlayerEquipment = {
-    cape: boolean
-    sword: boolean
+function resolveFrameDuration(clip: SpriteClipDefinition): number {
+    if (clip.frameDuration !== undefined) {
+        return clip.frameDuration
+    }
+
+    if (clip.fps !== undefined && clip.fps > 0) {
+        return 1 / clip.fps
+    }
+
+    throw new Error('Animation clip must define a positive fps or frameDuration')
 }
+
+function registerAnimationClips(animator: { addClip(clip: AnimationClip): unknown; play(name: string): void }, clips: Readonly<Record<string, SpriteClipDefinition>>): void {
+    for (const [name, clip] of Object.entries(clips)) {
+        animator.addClip({
+            name,
+            frames: clip.frames,
+            frameDuration: resolveFrameDuration(clip),
+            loop: clip.loop,
+        })
+    }
+
+    animator.play('idle')
+}
+
+export type PlayerEquipment = EquipmentLoadout
 
 /**
  * Player entity — extends Mob with input handling, sound cues, and equipment visuals.
  */
 export class PlayerMob extends Mob {
     private stepCooldown = 0
-    private readonly capeBackOverlaySheet: SpriteSheet
-    private readonly capeFrontOverlaySheet: SpriteSheet
-    private readonly swordOverlaySheet: SpriteSheet
-    private readonly equipped: PlayerEquipment = {
-        cape: false,
-        sword: false,
-    }
+    private readonly renderComponent: CharacterRenderComponent
+    private readonly appearance: CharacterAppearance
+    private readonly equipped: PlayerEquipment = {}
 
-    constructor(spawn: Vec2, solids: Rect[]) {
-        const sheet = createPlayerSpriteSheet()
-
+    constructor(spawn: Vec2, solids: Rect[], appearance: CharacterAppearance) {
         super({
             spawn,
-            width: 8,
-            height: 28,
-            spriteSheet: sheet,
+            width: appearance.definition.hitbox.width,
+            height: appearance.definition.hitbox.height,
+            spriteSheet: appearance.base,
             physics: PLAYER_PHYSICS,
             solids,
-            // Sprite is 32x32, collision box is 8x28 — offset aligns sprite feet with hitbox bottom.
-            spriteOffsetX: -13,
-            spriteOffsetY: -3,
+            spriteOffsetX: appearance.definition.spriteOffset.x,
+            spriteOffsetY: appearance.definition.spriteOffset.y,
         })
 
-        registerPlayerAnimationClips(this.animator)
-        this.capeBackOverlaySheet = createPlayerCapeBackOverlaySheet()
-        this.capeFrontOverlaySheet = createPlayerCapeFrontOverlaySheet()
-        this.swordOverlaySheet = createPlayerSwordOverlaySheet()
+        registerAnimationClips(this.animator, appearance.definition.clips)
+        this.appearance = appearance
+        this.renderComponent = new CharacterRenderComponent(appearance, this.equipped)
     }
 
     /**
@@ -105,16 +113,17 @@ export class PlayerMob extends Mob {
     }
 
     setEquipment(equipment: Partial<PlayerEquipment>): void {
-        this.equipped.cape = equipment.cape ?? this.equipped.cape
-        this.equipped.sword = equipment.sword ?? this.equipped.sword
+        Object.assign(this.equipped, equipment)
     }
 
-    equipCape(): void {
-        this.equipped.cape = true
-    }
+    equip(equipmentId: string): void {
+        const equipment = this.appearance.equipment[equipmentId]
 
-    equipSword(): void {
-        this.equipped.sword = true
+        if (!equipment) {
+            throw new Error(`Player cannot equip unknown equipment '${equipmentId}'`)
+        }
+
+        this.equipped[equipment.slot] = equipmentId
     }
 
     /** Draws optional visual equipment without changing collision or movement. */
@@ -124,19 +133,7 @@ export class PlayerMob extends Mob {
         const flipX = this.facing < 0
         const frame = this.animator.currentFrame
 
-        if (this.equipped.cape) {
-            this.capeBackOverlaySheet.drawFrame(context, frame, drawX, drawY, flipX)
-        }
-
-        super.draw(context)
-
-        if (this.equipped.sword) {
-            this.swordOverlaySheet.drawFrame(context, frame, drawX, drawY, flipX)
-        }
-
-        if (this.equipped.cape) {
-            this.capeFrontOverlaySheet.drawFrame(context, frame, drawX, drawY, flipX)
-        }
+        this.renderComponent.draw({ context, frame, x: drawX, y: drawY, flipX })
     }
 
     private addStepCues(cues: SoundCue[], deltaSeconds: number, horizontal: number): void {
@@ -171,9 +168,3 @@ export class PlayerMob extends Mob {
         }
     }
 }
-
-
-
-
-
-
