@@ -3,7 +3,6 @@ import type { Rect, Vec2 } from '../../core/geometry'
 import type { RayHit } from '../../systems/lighting'
 import type { LightSource } from '../../world/types'
 import { RayLighting } from '../../systems/lighting'
-import { PointLight } from '../../systems/light-source'
 
 export type SunLight = {
     x: number
@@ -57,16 +56,6 @@ export class LightingLayer implements RenderLayer {
         this.sources.push(source)
     }
 
-    setSunLights(lights: SunLight[]): void {
-        this.sources.length = 0
-        for (const light of lights) {
-            this.sources.push(new PointLight({
-                position: { x: light.x, y: light.y },
-                radius: light.radius,
-            }))
-        }
-    }
-
     removeLight(source: LightSource): void {
         const idx = this.sources.indexOf(source)
         if (idx !== -1) this.sources.splice(idx, 1)
@@ -100,7 +89,7 @@ export class LightingLayer implements RenderLayer {
 
         this.cachedLights = []
 
-        const padding = 500
+        const padding = 300
         for (const source of this.sources) {
             if (!source.isLightActive()) continue
 

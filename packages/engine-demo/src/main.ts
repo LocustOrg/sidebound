@@ -13,9 +13,10 @@ import { RenderPipeline } from './rendering/pipeline'
 import { BackgroundLayer } from './rendering/layers'
 import { TerrainLayer } from './rendering/layers'
 import { EntityLayer } from './rendering/layers'
-import { LightingLayer, type SunLight } from './rendering/layers/lighting'
+import { LightingLayer } from './rendering/layers/lighting'
 import { DebugLayer } from './rendering/layers'
 import { DebugMinimap } from './debug/debug-minimap'
+import { PointLight, AttachedLight } from './systems/light-source'
 import { createCapeItemSpriteSheet, createSwordItemSpriteSheet } from './sprites/item-sprites'
 import './style.css'
 
@@ -30,20 +31,36 @@ const camera = new SideViewCamera(world, viewport)
 const allOccluders = [...world.solids, ...world.reflectors]
 const lighting = new RayLighting(allOccluders)
 
-const sunLights: SunLight[] = []
 const sunSpacingX = tileSize * 12
 const sunSpacingY = tileSize * 14
 const sunRadius = tileSize * 10
+const sunLights: PointLight[] = []
 for (let y = tileSize * 2; y < world.height - tileSize * 4; y += sunSpacingY) {
     for (let x = sunSpacingX; x < world.width - sunSpacingX / 2; x += sunSpacingX) {
-        sunLights.push({ x, y, radius: sunRadius })
+        const insideSolid = world.solids.some(
+            (s) => x >= s.x && x <= s.x + s.width && y >= s.y && y <= s.y + s.height,
+        )
+        if (!insideSolid) {
+            sunLights.push(new PointLight({
+                position: { x, y },
+                radius: sunRadius,
+                color: { r: 255, g: 240, b: 180 },
+                intensity: 0.9,
+            }))
+        }
     }
 }
+
+const playerLight = new AttachedLight({
+    positionProvider: () => ({ x: player.x + player.width / 2, y: player.y + player.height / 2 }),
+    radius: 120,
+    color: { r: 200, g: 220, b: 255 },
+    intensity: 0.85,
+})
 
 const pipeline = new RenderPipeline()
 
 const backgroundLayer = new BackgroundLayer(world)
-backgroundLayer.setSunLights(sunLights)
 const terrainLayer = new TerrainLayer(world)
 const entityLayer = new EntityLayer()
 const lightingLayer = new LightingLayer(lighting, viewport.width, viewport.height)
@@ -51,8 +68,11 @@ const debugLayer = new DebugLayer(world.solids)
 
 entityLayer.addMob(player)
 
-lightingLayer.setSunLights(sunLights)
 lightingLayer.setCameraProvider(() => camera.getRect())
+lightingLayer.addLight(playerLight)
+for (const sun of sunLights) {
+    lightingLayer.addLight(sun)
+}
 
 itemSystem.add({
     id: 'starter-cape',
@@ -109,7 +129,7 @@ const minimap = new DebugMinimap({
     worldHeight: world.height,
     solids: world.solids,
     reflectors: world.reflectors,
-    sunLights,
+    sunLights: sunLights.map((s) => ({ x: s.getPosition().x, y: s.getPosition().y, radius: s.getLightRadius() })),
 })
 
 const mapTilesW = Math.round(world.width / tileSize)
