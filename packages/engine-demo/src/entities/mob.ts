@@ -86,11 +86,13 @@ export class Mob {
         spriteOffsetX?: number
         spriteOffsetY?: number
     }) {
-        this.x = options.spawn.x
-        this.y = options.spawn.y
-        this.spawnPoint = { x: options.spawn.x, y: options.spawn.y }
         this.width = options.width
         this.height = options.height
+
+        this.x = options.spawn.x
+        this.y = options.spawn.y - this.height
+        this.spawnPoint = { x: this.x, y: this.y }
+
         this.physics = options.physics
         this.solids = options.solids
         this.animationMap = options.animationMap ?? DEFAULT_ANIMATION_MAP
@@ -202,16 +204,7 @@ export class Mob {
         const justLanded = this.grounded && !wasGrounded
 
         // Resolve state
-        const nextState = resolveMobState(
-            this.mobState,
-            this.grounded,
-            this.vx,
-            this.vy,
-            inputHorizontal,
-            justLanded,
-            justJumped,
-            this.physics.stoppingThreshold,
-        )
+        const nextState = resolveMobState(this.mobState, this.grounded, this.vx, this.vy, inputHorizontal, justLanded, justJumped, this.physics.stoppingThreshold)
 
         this.transitionState(nextState)
     }
@@ -283,4 +276,3 @@ export class Mob {
         }
     }
 }
-

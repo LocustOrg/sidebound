@@ -1,7 +1,9 @@
 import type { RenderLayer } from '../pipeline'
 import type { Rect, Vec2 } from '../../core/geometry'
 import type { RayHit } from '../../systems/lighting'
+import type { LightSource } from '../../world/types'
 import { RayLighting } from '../../systems/lighting'
+import { PointLight } from '../../systems/light-source'
 
 export type SunLight = {
     x: number
@@ -9,11 +11,14 @@ export type SunLight = {
     radius: number
 }
 
-/**
- * Lighting layer: renders darkness across the map with sun light sources
- * casting from the top. No player light — the world is dark except for
- * sun beams penetrating from above.
- */
+type CachedLight = {
+    polygon: RayHit[]
+    origin: Vec2
+    radius: number
+    color: { r: number; g: number; b: number }
+    intensity: number
+}
+
 export class LightingLayer implements RenderLayer {
     readonly order = 30
 
@@ -23,23 +28,17 @@ export class LightingLayer implements RenderLayer {
     private readonly viewportWidth: number
     private readonly viewportHeight: number
 
-    // Sun lights
-    private sunLights: SunLight[] = []
+    private readonly sources: LightSource[] = []
+    private cachedLights: CachedLight[] = []
 
-    // Cached light data per sun (computed in update, used in render)
-    private cachedSunResults: { polygon: RayHit[]; origin: Vec2; radius: number }[] = []
-
-    // Legacy cached data for debug compatibility
     cachedPolygon: RayHit[] = []
     cachedOrigin: Vec2 = { x: 0, y: 0 }
     cachedRadius = 0
 
-    // Diagnostics
     lastRayMs = 0
     lastRays = 0
     lastRayChecks = 0
 
-    // Camera rect for culling — set externally via setCameraProvider or in render()
     private lastCamera: Rect = { x: 0, y: 0, width: 0, height: 0 }
     private cameraProvider: (() => Rect) | null = null
 
@@ -54,19 +53,42 @@ export class LightingLayer implements RenderLayer {
         this.offCtx = this.offscreen.getContext('2d')!
     }
 
-    /** Configure sun lights from above */
-    setSunLights(lights: SunLight[]): void {
-        this.sunLights = lights
+    addLight(source: LightSource): void {
+        this.sources.push(source)
     }
 
-    /** Set a function that provides the current camera rect for viewport culling */
+    setSunLights(lights: SunLight[]): void {
+        this.sources.length = 0
+        for (const light of lights) {
+            this.sources.push(new PointLight({
+                position: { x: light.x, y: light.y },
+                radius: light.radius,
+            }))
+        }
+    }
+
+    removeLight(source: LightSource): void {
+        const idx = this.sources.indexOf(source)
+        if (idx !== -1) this.sources.splice(idx, 1)
+    }
+
     setCameraProvider(provider: () => Rect): void {
         this.cameraProvider = provider
     }
 
-    /** Ray-cast happens here (during update phase), not during render. */
+    get activeSunCount(): number {
+        return this.cachedLights.length
+    }
+
+    get totalSunCount(): number {
+        return this.sources.length
+    }
+
+    get activeSunData(): { polygon: RayHit[]; origin: Vec2; radius: number }[] {
+        return this.cachedLights
+    }
+
     update(_deltaSeconds: number): void {
-        // Get fresh camera position for culling
         if (this.cameraProvider) {
             this.lastCamera = this.cameraProvider()
         }
@@ -76,27 +98,33 @@ export class LightingLayer implements RenderLayer {
         let totalRays = 0
         let totalChecks = 0
 
-        this.cachedSunResults = []
+        this.cachedLights = []
 
-        // Only cast rays for sun lights within/near the viewport
         const padding = 500
-        for (const sun of this.sunLights) {
+        for (const source of this.sources) {
+            if (!source.isLightActive()) continue
+
+            const pos = source.getPosition()
+            const radius = source.getLightRadius()
+
             if (
-                sun.x + sun.radius < camera.x - padding ||
-                sun.x - sun.radius > camera.x + camera.width + padding ||
-                sun.y + sun.radius < camera.y - padding ||
-                sun.y - sun.radius > camera.y + camera.height + padding
+                pos.x + radius < camera.x - padding ||
+                pos.x - radius > camera.x + camera.width + padding ||
+                pos.y + radius < camera.y - padding ||
+                pos.y - radius > camera.y + camera.height + padding
             ) {
                 continue
             }
 
-            const result = this.lighting.cast({ x: sun.x, y: sun.y }, sun.radius)
+            const result = this.lighting.cast(pos, radius)
             totalRays += result.rays
             totalChecks += result.rayChecks
-            this.cachedSunResults.push({
+            this.cachedLights.push({
                 polygon: result.polygon,
-                origin: { x: sun.x, y: sun.y },
-                radius: sun.radius,
+                origin: pos,
+                radius,
+                color: source.getLightColor(),
+                intensity: source.getLightIntensity(),
             })
         }
 
@@ -104,31 +132,17 @@ export class LightingLayer implements RenderLayer {
         this.lastRays = totalRays
         this.lastRayChecks = totalChecks
 
-        // Keep first result for debug panel compatibility
-        if (this.cachedSunResults.length > 0) {
-            this.cachedPolygon = this.cachedSunResults[0].polygon
-            this.cachedOrigin = this.cachedSunResults[0].origin
-            this.cachedRadius = this.cachedSunResults[0].radius
+        if (this.cachedLights.length > 0) {
+            this.cachedPolygon = this.cachedLights[0].polygon
+            this.cachedOrigin = this.cachedLights[0].origin
+            this.cachedRadius = this.cachedLights[0].radius
         }
-    }
-
-    get activeSunCount(): number {
-        return this.cachedSunResults.length
-    }
-
-    get totalSunCount(): number {
-        return this.sunLights.length
-    }
-
-    get activeSunData(): { polygon: RayHit[]; origin: Vec2; radius: number }[] {
-        return this.cachedSunResults
     }
 
     render(context: CanvasRenderingContext2D, camera: Rect): void {
         this.lastCamera = camera
 
-        if (this.cachedSunResults.length === 0) {
-            // No active suns — just draw full darkness
+        if (this.cachedLights.length === 0) {
             this.offCtx.clearRect(0, 0, this.viewportWidth, this.viewportHeight)
             this.offCtx.fillStyle = 'rgba(8, 6, 18, 0.82)'
             this.offCtx.fillRect(0, 0, this.viewportWidth, this.viewportHeight)
@@ -139,50 +153,47 @@ export class LightingLayer implements RenderLayer {
             return
         }
 
-        // Draw darkness + light cutouts onto offscreen buffer
         this.offCtx.clearRect(0, 0, this.viewportWidth, this.viewportHeight)
         this.offCtx.save()
         this.offCtx.translate(-camera.x, -camera.y)
 
-        // Full darkness
         this.offCtx.fillStyle = 'rgba(8, 6, 18, 0.82)'
         this.offCtx.fillRect(camera.x, camera.y, camera.width, camera.height)
 
-        // Cut out each sun light
         this.offCtx.globalCompositeOperation = 'destination-out'
-        for (const sun of this.cachedSunResults) {
+        for (const light of this.cachedLights) {
             const gradient = this.offCtx.createRadialGradient(
-                sun.origin.x, sun.origin.y, 4,
-                sun.origin.x, sun.origin.y, sun.radius,
+                light.origin.x, light.origin.y, 2,
+                light.origin.x, light.origin.y, light.radius,
             )
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.98)')
-            gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.6)')
-            gradient.addColorStop(0.8, 'rgba(255, 255, 255, 0.25)')
+            const a = light.intensity
+            gradient.addColorStop(0, `rgba(255, 255, 255, ${a})`)
+            gradient.addColorStop(0.4, `rgba(255, 255, 255, ${a * 0.7})`)
+            gradient.addColorStop(0.7, `rgba(255, 255, 255, ${a * 0.3})`)
             gradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
             this.offCtx.fillStyle = gradient
-            this.drawLightWedges(this.offCtx, sun.polygon, sun.origin)
+            this.drawLightWedges(this.offCtx, light.polygon, light.origin)
         }
         this.offCtx.restore()
 
-        // Composite offscreen darkness onto main context
         context.save()
         context.translate(camera.x, camera.y)
         context.drawImage(this.offscreen, 0, 0)
         context.restore()
 
-        // Additive warm sun glow
         context.save()
         context.globalCompositeOperation = 'lighter'
-        for (const sun of this.cachedSunResults) {
+        for (const light of this.cachedLights) {
+            const { r, g, b } = light.color
             const glow = context.createRadialGradient(
-                sun.origin.x, sun.origin.y, 0,
-                sun.origin.x, sun.origin.y, sun.radius,
+                light.origin.x, light.origin.y, 0,
+                light.origin.x, light.origin.y, light.radius,
             )
-            glow.addColorStop(0, 'rgba(255, 240, 180, 0.18)')
-            glow.addColorStop(0.6, 'rgba(255, 220, 120, 0.06)')
-            glow.addColorStop(1, 'rgba(255, 200, 80, 0)')
+            glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${light.intensity * 0.2})`)
+            glow.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, ${light.intensity * 0.06})`)
+            glow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`)
             context.fillStyle = glow
-            this.drawLightWedges(context, sun.polygon, sun.origin)
+            this.drawLightWedges(context, light.polygon, light.origin)
         }
         context.restore()
     }
@@ -201,4 +212,3 @@ export class LightingLayer implements RenderLayer {
         }
     }
 }
-
