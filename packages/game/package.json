@@ -1,5 +1,5 @@
 {
-    "name": "@strange-path/game",
+    "name": "@sidebound/game",
     "private": true,
     "version": "0.0.0",
     "type": "module",
@@ -11,7 +11,7 @@
         "check": "pnpm run typecheck"
     },
     "dependencies": {
-        "@strange-path/engine": "workspace:*"
+        "@sidebound/engine": "workspace:*"
     },
     "devDependencies": {
         "typescript": "~6.0.2",

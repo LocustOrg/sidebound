@@ -7,7 +7,7 @@ import {
     type ItemDefinition,
     type PlatformAdapter,
     type SpriteSheet,
-} from '@strange-path/engine'
+} from '@sidebound/engine'
 import { demoContent, demoContentIds } from './index'
 
 export type LoadedDemoContent = {

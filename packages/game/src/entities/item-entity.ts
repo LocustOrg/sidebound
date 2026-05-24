@@ -1,5 +1,5 @@
-import type { Rect, Vec2 } from '@strange-path/engine'
-import type { ItemEffectDefinition, SpriteSheet } from '@strange-path/engine'
+import type { Rect, Vec2 } from '@sidebound/engine'
+import type { ItemEffectDefinition, SpriteSheet } from '@sidebound/engine'
 
 export type PickupItemEntity = Vec2 & {
     id: string

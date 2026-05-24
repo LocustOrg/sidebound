@@ -1,4 +1,4 @@
-import type { PlacedTile as EnginePlacedTile, TileMapBuildResult } from '@strange-path/engine'
+import type { PlacedTile as EnginePlacedTile, TileMapBuildResult } from '@sidebound/engine'
 
 export type TileMaterial = 'wall' | 'glass' | 'decor' | 'grate'
 export type PlacedTile = EnginePlacedTile<TileMaterial>

@@ -1,4 +1,4 @@
-import type { ContentRegistry, SpriteSheet, Vec2 } from '@strange-path/engine'
+import type { ContentRegistry, SpriteSheet, Vec2 } from '@sidebound/engine'
 import type { PickupItemEntity } from '../entities/item-entity'
 
 export class ItemFactory {

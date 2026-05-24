@@ -1,5 +1,5 @@
-import type { Rect } from '@strange-path/engine'
-import { rectsIntersect } from '@strange-path/engine'
+import type { Rect } from '@sidebound/engine'
+import { rectsIntersect } from '@sidebound/engine'
 import { getPickupItemRect, type PickupItemEntity } from '../entities/item-entity'
 
 export type EquipmentHolder = {

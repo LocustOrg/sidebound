@@ -4,7 +4,7 @@ import capeFrontUrl from '../assets/sprites/cape-front.png'
 import capeIconUrl from '../assets/sprites/cape-icon.png'
 import swordEquippedUrl from '../assets/sprites/sword-equipped.png'
 import swordIconUrl from '../assets/sprites/sword-icon.png'
-import type { ImageAssetDefinition } from '@strange-path/engine'
+import type { ImageAssetDefinition } from '@sidebound/engine'
 
 export const spriteAssetIds = {
     playerBase: 'characters/player/base',

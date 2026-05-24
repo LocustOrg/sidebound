@@ -2,7 +2,7 @@
 
 ## Intent
 
-Move `strange-path` from a browser-preview-first runtime to a Deno executable
+Move `sidebound` from a browser-preview-first runtime to a Deno executable
 runtime backed by SDL2. The browser preview may remain as a development adapter,
 but it must not define engine architecture.
 
@@ -261,12 +261,12 @@ Goal: create a minimal SDL window that can clear, present, and exit.
     "tasks": {
         "check": "deno check src/index.ts",
         "dev": "deno run --allow-read --allow-env --allow-ffi src/dev.ts",
-        "compile:mac": "deno compile --allow-read --allow-env --allow-ffi --include ../../packages/game/assets --output ../../dist/strange-path src/dev.ts",
-        "compile:win": "deno compile --target x86_64-pc-windows-msvc --allow-read --allow-env --allow-ffi --include ../../packages/game/assets --output ../../dist/strange-path.exe src/dev.ts"
+        "compile:mac": "deno compile --allow-read --allow-env --allow-ffi --include ../../packages/game/assets --output ../../dist/sidebound src/dev.ts",
+        "compile:win": "deno compile --target x86_64-pc-windows-msvc --allow-read --allow-env --allow-ffi --include ../../packages/game/assets --output ../../dist/sidebound.exe src/dev.ts"
     },
     "imports": {
         "@divy/sdl2": "jsr:@divy/sdl2@0.15.0",
-        "@strange-path/engine": "../engine/src/index.ts"
+        "@sidebound/engine": "../engine/src/index.ts"
     }
 }
 ```
@@ -431,12 +431,12 @@ Goal: `packages/game` runs directly with Deno + SDL.
     "tasks": {
         "check": "deno check src/main.ts",
         "dev": "deno run --allow-read --allow-env --allow-ffi src/main.ts",
-        "compile:mac": "deno compile --allow-read --allow-env --allow-ffi --include assets --output ../../dist/strange-path src/main.ts",
-        "compile:win": "deno compile --target x86_64-pc-windows-msvc --allow-read --allow-env --allow-ffi --include assets --output ../../dist/strange-path.exe src/main.ts"
+        "compile:mac": "deno compile --allow-read --allow-env --allow-ffi --include assets --output ../../dist/sidebound src/main.ts",
+        "compile:win": "deno compile --target x86_64-pc-windows-msvc --allow-read --allow-env --allow-ffi --include assets --output ../../dist/sidebound.exe src/main.ts"
     },
     "imports": {
-        "@strange-path/engine": "../engine/src/index.ts",
-        "@strange-path/platform-sdl": "../platform-sdl/src/index.ts"
+        "@sidebound/engine": "../engine/src/index.ts",
+        "@sidebound/platform-sdl": "../platform-sdl/src/index.ts"
     },
     "compile": {
         "include": ["assets"]
@@ -447,15 +447,15 @@ Goal: `packages/game` runs directly with Deno + SDL.
 2. Replace `packages/game/src/main.ts` with:
 
 ```ts
-import { createEngine } from '@strange-path/engine'
-import { createSdlRuntime } from '@strange-path/platform-sdl'
+import { createEngine } from '@sidebound/engine'
+import { createSdlRuntime } from '@sidebound/platform-sdl'
 
 import { game } from './game.ts'
 
 const runtime = await createSdlRuntime({
-    appId: 'strange-path.debug-harness',
+    appId: 'sidebound.debug-harness',
     window: {
-        title: 'Strange Path Debug Harness',
+        title: 'Sidebound Debug Harness',
         logicalSize: [450, 250],
         pixelScale: 'integer-fit',
         resizable: true,
@@ -521,7 +521,7 @@ Linux:
 1. Compile target:
 
 ```sh
-deno compile --target x86_64-unknown-linux-gnu --allow-read --allow-env --allow-ffi --include assets --output ../../dist/strange-path src/main.ts
+deno compile --target x86_64-unknown-linux-gnu --allow-read --allow-env --allow-ffi --include assets --output ../../dist/sidebound src/main.ts
 ```
 
 2. Document required system packages:

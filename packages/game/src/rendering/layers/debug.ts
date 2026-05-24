@@ -1,6 +1,6 @@
-import type { RenderLayer, RenderContext } from '@strange-path/engine'
-import type { Rect, Vec2 } from '@strange-path/engine'
-import type { RayHit } from '@strange-path/engine'
+import type { RenderLayer, RenderContext } from '@sidebound/engine'
+import type { Rect, Vec2 } from '@sidebound/engine'
+import type { RayHit } from '@sidebound/engine'
 
 type LightDebugEntry = { polygon: RayHit[]; origin: Vec2; radius: number }
 

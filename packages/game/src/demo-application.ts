@@ -14,7 +14,7 @@ import {
     RenderPipeline,
     SideViewCamera,
     updateFrameDiagnostics,
-} from '@strange-path/engine'
+} from '@sidebound/engine'
 import { requireElement } from './core/dom'
 import { DebugMinimap } from './debug/debug-minimap'
 import { DebugPanel } from './debug/debug-panel'

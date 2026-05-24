@@ -4,7 +4,7 @@
 
 This project is an engine project first.
 
-`@strange-path/engine` is the product being built. `packages/game` is only a
+`@sidebound/engine` is the product being built. `packages/game` is only a
 demo harness used to refactor, debug, profile, and prove engine behavior on a
 real runtime surface. It should not become the game yet.
 
@@ -15,10 +15,10 @@ whose main purpose is to make the demo feel like a finished game.
 
 ## Current State
 
-The engine package (`@strange-path/engine`) is currently a thin canvas loop. Most
+The engine package (`@sidebound/engine`) is currently a thin canvas loop. Most
 reusable systems still live in `engine-demo`, which is being removed.
 
-Reusable systems move into `@strange-path/engine`. Demo-specific wiring moves
+Reusable systems move into `@sidebound/engine`. Demo-specific wiring moves
 into `packages/game`, where it becomes the engine validation harness.
 
 The old demo proves these behaviors and should keep proving them during the
@@ -37,7 +37,7 @@ extraction:
 
 Every phase should produce three things:
 
-- Engine API: reusable code exported from `@strange-path/engine`.
+- Engine API: reusable code exported from `@sidebound/engine`.
 - Demo harness proof: a small scenario in `packages/game` that exercises the API.
 - Debug visibility: enough overlay, logging, counters, or controls to make the
   system refactorable.
@@ -49,7 +49,7 @@ small, artificial test rooms over authored gameplay.
 
 ## Phase 0 - Engine Core Extraction
 
-Move reusable systems from `engine-demo` into `@strange-path/engine`, then move
+Move reusable systems from `engine-demo` into `@sidebound/engine`, then move
 demo-specific setup into `packages/game`. Delete `engine-demo` after parity is
 restored.
 
@@ -76,7 +76,7 @@ restored.
   spatial query helpers.
 - Minimal diagnostics primitives used by the demo: frame counters, debug flags,
   and overlay hooks.
-- Clean public exports from `@strange-path/engine`.
+- Clean public exports from `@sidebound/engine`.
 
 ### Demo Harness Proof
 
@@ -114,7 +114,7 @@ Reference: https://deno.com/blog/deno-compile-executable-programs
 - All `document.createElement`, `new Image()`, `HTMLCanvasElement`,
   `HTMLImageElement`, and `CanvasRenderingContext2D` references removed from
   engine core and moved behind the platform adapter.
-- `@strange-path/platform-browser` adapter implementing `PlatformAdapter` for
+- `@sidebound/platform-browser` adapter implementing `PlatformAdapter` for
   browser-based development preview.
 - Deno workspace configuration (`deno.json`) replacing `package.json`,
   `pnpm-workspace.yaml`, and `pnpm-lock.yaml`.
@@ -515,7 +515,7 @@ engine, not as hidden engine work inside the game package.
 
 The engine is ready for real game iteration when a developer can:
 
-1. Start from a small `@strange-path/engine` setup.
+1. Start from a small `@sidebound/engine` setup.
 2. Define a side-view world with regions, locations, chunked maps, connections,
    spawn points, a player entity, physics, lighting, animation, and combat.
 3. Inspect timing, rendering, input, world travel, chunk loading, physics,

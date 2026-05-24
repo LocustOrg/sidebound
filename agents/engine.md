@@ -2,7 +2,7 @@
 
 ## Identity
 
-`strange-path` is an open-source 2D side-view pixel-art engine built for
+`sidebound` is an open-source 2D side-view pixel-art engine built for
 **ARPG, Roguelike, and Roguelite** games. The primary differentiator is
 **interaction physics** — entities pushing, riding, bouncing off, hooking to, and
 stacking on each other — rather than destruction physics or full rigid-body
@@ -21,12 +21,12 @@ Do not build top-down, three-quarter, isometric, or hybrid movement systems.
 
 ## Current Architecture
 
-| Package                | Role               | State                                                                                                                  |
-| ---------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `@strange-path/engine` | All engine systems | Thin today — only owns the old browser rAF loop and canvas scaling. Will absorb reusable systems behind platform APIs. |
-| `game`                 | Game demo          | Will use engine APIs to prove the feel. Currently minimal.                                                             |
+| Package             | Role               | State                                                                                                                  |
+| ------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `@sidebound/engine` | All engine systems | Thin today — only owns the old browser rAF loop and canvas scaling. Will absorb reusable systems behind platform APIs. |
+| `game`              | Game demo          | Will use engine APIs to prove the feel. Currently minimal.                                                             |
 
-`engine-demo` is being deleted. All reusable systems move into `@strange-path/engine`;
+`engine-demo` is being deleted. All reusable systems move into `@sidebound/engine`;
 game-specific demo code moves into `game`.
 
 ## Mandatory Systems

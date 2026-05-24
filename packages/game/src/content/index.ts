@@ -1,4 +1,4 @@
-import { ContentRegistry } from '@strange-path/engine'
+import { ContentRegistry } from '@sidebound/engine'
 import { spriteAssets } from './assets'
 import { playerCharacter } from './characters/player'
 import { ironSwordEquipment } from './equipment/iron-sword'

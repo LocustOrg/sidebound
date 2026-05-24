@@ -1,6 +1,6 @@
-import type { RenderLayer, RenderContext } from '@strange-path/engine'
+import type { RenderLayer, RenderContext } from '@sidebound/engine'
 import type { Level } from '../../world/types'
-import type { Rect } from '@strange-path/engine'
+import type { Rect } from '@sidebound/engine'
 
 export class BackgroundLayer implements RenderLayer {
     readonly order = 0

@@ -54,7 +54,7 @@ src/world/
 ## World Definition
 
 ```ts
-import { defineWorld } from '@strange-path/engine'
+import { defineWorld } from '@sidebound/engine'
 
 import { caveRegion } from './regions/cave.region'
 import { forestRegion } from './regions/forest.region'
@@ -73,7 +73,7 @@ export const worldMap = defineWorld({
 Regions are organization and defaults. They are not giant scenes.
 
 ```ts
-import { defineRegion } from '@strange-path/engine'
+import { defineRegion } from '@sidebound/engine'
 
 import { caveDepths } from '../locations/cave/depths.location'
 import { caveEntrance } from '../locations/cave/entrance.location'
@@ -95,7 +95,7 @@ export const caveRegion = defineRegion({
 A location owns its tilemap, spawn points, authored entities, and exits.
 
 ```ts
-import { chunkedTilemap, connection, defineLocation, edgeConnection, rect } from '@strange-path/engine'
+import { chunkedTilemap, connection, defineLocation, edgeConnection, rect } from '@sidebound/engine'
 
 export const caveEntrance = defineLocation({
     id: 'cave.entrance',
@@ -141,7 +141,7 @@ export const caveEntrance = defineLocation({
 The target location mirrors its own entry points:
 
 ```ts
-import { chunkedTilemap, defineLocation, edgeConnection, rect } from '@strange-path/engine'
+import { chunkedTilemap, defineLocation, edgeConnection, rect } from '@sidebound/engine'
 
 export const caveDepths = defineLocation({
     id: 'cave.depths',

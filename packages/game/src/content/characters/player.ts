@@ -1,4 +1,4 @@
-import { defineCharacter } from '@strange-path/engine'
+import { defineCharacter } from '@sidebound/engine'
 import { spriteAssetIds } from '../assets'
 
 export const playerCharacter = defineCharacter({

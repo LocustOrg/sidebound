@@ -1,4 +1,4 @@
-import type { Rect, RenderContext, RenderLayer } from '@strange-path/engine'
+import type { Rect, RenderContext, RenderLayer } from '@sidebound/engine'
 import type { Level, PlacedTile } from '../../world/types'
 
 export class TerrainLayer implements RenderLayer {

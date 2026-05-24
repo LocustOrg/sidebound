@@ -43,7 +43,7 @@ importers:
 
     packages/game:
         dependencies:
-            '@strange-path/engine':
+            '@sidebound/engine':
                 specifier: workspace:*
                 version: link:../engine
         devDependencies:

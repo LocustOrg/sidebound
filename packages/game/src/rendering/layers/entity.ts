@@ -1,6 +1,6 @@
-import type { RenderLayer, RenderContext } from '@strange-path/engine'
-import type { Rect } from '@strange-path/engine'
-import { clamp } from '@strange-path/engine'
+import type { RenderLayer, RenderContext } from '@sidebound/engine'
+import type { Rect } from '@sidebound/engine'
+import { clamp } from '@sidebound/engine'
 import type { Mob } from '../../entities/mob'
 import type { PickupItemEntity } from '../../entities/item-entity'
 

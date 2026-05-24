@@ -1,4 +1,4 @@
-import { defineEquipment } from '@strange-path/engine'
+import { defineEquipment } from '@sidebound/engine'
 import { spriteAssetIds } from '../assets'
 
 export const redCapeEquipment = defineEquipment({

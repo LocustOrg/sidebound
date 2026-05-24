@@ -4,7 +4,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
     resolve: {
         alias: {
-            '@strange-path/engine': fileURLToPath(new URL('../engine/src/index.ts', import.meta.url)),
+            '@sidebound/engine': fileURLToPath(new URL('../engine/src/index.ts', import.meta.url)),
         },
     },
 })

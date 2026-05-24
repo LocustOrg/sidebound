@@ -1,6 +1,6 @@
-# Strange Path Agent Notes
+# Sidebound Agent Notes
 
-These notes are the working memory for agents contributing to `strange-path`.
+These notes are the working memory for agents contributing to `sidebound`.
 Read them before making engine or demo changes.
 
 ## Files

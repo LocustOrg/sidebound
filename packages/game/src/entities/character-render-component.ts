@@ -1,4 +1,4 @@
-import { CharacterRenderer, type CharacterAppearance, type EquipmentLoadout, type RenderContext } from '@strange-path/engine'
+import { CharacterRenderer, type CharacterAppearance, type EquipmentLoadout, type RenderContext } from '@sidebound/engine'
 
 export type CharacterRenderFrame = {
     readonly context: RenderContext

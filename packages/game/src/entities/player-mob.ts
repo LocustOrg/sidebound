@@ -6,7 +6,7 @@ import {
     registerSpriteAnimationClips,
     type RenderContext,
     type Vec2,
-} from '@strange-path/engine'
+} from '@sidebound/engine'
 import type { SoundCue } from '../systems/audio'
 import { controls } from '../core/config'
 import { CharacterRenderComponent } from './character-render-component'

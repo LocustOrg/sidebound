@@ -2,7 +2,7 @@
 
 ## Intent
 
-This file describes the target developer experience for `@strange-path/engine`.
+This file describes the target developer experience for `@sidebound/engine`.
 It is not a statement of what exists today. It is the north-star API shape for
 the engine roadmap.
 
@@ -51,9 +51,9 @@ and debug UI.
 
 The same game code should be able to run through:
 
-- `@strange-path/platform-deno` for the intended runtime.
-- `@strange-path/platform-desktop` later for packaged desktop apps.
-- `@strange-path/platform-browser-preview` only as a development preview adapter,
+- `@sidebound/platform-deno` for the intended runtime.
+- `@sidebound/platform-desktop` later for packaged desktop apps.
+- `@sidebound/platform-browser-preview` only as a development preview adapter,
   not as the engine's native architecture.
 
 ## Design Principles
@@ -146,11 +146,11 @@ The game should run through Deno directly.
         "start": "deno run --allow-read --allow-env --allow-write --allow-ffi src/main.ts",
         "test": "deno test --allow-read --allow-env",
         "check": "deno check src/main.ts && deno test --allow-read --allow-env",
-        "compile:desktop": "deno compile --allow-read --allow-env --allow-write --allow-ffi --output dist/strange-path src/main.ts"
+        "compile:desktop": "deno compile --allow-read --allow-env --allow-write --allow-ffi --output dist/sidebound src/main.ts"
     },
     "imports": {
-        "@strange-path/engine": "../engine/src/index.ts",
-        "@strange-path/platform-deno": "../platform-deno/src/index.ts"
+        "@sidebound/engine": "../engine/src/index.ts",
+        "@sidebound/platform-deno": "../platform-deno/src/index.ts"
     }
 }
 ```
@@ -161,21 +161,21 @@ The entrypoint should stay tiny. It should choose a platform adapter, load the
 game definition, and start the engine.
 
 ```ts
-import { createEngine } from '@strange-path/engine'
-import { createDenoPlatform } from '@strange-path/platform-deno'
+import { createEngine } from '@sidebound/engine'
+import { createDenoPlatform } from '@sidebound/platform-deno'
 
 import { game } from './game'
 
 const platform = await createDenoPlatform({
-    appId: 'strange-path.debug-harness',
+    appId: 'sidebound.debug-harness',
     window: {
-        title: 'Strange Path Debug Harness',
+        title: 'Sidebound Debug Harness',
         size: [1280, 720],
         minSize: [768, 432],
         pixelScale: 'integer-fit',
     },
     storage: {
-        namespace: 'strange-path',
+        namespace: 'sidebound',
     },
 })
 
@@ -197,7 +197,7 @@ The game definition should connect global settings, assets, world structure, and
 debug scenes. It should not contain real gameplay code.
 
 ```ts
-import { defineGame } from '@strange-path/engine'
+import { defineGame } from '@sidebound/engine'
 
 import { assets } from './assets'
 import { content } from './content'
@@ -207,8 +207,8 @@ import { physicsLab } from './scenes/physics-lab.scene'
 import { worldMap } from './world/world'
 
 export const game = defineGame({
-    id: 'strange-path-debug-harness',
-    title: 'Strange Path Debug Harness',
+    id: 'sidebound-debug-harness',
+    title: 'Sidebound Debug Harness',
 
     runtime: {
         platform: 'deno',
@@ -258,7 +258,7 @@ equipment layers, item icons, sockets, and gameplay metadata live in content
 modules.
 
 ```ts
-import { defineAssets, image, sample, spriteSheet, tileAtlas } from '@strange-path/engine'
+import { defineAssets, image, sample, spriteSheet, tileAtlas } from '@sidebound/engine'
 
 export const assets = defineAssets({
     root: './assets',
@@ -330,7 +330,7 @@ Content registration should be explicit and centralized. Individual content
 modules should export definitions; the index decides what enters the game.
 
 ```ts
-import { defineContent } from '@strange-path/engine'
+import { defineContent } from '@sidebound/engine'
 
 import { redCape } from './equipment/red-cape.equipment'
 import { starterItems } from './items/starter-items'
@@ -351,7 +351,7 @@ default hitbox, and render offset. Gameplay entities can then reference the
 character id without repeating sprite details.
 
 ```ts
-import { defineCharacter } from '@strange-path/engine'
+import { defineCharacter } from '@sidebound/engine'
 
 export const playerCharacter = defineCharacter({
     id: 'player',
@@ -383,7 +383,7 @@ Equipment definitions should be additive. Adding a visual layer should not
 require edits to the player entity, renderer internals, or main entrypoint.
 
 ```ts
-import { defineEquipment } from '@strange-path/engine'
+import { defineEquipment } from '@sidebound/engine'
 
 export const redCape = defineEquipment({
     id: 'red-cape',
@@ -405,7 +405,7 @@ Mob visuals use the same content path as the player. A mob entity should not
 hardcode frame grids or clip timings.
 
 ```ts
-import { defineCharacter } from '@strange-path/engine'
+import { defineCharacter } from '@sidebound/engine'
 
 export const slimeCharacter = defineCharacter({
     id: 'slime',
@@ -430,7 +430,7 @@ Items own icon and pickup metadata plus typed effects. Systems apply effects to
 gameplay interfaces; visual animation code should not contain item rules.
 
 ```ts
-import { defineItem } from '@strange-path/engine'
+import { defineItem } from '@sidebound/engine'
 
 export const starterItems = [
     defineItem({
@@ -449,7 +449,7 @@ it. Collision, interaction, rendering, and default sounds should live in the
 tileset, not in location or debug-scene code.
 
 ```ts
-import { autotile4, defineTileset, oneWayTile, playSound, setTile, solidTile, tile } from '@strange-path/engine'
+import { autotile4, defineTileset, oneWayTile, playSound, setTile, solidTile, tile } from '@sidebound/engine'
 
 export const caveTileset = defineTileset({
     id: 'cave',
@@ -512,7 +512,7 @@ The world graph should be data, not custom scene code. It names the regions and
 the starting location/spawn.
 
 ```ts
-import { defineWorld } from '@strange-path/engine'
+import { defineWorld } from '@sidebound/engine'
 
 import { caveRegion } from './regions/cave.region'
 
@@ -530,7 +530,7 @@ export const worldMap = defineWorld({
 Regions group related locations and shared defaults.
 
 ```ts
-import { defineRegion } from '@strange-path/engine'
+import { defineRegion } from '@sidebound/engine'
 
 import { caveDepths } from '../locations/cave/depths.location'
 import { caveEntrance } from '../locations/cave/entrance.location'
@@ -551,7 +551,7 @@ export const caveRegion = defineRegion({
 Locations own spawn points and connections. Big tile data lives in chunk files.
 
 ```ts
-import { chunkedTilemap, connection, defineLocation, edgeConnection, rect } from '@strange-path/engine'
+import { chunkedTilemap, connection, defineLocation, edgeConnection, rect } from '@sidebound/engine'
 
 export const caveEntrance = defineLocation({
     id: 'cave.entrance',
@@ -593,7 +593,7 @@ export const caveEntrance = defineLocation({
 Target locations define their own spawn points and return connections.
 
 ```ts
-import { chunkedTilemap, defineLocation, edgeConnection, rect } from '@strange-path/engine'
+import { chunkedTilemap, defineLocation, edgeConnection, rect } from '@sidebound/engine'
 
 export const caveDepths = defineLocation({
     id: 'cave.depths',
@@ -641,7 +641,7 @@ import {
     playSound,
     stateChart,
     transform,
-} from '@strange-path/engine'
+} from '@sidebound/engine'
 
 export const player = defineActor({
     id: 'player',
@@ -738,7 +738,7 @@ normal component or system input. Mob hit feedback should be a first-class
 reaction, including sound.
 
 ```ts
-import { applyKnockbackFromHit, body, characterAppearance, collider, defineActor, flashSprite, hurtbox, mobBrain, playSound, stateChart, transform } from '@strange-path/engine'
+import { applyKnockbackFromHit, body, characterAppearance, collider, defineActor, flashSprite, hurtbox, mobBrain, playSound, stateChart, transform } from '@sidebound/engine'
 
 export const slime = defineActor({
     id: 'slime',
@@ -783,7 +783,7 @@ Props should be regular entities. If a crate uses interaction physics and hit
 feedback, it should not need custom gameplay code.
 
 ```ts
-import { body, collider, definePrefab, hurtbox, playSound, sprite, transform } from '@strange-path/engine'
+import { body, collider, definePrefab, hurtbox, playSound, sprite, transform } from '@sidebound/engine'
 
 export const crate = definePrefab({
     id: 'crate',
@@ -819,7 +819,7 @@ This debug scene intentionally uses an inline ASCII map. Production world layout
 should use the region/location/chunk model shown above.
 
 ```ts
-import { asciiTilemap, defineScene, vec } from '@strange-path/engine'
+import { asciiTilemap, defineScene, vec } from '@sidebound/engine'
 
 import { slime } from '../entities/mobs/slime.entity'
 import { player } from '../entities/player.entity'

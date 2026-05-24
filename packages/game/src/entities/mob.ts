@@ -1,6 +1,6 @@
-import type { Rect, Vec2, RenderContext } from '@strange-path/engine'
-import { approach, rectsIntersect } from '@strange-path/engine'
-import { Animator, type SpriteSheet } from '@strange-path/engine'
+import type { Rect, Vec2, RenderContext } from '@sidebound/engine'
+import { approach, rectsIntersect } from '@sidebound/engine'
+import { Animator, type SpriteSheet } from '@sidebound/engine'
 import { MobState, resolveMobState } from './mob-states'
 
 /**

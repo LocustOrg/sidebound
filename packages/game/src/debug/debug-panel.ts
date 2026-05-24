@@ -1,6 +1,6 @@
 import type { SoundButtonState } from '../systems/audio'
 import { requireElement } from '../core/dom'
-import { clamp, type Vec2 } from '@strange-path/engine'
+import { clamp, type Vec2 } from '@sidebound/engine'
 
 export type DebugWindowSettings = {
     panelLeft?: number
@@ -71,7 +71,7 @@ type SoundToggleHandler = () => Promise<SoundButtonState> | SoundButtonState
 
 const panelMargin = 12
 const panelKeyboardStep = 16
-const debugWindowStorageKey = 'strange-path.game.debug-window'
+const debugWindowStorageKey = 'sidebound.game.debug-window'
 
 function createDebugPanelElements(): DebugPanelElements {
     return {

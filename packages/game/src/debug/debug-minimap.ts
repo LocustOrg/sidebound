@@ -1,4 +1,4 @@
-import type { Rect, SunLight, Vec2 } from '@strange-path/engine'
+import type { Rect, SunLight, Vec2 } from '@sidebound/engine'
 import type { PlacedTile, TileMaterial } from '../world/types'
 
 export type MinimapConfig = {
