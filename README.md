@@ -2,6 +2,18 @@
 
 ![Sidebound engine logo](assets/brand/sidebound-engine-logo.png)
 
+## ALPHA ENGINE - EXPECT BREAKING CHANGES
+
+> Sidebound is in an early alpha stage. The engine API, package layout, runtime,
+> rendering layer, content model, and demo harness will change a lot.
+>
+> Most upcoming changes should be treated as breaking changes. One major planned
+> example is the transition from the current pnpm/Node workspace toward a
+> Deno-first engine and desktop runtime path.
+>
+> Use this repository as active engine research and development, not as a stable
+> production dependency yet.
+
 Sidebound is a code-first 2D side-view pixel-art engine for ARPG, roguelike,
 and roguelite games. The project is engine-first: `packages/engine` is the
 product, while `packages/game` is a demo and debugging harness used to validate
