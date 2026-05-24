@@ -57,10 +57,6 @@ export class CharacterRenderer {
             if (!equipmentId) continue
 
             const definition = appearance.equipment[equipmentId]
-            if (!definition) {
-                throw new Error(`Character '${appearance.definition.id}' cannot render unknown equipment '${equipmentId}'`)
-            }
-
             layers.push(...definition.visualLayers)
         }
 

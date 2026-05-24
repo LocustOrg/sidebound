@@ -14,6 +14,10 @@ export type LightSource = {
     isLightActive(): boolean
 }
 
+export type LightOccluder = Rect & {
+    readonly trapsLight?: boolean
+}
+
 export type RayHit = Vec2 & {
     angle: number
     distance: number
@@ -41,6 +45,13 @@ const rayAngleOffset = 0.00045
 const rayAnglePrecision = 100_000
 const radialRaySamples = 128
 const fullCircleRadians = Math.PI * 2
+const pointInsideRectEpsilon = 0.0001
+
+type OccluderSegmentEntry = {
+    readonly segment: Segment
+    readonly bounds: Rect
+    readonly trapsLight: boolean
+}
 
 function normalizeAngle(angle: number): number {
     return ((angle % fullCircleRadians) + fullCircleRadians) % fullCircleRadians
@@ -134,6 +145,44 @@ export function buildOccluderSegments(rects: readonly Rect[]): Segment[] {
     ])
 }
 
+function pointInsideRect(point: Vec2, rect: Rect): boolean {
+    return (
+        point.x >= rect.x - pointInsideRectEpsilon &&
+        point.x <= rect.x + rect.width + pointInsideRectEpsilon &&
+        point.y >= rect.y - pointInsideRectEpsilon &&
+        point.y <= rect.y + rect.height + pointInsideRectEpsilon
+    )
+}
+
+function buildOccluderSegmentEntries(occluders: readonly LightOccluder[]): OccluderSegmentEntry[] {
+    return occluders.flatMap((bounds) => {
+        const trapsLight = bounds.trapsLight ?? true
+
+        return [
+            {
+                segment: { x1: bounds.x, y1: bounds.y, x2: bounds.x + bounds.width, y2: bounds.y },
+                bounds,
+                trapsLight,
+            },
+            {
+                segment: { x1: bounds.x + bounds.width, y1: bounds.y, x2: bounds.x + bounds.width, y2: bounds.y + bounds.height },
+                bounds,
+                trapsLight,
+            },
+            {
+                segment: { x1: bounds.x + bounds.width, y1: bounds.y + bounds.height, x2: bounds.x, y2: bounds.y + bounds.height },
+                bounds,
+                trapsLight,
+            },
+            {
+                segment: { x1: bounds.x, y1: bounds.y + bounds.height, x2: bounds.x, y2: bounds.y },
+                bounds,
+                trapsLight,
+            },
+        ]
+    })
+}
+
 export class OccluderSegmentIndex {
     private readonly segments: readonly Segment[]
 
@@ -147,14 +196,20 @@ export class OccluderSegmentIndex {
 }
 
 export class RayLighting {
-    private readonly occluders: OccluderSegmentIndex
+    private readonly occluders: readonly OccluderSegmentEntry[]
 
-    constructor(solids: readonly Rect[]) {
-        this.occluders = new OccluderSegmentIndex(buildOccluderSegments(solids))
+    constructor(occluders: readonly LightOccluder[]) {
+        this.occluders = buildOccluderSegmentEntries(occluders)
     }
 
     cast(origin: Vec2, radius: number): LightCastResult {
-        const activeSegments = this.occluders.queryCircle(origin, radius)
+        const activeSegments = this.occluders.filter((entry) => {
+            if (!segmentTouchesCircle(entry.segment, origin, radius)) {
+                return false
+            }
+
+            return entry.trapsLight || !pointInsideRect(origin, entry.bounds)
+        })
         const angleKeys = new Set<number>()
         const angles: number[] = []
 
@@ -162,9 +217,9 @@ export class RayLighting {
             addRayAngle(angles, angleKeys, (index / radialRaySamples) * fullCircleRadians)
         }
 
-        for (const segment of activeSegments) {
-            addEndpointAngles(angles, angleKeys, origin, segment.x1, segment.y1)
-            addEndpointAngles(angles, angleKeys, origin, segment.x2, segment.y2)
+        for (const entry of activeSegments) {
+            addEndpointAngles(angles, angleKeys, origin, entry.segment.x1, entry.segment.y1)
+            addEndpointAngles(angles, angleKeys, origin, entry.segment.x2, entry.segment.y2)
         }
 
         const hits: RayHit[] = []
@@ -173,9 +228,9 @@ export class RayLighting {
         for (const angle of angles) {
             let closestHit: RayHit | undefined
 
-            for (const segment of activeSegments) {
+            for (const entry of activeSegments) {
                 rayChecks += 1
-                const hit = intersectRaySegment(origin, angle, segment)
+                const hit = intersectRaySegment(origin, angle, entry.segment)
 
                 if (!hit || hit.distance > radius) {
                     continue

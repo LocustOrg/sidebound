@@ -1,5 +1,4 @@
-import type { ContentRegistry, SpriteSheet } from '@strange-path/engine'
-import type { Vec2 } from '@strange-path/engine'
+import type { ContentRegistry, SpriteSheet, Vec2 } from '@strange-path/engine'
 import type { PickupItemEntity } from '../entities/item-entity'
 
 export class ItemFactory {
@@ -14,10 +13,6 @@ export class ItemFactory {
     createPickup(itemId: string, position: Vec2, id = itemId): PickupItemEntity {
         const definition = this.registry.getItem(itemId)
         const spriteSheet = this.iconSheets[definition.id]
-
-        if (!spriteSheet) {
-            throw new Error(`Missing loaded icon sheet for item '${definition.id}'`)
-        }
 
         return {
             id,

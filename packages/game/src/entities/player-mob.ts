@@ -1,4 +1,12 @@
-import { registerSpriteAnimationClips, type CharacterAppearance, type EquipmentLoadout, type PlayerInputFrame, type Rect, type Vec2, type RenderContext } from '@strange-path/engine'
+import {
+    type CharacterAppearance,
+    type EquipmentLoadout,
+    type PlayerInputFrame,
+    type Rect,
+    registerSpriteAnimationClips,
+    type RenderContext,
+    type Vec2,
+} from '@strange-path/engine'
 import type { SoundCue } from '../systems/audio'
 import { controls } from '../core/config'
 import { CharacterRenderComponent } from './character-render-component'
@@ -91,11 +99,6 @@ export class PlayerMob extends Mob {
 
     equip(equipmentId: string): void {
         const equipment = this.appearance.equipment[equipmentId]
-
-        if (!equipment) {
-            throw new Error(`Player cannot equip unknown equipment '${equipmentId}'`)
-        }
-
         this.equipped[equipment.slot] = equipmentId
     }
 

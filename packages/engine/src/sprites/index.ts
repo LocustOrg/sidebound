@@ -147,7 +147,7 @@ export function createProceduralSheet(
     surface.context.imageSmoothingEnabled = false
     draw(surface.context, frameWidth, frameHeight)
 
-    return new SpriteSheet({ image: surface.toImageSource(), frameWidth, frameHeight, columns, rows })
+    return new SpriteSheet({ image: surface.image, frameWidth, frameHeight, columns, rows })
 }
 
 export function createBitmapSheet(
@@ -175,11 +175,10 @@ export function createBitmapSheet(
 
         for (let y = 0; y < frame.length; y += 1) {
             const line = frame[y]
-            if (!line) continue
 
             for (let x = 0; x < line.length; x += 1) {
                 const colorIndex = line[x]
-                if (colorIndex === 0 || colorIndex === undefined) continue
+                if (colorIndex === 0) continue
 
                 const color = palette[colorIndex]
                 if (!color) continue
@@ -190,7 +189,7 @@ export function createBitmapSheet(
         }
     }
 
-    return new SpriteSheet({ image: surface.toImageSource(), frameWidth, frameHeight, columns, rows })
+    return new SpriteSheet({ image: surface.image, frameWidth, frameHeight, columns, rows })
 }
 
 export type AnimationClip = {

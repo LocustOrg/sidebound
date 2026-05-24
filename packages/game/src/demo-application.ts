@@ -2,17 +2,19 @@ import {
     AttachedLight,
     BrowserPlatformAdapter,
     createFrameDiagnostics,
+    type FrameDiagnostics,
     InputManager,
+    type KeyboardInputSource,
     LightingLayer,
+    type LightOccluder,
     PixelEngine,
     PointLight,
+    type PlatformAdapter,
     RayLighting,
+    type RenderContext,
     RenderPipeline,
     SideViewCamera,
     updateFrameDiagnostics,
-    type FrameDiagnostics,
-    type KeyboardInputSource,
-    type RenderContext,
 } from '@strange-path/engine'
 import { requireElement } from './core/dom'
 import { DebugMinimap } from './debug/debug-minimap'
@@ -35,10 +37,10 @@ type Diagnostics = FrameDiagnostics & {
 function createKeyboardInputSource(): KeyboardInputSource {
     return {
         addEventListener(type, listener) {
-            window.addEventListener(type, listener as unknown as EventListener)
+            window.addEventListener(type, listener)
         },
         removeEventListener(type, listener) {
-            window.removeEventListener(type, listener as unknown as EventListener)
+            window.removeEventListener(type, listener)
         },
     }
 }
@@ -69,15 +71,19 @@ export class DemoApplication {
     }
 
     static async create(): Promise<DemoApplication> {
-        return new DemoApplication(await loadDemoContent())
+        const platform = new BrowserPlatformAdapter()
+
+        return new DemoApplication(await loadDemoContent(platform), platform)
     }
 
-    private constructor(loadedContent: LoadedDemoContent) {
+    private constructor(loadedContent: LoadedDemoContent, platform: PlatformAdapter) {
         const canvas = requireElement<HTMLCanvasElement>('#game')
         const minimapCanvas = requireElement<HTMLCanvasElement>('#debug-minimap')
-        const allOccluders = [...world.solids, ...world.reflectors]
-        const lighting = new RayLighting(allOccluders)
-        const platform = new BrowserPlatformAdapter()
+        const lightOccluders: LightOccluder[] = [
+            ...world.solids,
+            ...world.reflectors.map((reflector) => ({ ...reflector, trapsLight: false })),
+        ]
+        const lighting = new RayLighting(lightOccluders)
 
         this.loadedContent = loadedContent
         this.debugPanel = new DebugPanel()

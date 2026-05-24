@@ -53,9 +53,7 @@ export class ItemSystem {
 
     private applyPickupEffect(item: PickupItemEntity): void {
         for (const effect of item.effects) {
-            if (effect.type === 'equip') {
-                this.context.equipmentHolder.equip(effect.equipment)
-            }
+            this.context.equipmentHolder.equip(effect.equipment)
         }
     }
 }

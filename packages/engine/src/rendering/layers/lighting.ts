@@ -149,7 +149,7 @@ export class LightingLayer implements RenderLayer {
             this.offCtx.fillRect(0, 0, this.viewportWidth, this.viewportHeight)
             context.save()
             context.translate(camera.x, camera.y)
-            context.drawImage(this.offscreen.toImageSource(), 0, 0)
+            context.drawImage(this.offscreen.image, 0, 0)
             context.restore()
             return
         }
@@ -176,7 +176,7 @@ export class LightingLayer implements RenderLayer {
 
         context.save()
         context.translate(camera.x, camera.y)
-        context.drawImage(this.offscreen.toImageSource(), 0, 0)
+        context.drawImage(this.offscreen.image, 0, 0)
         context.restore()
 
         context.save()

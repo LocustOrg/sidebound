@@ -10,6 +10,7 @@ Read them before making engine or demo changes.
 3. `sprite-content-architecture.md` — sprite assets, content registration, and character/item architecture.
 4. `world-location-architecture.md` — regions, locations, connections, chunked maps, travel, and validation.
 5. `north-star-engine.md` — the target Deno-first, code-first developer experience and ideal API shape.
+6. `deno-sdl-migration.md` — exact migration plan from browser preview to a Deno + SDL runtime.
 
 ## Default Behavior
 

@@ -1,6 +1,6 @@
-import { EngineLoop, type EngineClock } from './loop'
+import { type EngineClock, EngineLoop } from './loop'
 import type { ImageSource, RenderContext } from './render-context'
-import type { OffscreenSurface, PlatformAdapter, PlatformClock, PlatformImageAsset } from './adapter'
+import type { OffscreenSurface, PlatformAdapter } from './adapter'
 
 export type PixelLoop = {
     update(deltaSeconds: number): void
@@ -31,17 +31,13 @@ export type PixelCanvasSurface = {
 export type PixelEngineOptions = PixelCanvasSurfaceOptions & {
     readonly loop: PixelLoop
     readonly clock?: EngineClock
-    readonly platform?: PlatformAdapter
 }
 
-/**
- * Wraps a CanvasRenderingContext2D as a platform-agnostic RenderContext.
- */
-export function wrapCanvasContext(ctx: CanvasRenderingContext2D): RenderContext {
-    return ctx as unknown as RenderContext
+function toRenderContext(context: CanvasRenderingContext2D): RenderContext {
+    return context as unknown as RenderContext
 }
 
-export class BrowserAnimationFrameClock implements EngineClock, PlatformClock {
+export class BrowserAnimationFrameClock implements EngineClock {
     now(): number {
         return performance.now()
     }
@@ -55,22 +51,11 @@ export class BrowserAnimationFrameClock implements EngineClock, PlatformClock {
     }
 }
 
-/**
- * Browser implementation of the PlatformAdapter interface.
- */
 export class BrowserPlatformAdapter implements PlatformAdapter {
-    readonly clock: PlatformClock = new BrowserAnimationFrameClock()
-
-    loadImage(url: string): Promise<PlatformImageAsset> {
+    loadImage(url: string): Promise<ImageSource> {
         return new Promise((resolve, reject) => {
             const image = new Image()
-            image.onload = () =>
-                resolve({
-                    id: url,
-                    width: image.naturalWidth,
-                    height: image.naturalHeight,
-                    // The HTMLImageElement itself serves as the ImageSource for browser canvas
-                } as PlatformImageAsset & HTMLImageElement)
+            image.onload = () => resolve(image)
             image.onerror = () => reject(new Error(`Failed to load image from ${url}`))
             image.src = url
         })
@@ -87,15 +72,13 @@ export class BrowserPlatformAdapter implements PlatformAdapter {
         }
 
         ctx.imageSmoothingEnabled = false
-        const context = wrapCanvasContext(ctx)
+        const context = toRenderContext(ctx)
 
         return {
             context,
+            image: canvas,
             width,
             height,
-            toImageSource(): ImageSource {
-                return canvas as unknown as ImageSource
-            },
         }
     }
 }
@@ -140,7 +123,7 @@ export function createPixelCanvasSurface(options: PixelCanvasSurfaceOptions): Pi
     ctx.imageSmoothingEnabled = false
     ctx.setTransform(platformScale, 0, 0, platformScale, 0, 0)
 
-    const context = wrapCanvasContext(ctx)
+    const context = toRenderContext(ctx)
 
     return {
         canvas,

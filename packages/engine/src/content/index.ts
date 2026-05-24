@@ -229,7 +229,7 @@ export class ContentRegistry {
             validateSize(item.pickup.size, `item '${item.id}' pickup`, errors)
 
             for (const effect of item.effects) {
-                if (effect.type === 'equip' && !this.equipment.has(effect.equipment)) {
+                if (!this.equipment.has(effect.equipment)) {
                     errors.push(`item '${item.id}' references unknown equipment '${effect.equipment}'`)
                 }
             }

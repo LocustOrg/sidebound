@@ -1,11 +1,11 @@
 import {
     AssetStore,
-    BrowserPlatformAdapter,
     createLoadedEquipmentDefinition,
     loadSpriteSheet,
     type CharacterAppearance,
     type ContentRegistry,
     type ItemDefinition,
+    type PlatformAdapter,
     type SpriteSheet,
 } from '@strange-path/engine'
 import { demoContent, demoContentIds } from './index'
@@ -58,10 +58,9 @@ async function loadItemIconSheets(registry: ContentRegistry, assets: AssetStore)
     return Object.fromEntries(entries)
 }
 
-export async function loadDemoContent(): Promise<LoadedDemoContent> {
+export async function loadDemoContent(platform: PlatformAdapter): Promise<LoadedDemoContent> {
     demoContent.assertValid()
 
-    const platform = new BrowserPlatformAdapter()
     const assets = new AssetStore(platform)
     assets.registerImages(demoContent.getImageAssets())
     await assets.preloadAll()
