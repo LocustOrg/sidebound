@@ -24,7 +24,7 @@ export type DiagnosticsMetrics = {
     totalSuns: number
     mapSize: string
     solids: number
-    reflectors: number
+    occluders: number
 }
 
 type MemoryPerformance = Performance & {
@@ -57,7 +57,7 @@ type DebugPanelElements = {
     velocityMetric: HTMLElement
     mapSizeMetric: HTMLElement
     solidsMetric: HTMLElement
-    reflectorsMetric: HTMLElement
+    occludersMetric: HTMLElement
     sunsMetric: HTMLElement
 }
 
@@ -96,7 +96,7 @@ function createDebugPanelElements(): DebugPanelElements {
         velocityMetric: requireElement<HTMLElement>('#metric-velocity'),
         mapSizeMetric: requireElement<HTMLElement>('#metric-map-size'),
         solidsMetric: requireElement<HTMLElement>('#metric-solids'),
-        reflectorsMetric: requireElement<HTMLElement>('#metric-reflectors'),
+        occludersMetric: requireElement<HTMLElement>('#metric-occluders'),
         sunsMetric: requireElement<HTMLElement>('#metric-suns'),
     }
 }
@@ -236,7 +236,7 @@ export class DebugPanel {
         this.elements.velocityMetric.textContent = `${metrics.velocity.x.toFixed(1)}, ${metrics.velocity.y.toFixed(1)}`
         this.elements.mapSizeMetric.textContent = metrics.mapSize
         this.elements.solidsMetric.textContent = String(metrics.solids)
-        this.elements.reflectorsMetric.textContent = String(metrics.reflectors)
+        this.elements.occludersMetric.textContent = String(metrics.occluders)
         this.elements.sunsMetric.textContent = `${metrics.activeSuns} / ${metrics.totalSuns}`
     }
 

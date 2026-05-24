@@ -6,7 +6,6 @@ import {
     InputManager,
     type KeyboardInputSource,
     LightingLayer,
-    type LightOccluder,
     PixelEngine,
     PointLight,
     type PlatformAdapter,
@@ -79,11 +78,7 @@ export class DemoApplication {
     private constructor(loadedContent: LoadedDemoContent, platform: PlatformAdapter) {
         const canvas = requireElement<HTMLCanvasElement>('#game')
         const minimapCanvas = requireElement<HTMLCanvasElement>('#debug-minimap')
-        const lightOccluders: LightOccluder[] = [
-            ...world.solids,
-            ...world.reflectors.map((reflector) => ({ ...reflector, trapsLight: false })),
-        ]
-        const lighting = new RayLighting(lightOccluders)
+        const lighting = new RayLighting(world.lightOccluders)
 
         this.loadedContent = loadedContent
         this.debugPanel = new DebugPanel()
@@ -112,8 +107,7 @@ export class DemoApplication {
             canvas: minimapCanvas,
             worldWidth: world.width,
             worldHeight: world.height,
-            solids: world.solids,
-            reflectors: world.reflectors,
+            tiles: world.tiles,
             sunLights: this.sunLights.map((sun) => ({ x: sun.getPosition().x, y: sun.getPosition().y, radius: sun.getLightRadius() })),
         })
 
@@ -264,7 +258,7 @@ export class DemoApplication {
             totalSuns: this.lightingLayer.totalSunCount,
             mapSize: `${this.mapTilesW}×${this.mapTilesH}`,
             solids: world.solids.length,
-            reflectors: world.reflectors.length,
+            occluders: world.lightOccluders.length,
         })
         this.minimap.render({ x: this.player.x, y: this.player.y }, cameraRect)
     }
@@ -274,7 +268,7 @@ export class DemoApplication {
             `[Content] characters=${this.loadedContent.summary.characters.join(', ')} equipment=${this.loadedContent.summary.equipment.join(', ')} items=${this.loadedContent.summary.items.join(', ')} atlases=${this.loadedContent.summary.atlases.length}`,
         )
         console.log(
-            `[Map] ${this.mapTilesW}×${this.mapTilesH} tiles (${world.width}×${world.height}px), ${world.solids.length} solids, ${world.reflectors.length} reflectors, ${this.sunLights.length} suns`,
+            `[Map] ${this.mapTilesW}×${this.mapTilesH} tiles (${world.width}×${world.height}px), ${world.solids.length} solid rects, ${world.lightOccluders.length} light occluders, ${this.sunLights.length} suns`,
         )
     }
 }

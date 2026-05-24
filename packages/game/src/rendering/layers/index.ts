@@ -1,4 +1,3 @@
-export { LightingLayer, RenderPipeline, type RenderLayer } from '@strange-path/engine'
 export { BackgroundLayer } from './background'
 export { TerrainLayer } from './terrain'
 export { EntityLayer } from './entity'

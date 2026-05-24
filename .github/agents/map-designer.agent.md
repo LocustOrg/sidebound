@@ -58,4 +58,3 @@ Always read these files before working:
 2. `agents/world-rules.md`
 3. `agents/demo-scope.md`
 4. `agents/engine-capabilities.md`
-

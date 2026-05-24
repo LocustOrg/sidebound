@@ -1,48 +1,10 @@
-import type { Rect, Vec2 } from '@strange-path/engine'
+import type { PlacedTile as EnginePlacedTile, TileMapBuildResult } from '@strange-path/engine'
 
-export type Level = {
-    width: number
-    height: number
-    spawn: Vec2
-    solids: Rect[]
-    reflectors: Rect[]
-    sunY: number
-}
-
-export type TileArea = {
-    x: number
-    y: number
-    width: number
-    height: number
-}
+export type TileMaterial = 'wall' | 'glass' | 'decor' | 'grate'
+export type PlacedTile = EnginePlacedTile<TileMaterial>
+export type Level = TileMapBuildResult<TileMaterial>
 
 export type Viewport = {
     width: number
     height: number
-}
-
-export type TileKind = 'solid' | 'passable' | 'spawn' | 'decorative'
-
-export type RenderHint = {
-    color?: string
-    spriteId?: string
-    opacity?: number
-}
-
-export type PlacementResult = {
-    tag: string
-    position: Vec2
-}
-
-export type TilePlaceContext = {
-    x: number
-    y: number
-    tileSize: number
-}
-
-export type TileDefinition = {
-    glyph: string
-    kind: TileKind
-    renderHint?: RenderHint
-    onPlace?: (ctx: TilePlaceContext) => PlacementResult | undefined
 }

@@ -1,25 +1,24 @@
 import type { Rect, SunLight, Vec2 } from '@strange-path/engine'
+import type { PlacedTile, TileMaterial } from '../world/types'
 
 export type MinimapConfig = {
     canvas: HTMLCanvasElement
     worldWidth: number
     worldHeight: number
-    solids: Rect[]
-    reflectors: Rect[]
+    tiles: PlacedTile[]
     sunLights: SunLight[]
 }
 
 /**
  * Renders a minimap overview of the game world inside the debug panel.
- * Shows solids, reflectors, sun positions, player position, and camera viewport.
+ * Shows terrain materials, sun positions, player position, and camera viewport.
  */
 export class DebugMinimap {
     private readonly canvas: HTMLCanvasElement
     private readonly ctx: CanvasRenderingContext2D
     private readonly worldWidth: number
     private readonly worldHeight: number
-    private readonly solids: Rect[]
-    private readonly reflectors: Rect[]
+    private readonly tiles: PlacedTile[]
     private readonly sunLights: SunLight[]
     private readonly scaleX: number
     private readonly scaleY: number
@@ -32,14 +31,13 @@ export class DebugMinimap {
         this.ctx = this.canvas.getContext('2d')!
         this.worldWidth = config.worldWidth
         this.worldHeight = config.worldHeight
-        this.solids = config.solids
-        this.reflectors = config.reflectors
+        this.tiles = config.tiles
         this.sunLights = config.sunLights
 
         this.scaleX = this.canvas.width / this.worldWidth
         this.scaleY = this.canvas.height / this.worldHeight
 
-        // Pre-render static elements (solids, reflectors, suns) once
+        // Pre-render static elements (terrain and suns) once
         this.staticMap = document.createElement('canvas')
         this.staticMap.width = this.canvas.width
         this.staticMap.height = this.canvas.height
@@ -54,16 +52,9 @@ export class DebugMinimap {
         ctx.fillStyle = '#1a1628'
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
 
-        // Solids
-        ctx.fillStyle = '#5e5478'
-        for (const s of this.solids) {
-            ctx.fillRect(Math.floor(s.x * scaleX), Math.floor(s.y * scaleY), Math.max(1, Math.ceil(s.width * scaleX)), Math.max(1, Math.ceil(s.height * scaleY)))
-        }
-
-        // Reflectors
-        ctx.fillStyle = '#4ea8cc'
-        for (const r of this.reflectors) {
-            ctx.fillRect(Math.floor(r.x * scaleX), Math.floor(r.y * scaleY), Math.max(1, Math.ceil(r.width * scaleX)), Math.max(1, Math.ceil(r.height * scaleY)))
+        for (const tile of this.tiles) {
+            ctx.fillStyle = this.getTileColor(tile.material)
+            ctx.fillRect(Math.floor(tile.x * scaleX), Math.floor(tile.y * scaleY), Math.max(1, Math.ceil(tile.width * scaleX)), Math.max(1, Math.ceil(tile.height * scaleY)))
         }
 
         // Sun positions (small dots)
@@ -72,6 +63,19 @@ export class DebugMinimap {
             const sx = Math.floor(sun.x * scaleX)
             const sy = Math.floor(sun.y * scaleY)
             ctx.fillRect(sx - 1, sy - 1, 3, 3)
+        }
+    }
+
+    private getTileColor(material: TileMaterial): string {
+        switch (material) {
+            case 'wall':
+                return '#5e5478'
+            case 'glass':
+                return '#4ea8cc'
+            case 'decor':
+                return '#7bd0b1'
+            case 'grate':
+                return '#b29668'
         }
     }
 

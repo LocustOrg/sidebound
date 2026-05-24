@@ -1,4 +1,5 @@
 import { rect, type Rect, type Vec2 } from '../core'
+export * from './tilemap'
 
 export type WorldId = string
 export type RegionId = string
