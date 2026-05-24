@@ -1,3 +1,6 @@
+import type { ImageSource } from '../platform/render-context'
+import type { PlatformAdapter } from '../platform/adapter'
+
 export type AssetId = string
 
 export type AssetHandle<TKind extends string = string> = {
@@ -7,7 +10,7 @@ export type AssetHandle<TKind extends string = string> = {
 
 export type ImageAsset = {
     readonly id: AssetId
-    readonly image: HTMLImageElement
+    readonly image: ImageSource
     readonly width: number
     readonly height: number
 }
@@ -21,18 +24,14 @@ export function imageHandle(id: AssetId): AssetHandle<'image'> {
     return { id, kind: 'image' }
 }
 
-function loadImageAsset(definition: ImageAssetDefinition): Promise<ImageAsset> {
-    return new Promise((resolve, reject) => {
-        const image = new Image()
-        image.onload = () => resolve({ id: definition.id, image, width: image.naturalWidth, height: image.naturalHeight })
-        image.onerror = () => reject(new Error(`Failed to load image asset '${definition.id}' from ${definition.url}`))
-        image.src = definition.url
-    })
-}
-
 export class AssetStore {
     private readonly imageDefinitions = new Map<AssetId, ImageAssetDefinition>()
     private readonly images = new Map<AssetId, Promise<ImageAsset>>()
+    private readonly platform: PlatformAdapter
+
+    constructor(platform: PlatformAdapter) {
+        this.platform = platform
+    }
 
     registerImage(definition: ImageAssetDefinition): AssetHandle<'image'> {
         const existing = this.imageDefinitions.get(definition.id)
@@ -60,7 +59,12 @@ export class AssetStore {
 
         let image = this.images.get(id)
         if (!image) {
-            image = loadImageAsset(definition)
+            image = this.platform.loadImage(definition.url).then((loaded) => ({
+                id: definition.id,
+                image: loaded,
+                width: loaded.width,
+                height: loaded.height,
+            }))
             this.images.set(id, image)
         }
 

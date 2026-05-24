@@ -38,9 +38,9 @@ jobs:
           title: ${{ steps.branch.outputs.title }}
           body: |
             ## Summary
-
+            
             Auto-generated PR for branch `${{ steps.branch.outputs.branch }}`.
-
+            
             ---
             *Created automatically by GitHub Actions*
           draft: true
@@ -52,4 +52,3 @@ jobs:
         run: |
           echo "PR #${{ steps.create-pr.outputs.pull-request-number }} created/updated"
           echo "URL: ${{ steps.create-pr.outputs.pull-request-url }}"
-

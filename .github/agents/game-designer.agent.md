@@ -49,4 +49,3 @@ Always read these files before working:
 1. `agents/project-vision.md`
 2. `agents/world-rules.md`
 3. `agents/demo-scope.md`
-

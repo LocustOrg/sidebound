@@ -95,6 +95,52 @@ and minimap.
 
 ---
 
+## Phase 0.5 - Deno Migration and Platform Abstraction
+
+Move the project from pnpm/Node to Deno immediately after Phase 0 extraction.
+The engine must run as a desktop app through `deno compile` without requiring a
+browser. Browser preview remains available as a development adapter.
+
+Reference: https://deno.com/blog/deno-compile-executable-programs
+
+### Engine Deliverables
+
+- `RenderContext` interface that replaces direct `CanvasRenderingContext2D` usage
+  in `RenderLayer`, `RenderPipeline`, `SpriteSheet`, `CharacterRenderer`, and
+  diagnostics.
+- `PlatformAdapter` interface owning: window/surface creation, image loading,
+  offscreen buffer creation, clock/timers, input source, storage, and audio
+  backend.
+- All `document.createElement`, `new Image()`, `HTMLCanvasElement`,
+  `HTMLImageElement`, and `CanvasRenderingContext2D` references removed from
+  engine core and moved behind the platform adapter.
+- `@strange-path/platform-browser` adapter implementing `PlatformAdapter` for
+  browser-based development preview.
+- Deno workspace configuration (`deno.json`) replacing `package.json`,
+  `pnpm-workspace.yaml`, and `pnpm-lock.yaml`.
+- Import maps pointing engine and platform packages to local source.
+- `deno compile` target producing a standalone desktop executable.
+- Engine loop using platform-provided clock instead of `requestAnimationFrame`
+  directly.
+
+### Demo Harness Proof
+
+- `packages/game` still runs in browser through the browser platform adapter.
+- Engine core passes `deno check` with no browser type dependencies.
+- `deno compile` produces an executable (rendering backend may be stubbed
+  initially; windowing and loop must work).
+- No `document`, `window`, `HTMLCanvasElement`, `HTMLImageElement`,
+  `CanvasRenderingContext2D`, `requestAnimationFrame`, or `localStorage` in
+  engine core source files.
+
+### Done When
+
+The engine has zero direct browser API usage, `packages/game` still runs in
+browser preview, the project builds and typechecks through Deno, and
+`deno compile` produces a runnable binary.
+
+---
+
 ## Phase 1 - Time, Lifecycle, and Determinism
 
 Make simulation timing explicit before adding more systems.

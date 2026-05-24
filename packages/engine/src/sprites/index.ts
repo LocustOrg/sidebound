@@ -1,4 +1,6 @@
 import type { AssetId, AssetStore } from '../assets'
+import type { ImageSource, RenderContext } from '../platform/render-context'
+import type { PlatformAdapter } from '../platform/adapter'
 
 export type SpriteFrame = {
     readonly col: number
@@ -65,11 +67,11 @@ export class TextureAtlasLayout {
 }
 
 export type SpriteSheetOptions = TextureAtlasLayoutOptions & {
-    readonly image: CanvasImageSource
+    readonly image: ImageSource
 }
 
 export class SpriteSheet {
-    readonly image: CanvasImageSource
+    readonly image: ImageSource
     readonly layout: TextureAtlasLayout
 
     constructor(options: SpriteSheetOptions) {
@@ -97,12 +99,12 @@ export class SpriteSheet {
         return this.layout.frameCount
     }
 
-    drawFrame(context: CanvasRenderingContext2D, frameIndex: number, x: number, y: number, flipX = false): void {
+    drawFrame(context: RenderContext, frameIndex: number, x: number, y: number, flipX = false): void {
         const frame = this.layout.frameAt(frameIndex)
         this.drawFrameAt(context, frame.col, frame.row, x, y, flipX)
     }
 
-    drawFrameAt(context: CanvasRenderingContext2D, col: number, row: number, x: number, y: number, flipX = false): void {
+    drawFrameAt(context: RenderContext, col: number, row: number, x: number, y: number, flipX = false): void {
         const sx = col * this.frameWidth
         const sy = row * this.frameHeight
 
@@ -119,14 +121,7 @@ export class SpriteSheet {
     }
 }
 
-export async function loadSpriteSheet(
-    assetStore: AssetStore,
-    assetId: AssetId,
-    frameWidth: number,
-    frameHeight: number,
-    columns: number,
-    rows: number,
-): Promise<SpriteSheet> {
+export async function loadSpriteSheet(assetStore: AssetStore, assetId: AssetId, frameWidth: number, frameHeight: number, columns: number, rows: number): Promise<SpriteSheet> {
     const image = await assetStore.loadImage(assetId)
     const layout = new TextureAtlasLayout({ frameWidth, frameHeight, columns, rows })
 
@@ -140,28 +135,23 @@ export async function loadSpriteSheet(
 }
 
 export function createProceduralSheet(
+    platform: PlatformAdapter,
     frameWidth: number,
     frameHeight: number,
     columns: number,
     rows: number,
-    draw: (context: CanvasRenderingContext2D, frameWidth: number, frameHeight: number) => void,
+    draw: (context: RenderContext, frameWidth: number, frameHeight: number) => void,
 ): SpriteSheet {
-    const canvas = document.createElement('canvas')
-    canvas.width = columns * frameWidth
-    canvas.height = rows * frameHeight
-    const context = canvas.getContext('2d')
+    const surface = platform.createOffscreenSurface(columns * frameWidth, rows * frameHeight)
 
-    if (!context) {
-        throw new Error('Failed to create procedural sprite sheet canvas context')
-    }
+    surface.context.imageSmoothingEnabled = false
+    draw(surface.context, frameWidth, frameHeight)
 
-    context.imageSmoothingEnabled = false
-    draw(context, frameWidth, frameHeight)
-
-    return new SpriteSheet({ image: canvas, frameWidth, frameHeight, columns, rows })
+    return new SpriteSheet({ image: surface.image, frameWidth, frameHeight, columns, rows })
 }
 
 export function createBitmapSheet(
+    platform: PlatformAdapter,
     frameWidth: number,
     frameHeight: number,
     columns: number,
@@ -169,14 +159,8 @@ export function createBitmapSheet(
     palette: readonly string[],
     frames: readonly (readonly (readonly number[])[] | null)[],
 ): SpriteSheet {
-    const canvas = document.createElement('canvas')
-    canvas.width = columns * frameWidth
-    canvas.height = rows * frameHeight
-    const context = canvas.getContext('2d')
-
-    if (!context) {
-        throw new Error('Failed to create bitmap sprite sheet canvas context')
-    }
+    const surface = platform.createOffscreenSurface(columns * frameWidth, rows * frameHeight)
+    const context = surface.context
 
     context.imageSmoothingEnabled = false
 
@@ -191,11 +175,10 @@ export function createBitmapSheet(
 
         for (let y = 0; y < frame.length; y += 1) {
             const line = frame[y]
-            if (!line) continue
 
             for (let x = 0; x < line.length; x += 1) {
                 const colorIndex = line[x]
-                if (colorIndex === 0 || colorIndex === undefined) continue
+                if (colorIndex === 0) continue
 
                 const color = palette[colorIndex]
                 if (!color) continue
@@ -206,7 +189,7 @@ export function createBitmapSheet(
         }
     }
 
-    return new SpriteSheet({ image: canvas, frameWidth, frameHeight, columns, rows })
+    return new SpriteSheet({ image: surface.image, frameWidth, frameHeight, columns, rows })
 }
 
 export type AnimationClip = {
@@ -221,6 +204,43 @@ export type SpriteClipDefinition = {
     readonly fps?: number
     readonly frameDuration?: number
     readonly loop: boolean
+}
+
+export function resolveSpriteClipFrameDuration(clip: SpriteClipDefinition): number {
+    if (clip.frameDuration !== undefined) {
+        return clip.frameDuration
+    }
+
+    if (clip.fps !== undefined && clip.fps > 0) {
+        return 1 / clip.fps
+    }
+
+    throw new Error('Animation clip must define a positive fps or frameDuration')
+}
+
+export function createAnimationClip(name: string, clip: SpriteClipDefinition): AnimationClip {
+    return {
+        name,
+        frames: clip.frames,
+        frameDuration: resolveSpriteClipFrameDuration(clip),
+        loop: clip.loop,
+    }
+}
+
+export function createAnimationClips(clips: Readonly<Record<string, SpriteClipDefinition>>): AnimationClip[] {
+    return Object.entries(clips).map(([name, clip]) => createAnimationClip(name, clip))
+}
+
+export function registerSpriteAnimationClips(
+    animator: { addClip(clip: AnimationClip): unknown; play(name: string): void },
+    clips: Readonly<Record<string, SpriteClipDefinition>>,
+    initialClip = 'idle',
+): void {
+    for (const clip of createAnimationClips(clips)) {
+        animator.addClip(clip)
+    }
+
+    animator.play(initialClip)
 }
 
 export class SpriteAnimator {
@@ -307,10 +327,9 @@ export class SpriteAnimator {
         this.currentPlaybackRate = Number.isFinite(value) ? Math.max(0, value) : 1
     }
 
-    draw(context: CanvasRenderingContext2D, x: number, y: number, flipX = false): void {
+    draw(context: RenderContext, x: number, y: number, flipX = false): void {
         this.sheet.drawFrame(context, this.currentFrame, x, y, flipX)
     }
 }
 
 export { SpriteAnimator as Animator }
-

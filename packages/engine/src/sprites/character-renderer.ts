@@ -1,5 +1,6 @@
 import type { CharacterDefinition, EquipmentDefinition } from '../content'
 import { resolveEquipmentLayerOrder } from '../content'
+import type { RenderContext } from '../platform/render-context'
 import type { SpriteSheet } from './index'
 
 export type EquipmentLoadout = Partial<Record<string, string>>
@@ -21,7 +22,7 @@ export type CharacterAppearance = {
 }
 
 export type CharacterRenderOptions = {
-    readonly context: CanvasRenderingContext2D
+    readonly context: RenderContext
     readonly appearance: CharacterAppearance
     readonly equipment: EquipmentLoadout
     readonly frame: number
@@ -56,10 +57,6 @@ export class CharacterRenderer {
             if (!equipmentId) continue
 
             const definition = appearance.equipment[equipmentId]
-            if (!definition) {
-                throw new Error(`Character '${appearance.definition.id}' cannot render unknown equipment '${equipmentId}'`)
-            }
-
             layers.push(...definition.visualLayers)
         }
 

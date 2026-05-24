@@ -54,11 +54,10 @@ export type EquipmentDefinition<TId extends ContentId = ContentId, TSlot extends
     readonly layers: readonly EquipmentLayerDefinition[]
 }
 
-export type ItemEffectDefinition =
-    | {
-          readonly type: 'equip'
-          readonly equipment: ContentId
-      }
+export type ItemEffectDefinition = {
+    readonly type: 'equip'
+    readonly equipment: ContentId
+}
 
 export type ItemDefinition<TId extends ContentId = ContentId> = {
     readonly id: TId
@@ -230,7 +229,7 @@ export class ContentRegistry {
             validateSize(item.pickup.size, `item '${item.id}' pickup`, errors)
 
             for (const effect of item.effects) {
-                if (effect.type === 'equip' && !this.equipment.has(effect.equipment)) {
+                if (!this.equipment.has(effect.equipment)) {
                     errors.push(`item '${item.id}' references unknown equipment '${effect.equipment}'`)
                 }
             }
@@ -260,4 +259,3 @@ export function resolveEquipmentLayerOrder(order: EquipmentLayerOrder): number {
             return order
     }
 }
-

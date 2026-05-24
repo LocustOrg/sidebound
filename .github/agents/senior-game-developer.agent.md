@@ -51,4 +51,3 @@ Always read these files before working:
 3. `agents/rendering-ui.md`
 4. `agents/debug-performance.md`
 5. `agents/implementation-rules.md`
-
