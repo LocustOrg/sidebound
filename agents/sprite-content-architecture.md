@@ -6,7 +6,9 @@ systems consume loaded appearances and resolved asset handles.
 
 ## Principles
 
-- Keep sprite rendering canvas-first and pixel-crisp.
+- Keep sprite rendering platform-renderer-first and pixel-crisp.
+- Keep game/content code free of direct browser APIs; renderer-specific handles
+  belong behind the Deno platform adapter and engine asset layer.
 - Keep simulation state separate from render state.
 - Resolve content, assets, frame layouts, and equipment layers during startup.
 - Avoid stringly-typed lookups inside hot render loops.
@@ -51,7 +53,7 @@ Game packages own content modules and gameplay systems:
 ## Borrowed Patterns
 
 - Bevy separates image assets, texture atlas layouts, sprite components, and
-  animation systems. Follow the same separation: image URL, frame layout,
+  animation systems. Follow the same separation: asset id/path, frame layout,
   animation state, and draw call are distinct concepts.
 - tModLoader makes content registration explicit and local to each content type.
   Follow that model with one small module per character, item, or equipment piece.

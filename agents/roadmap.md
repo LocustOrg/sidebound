@@ -5,8 +5,8 @@
 This project is an engine project first.
 
 `@strange-path/engine` is the product being built. `packages/game` is only a
-demo harness used to refactor, debug, profile, and prove engine behavior in a
-real browser canvas. It should not become the game yet.
+demo harness used to refactor, debug, profile, and prove engine behavior on a
+real runtime surface. It should not become the game yet.
 
 The demo harness may contain placeholder art, temporary rooms, test actors, and
 debug controls, but only to validate engine APIs. Avoid lore, progression,
@@ -29,7 +29,7 @@ extraction:
 - AABB collision against static rectangles.
 - Smooth side-view camera follow.
 - Ray-based lighting.
-- Layered canvas rendering.
+- Layered rendering.
 - Sprite animation.
 - Debug panel and minimap.
 
@@ -57,12 +57,18 @@ restored.
 
 - `Vec2`, `Rect`, `Segment`, and numeric helpers (`clamp`, `approach`,
   `smoothDamp`).
-- Canvas bootstrap helpers: canvas lookup, resize handling, pixel-art scaling,
-  and device-pixel-ratio support.
-- `GameLoop` or equivalent rAF wrapper with `start()`, `stop()`, and
+- Renderer/platform bootstrap helpers: surface creation, resize handling,
+  pixel-art scaling, and platform-scale support.
+- `EngineLoop` or equivalent platform-clock wrapper with `start()`, `stop()`, and
   `dispose()`.
 - `RenderPipeline` and `RenderLayer` interface.
 - Sprite primitives: `SpriteSheet`, `AnimationClip`, `Animator`.
+- Content primitives from `sprite-content-architecture.md`: `AssetStore`,
+  `TextureAtlasLayout`, `ContentRegistry`, `defineCharacter`,
+  `defineEquipment`, and `defineItem`.
+- World primitives from `world-location-architecture.md`: `defineWorld`,
+  `defineRegion`, `defineLocation`, `connection`, `edgeConnection`, and
+  `chunkedTilemap`.
 - `SideViewCamera` with bounds, smoothing, integer pixel snapping, and viewport
   conversion helpers.
 - `InputManager` for keyboard input and a typed `PlayerInputFrame`.
@@ -76,8 +82,8 @@ restored.
 
 - `packages/game` imports engine systems instead of copying or redefining them.
 - The old demo behavior still works after extraction.
-- Player sprite, demo map, debug panel DOM wiring, and temporary assets live in
-  `packages/game`.
+- Player sprite, demo map, debug panel platform wiring, and temporary assets live
+  in `packages/game`.
 - `engine-demo` package, workspace entry, scripts, and stale dist output are
   removed.
 
@@ -128,16 +134,21 @@ Turn rendering from demo code into a reusable side-view rendering module.
 
 - Stable layer order: background, terrain, entities, lighting, particles/FX, UI,
   debug.
-- `RenderContext` with canvas size, camera transform, elapsed time, and debug
+- `RenderContext` with surface size, camera transform, elapsed time, and debug
   flags.
-- Offscreen canvas helpers for cached terrain and light buffers.
+- Offscreen render-target helpers for cached terrain and light buffers.
 - Dirty tracking hooks for layers that can avoid full redraws.
 - Pixel-perfect scaling and camera snapping rules.
-- Asset loader for images and JSON sprite manifests.
+- Asset loader for images, sprite sheets, texture atlas layouts, sounds, and JSON
+  sprite manifests.
+- Startup validation for duplicate content ids, missing asset references, invalid
+  frame indices, unknown equipment references, and incompatible atlas sizes.
+- Startup validation for duplicate region/location ids, broken connection
+  targets, missing spawn points, invalid chunk paths, and unknown tile ids.
 - Camera APIs for follow target, look-ahead, deadzone, bounds, shake, and world
   to screen conversion.
 - Basic render stats: draw calls where measurable, layer timings, cache hits,
-  canvas dimensions, and DPR.
+  surface dimensions, and pixel scale.
 
 ### Demo Harness Proof
 
@@ -145,7 +156,8 @@ Turn rendering from demo code into a reusable side-view rendering module.
 - Camera can follow the player, clamp to room bounds, lead horizontally, and
   shake from a test button.
 - Terrain can be cached offscreen and invalidated from debug controls.
-- Sprite manifests load at runtime instead of being hardcoded in the demo.
+- Sprite/content definitions load through `ContentRegistry` instead of being
+  hardcoded in the demo.
 
 ### Done When
 
@@ -179,7 +191,7 @@ Separate physical inputs from gameplay intent.
 
 ### Done When
 
-Player control uses action frames from the engine, not direct browser events, and
+Player control uses action frames from the engine, not direct platform events, and
 input can be recorded, inspected, and replayed.
 
 ---
@@ -196,7 +208,8 @@ Introduce a lightweight world model before adding deeper physics and combat.
 - Component storage for common components without committing to a heavy ECS
   framework.
 - Core components: `Transform`, `PhysicsBody`, `Sprite`, `AnimatorState`,
-  `Controller`, `LightEmitter`, and `DebugLabel`.
+  `CharacterAppearance`, `EquipmentHolder`, `Controller`, `LightEmitter`, and
+  `DebugLabel`.
 - `System` interface with fixed update ordering.
 - Entity pooling hooks for future hot-path optimization.
 - Serialization-friendly entity definitions for demo fixtures.
@@ -204,7 +217,8 @@ Introduce a lightweight world model before adding deeper physics and combat.
 
 ### Demo Harness Proof
 
-- Player becomes an entity with transform, physics, sprite, and controller data.
+- Player becomes an entity with transform, physics, character appearance, and
+  controller data.
 - Test blocks, crates, lights, and debug markers are spawned from data.
 - Entity render layer draws from world queries instead of hardcoded arrays.
 - Debug panel can select an entity and inspect its component state.
@@ -288,7 +302,44 @@ enough to debug geometry mistakes.
 
 ---
 
-## Phase 7 - Animation, State, and Feel
+## Phase 7 - World Locations, Travel, and Chunked Maps
+
+Make large worlds clean by splitting them into regions, locations, connections,
+and chunks.
+
+### Engine Deliverables
+
+- `defineWorld`, `defineRegion`, and `defineLocation`.
+- `connection()` and `edgeConnection()` helpers.
+- Connection kinds: edge, door, ladder, portal, fall, debug.
+- Spawn point registry per location.
+- `TravelSystem` with `world.travel.to()` and `world.travel.follow()`.
+- Transition hooks: none, fade, pan, and custom transition.
+- `chunkedTilemap()` with chunk size, preload radius, unload radius, static
+  render caching, collision caching, and lighting occluder caching.
+- Validation for regions, locations, spawn points, connection targets, reciprocal
+  links when configured, chunk paths, tile ids, and trigger bounds.
+- Persistence hooks for visited locations, unlocked connections, flags, and
+  persistent entity state overrides.
+- Debug overlay for location bounds, spawn points, connection triggers, target
+  labels, loaded chunks, and travel state.
+
+### Demo Harness Proof
+
+- Two or three artificial locations are connected by edge and door connections.
+- Player can travel between locations and land at the correct spawn point.
+- One location uses chunked map data larger than the viewport.
+- Debug overlay shows loaded chunks, connection triggers, and current location.
+- Validation catches one intentionally broken debug-only connection in a test.
+
+### Done When
+
+The demo can move between locations through engine-owned travel, and a large
+chunked map stays readable because tile data lives outside gameplay code.
+
+---
+
+## Phase 8 - Animation, State, and Feel
 
 Make gameplay timing data explicit and separate it from visual animation.
 
@@ -296,6 +347,8 @@ Make gameplay timing data explicit and separate it from visual animation.
 
 - Animation graph or state machine primitives for side-view actors.
 - Data-driven clips with frame duration, loop policy, tags, and events.
+- Character appearance rendering with layered equipment, sockets, and resolved
+  atlas handles.
 - Gameplay event timeline independent of rendered sprite frames.
 - Actor controller helpers for acceleration, deceleration, coyote time, jump
   buffer, variable jump height, and wall/platform policies.
@@ -318,7 +371,7 @@ and state/timing decisions are inspectable frame by frame.
 
 ---
 
-## Phase 8 - Combat Primitives
+## Phase 9 - Combat Primitives
 
 Add combat as an engine framework, not as final game design.
 
@@ -352,7 +405,7 @@ framework without becoming a real combat game.
 
 ---
 
-## Phase 9 - Engine DX, Testing, and Tooling
+## Phase 10 - Engine DX, Testing, and Tooling
 
 Make the engine easier to use, refactor, and trust.
 
@@ -362,30 +415,31 @@ Make the engine easier to use, refactor, and trust.
   camera, assets, and debug options from one config object.
 - Stable package exports grouped by subsystem.
 - Headless tests for math, fixed timestep, input buffering, entity queries,
-  collision, combat overlap, and serialization.
-- Browser smoke test for the demo harness.
-- Debug settings persisted in localStorage.
+  collision, world validation, travel, combat overlap, and serialization.
+- Deno/platform smoke test for the demo harness.
+- Debug settings persisted through platform storage.
 - Minimal profiling helpers for subsystem timing and allocation-sensitive paths.
 - Error boundaries or fatal-error reporting for demo boot failures.
-- Starter scene/data format documented by example.
+- Starter world/location/data format documented by example.
 - Public API notes for each subsystem as it stabilizes.
 
 ### Demo Harness Proof
 
 - Demo boot code is small and mostly declarative.
-- A new test scene can be added without changing engine internals.
+- A new test location or debug scene can be added without changing engine
+  internals.
 - CI can typecheck, lint, run headless tests, and build the demo.
-- Debug panel can reset the scene, switch test rooms, and export/import a small
-  diagnostic snapshot.
+- Debug panel can reset the current test location or debug scene, switch test
+  rooms, and export/import a small diagnostic snapshot.
 
 ### Done When
 
 A new demo can be bootstrapped quickly with engine APIs, and refactoring engine
-internals is protected by tests and browser smoke coverage.
+internals is protected by tests and platform smoke coverage.
 
 ---
 
-## Phase 10 - Deferred Game Layer
+## Phase 11 - Deferred Game Layer
 
 Only start real game iteration after the engine has passed the earlier phases.
 This phase is intentionally not the current focus.
@@ -393,7 +447,8 @@ This phase is intentionally not the current focus.
 Candidate game-layer features:
 
 - Tilemap authoring and auto-tiling using engine collision and rendering APIs.
-- Room/chunk transitions and persistent world flags.
+- Production room/chunk transitions and persistent world flags built on the
+  engine location graph.
 - Enemy AI built on engine FSM, physics, and combat primitives.
 - Boss framework with arenas, phase changes, telegraphs, and pattern selection.
 - Inventory, progression, pickups, economy, or loot.
@@ -415,10 +470,10 @@ engine, not as hidden engine work inside the game package.
 The engine is ready for real game iteration when a developer can:
 
 1. Start from a small `@strange-path/engine` setup.
-2. Define a side-view scene, spawn a player entity, and add physics, lighting,
-   animation, and combat components.
-3. Inspect timing, rendering, input, physics, lighting, entities, and combat from
-   debug tools.
+2. Define a side-view world with regions, locations, chunked maps, connections,
+   spawn points, a player entity, physics, lighting, animation, and combat.
+3. Inspect timing, rendering, input, world travel, chunk loading, physics,
+   lighting, entities, and combat from debug tools.
 4. Build a playable ARPG or roguelite prototype within an afternoon using engine
    APIs instead of copying demo code.
 
