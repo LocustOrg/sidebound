@@ -63,6 +63,21 @@ game-specific demo code moves into `game`.
 - System interface: `update(entities, dt)`.
 - No heavy ECS framework — tagged pool now, typed arrays for hot systems later.
 
+### World Structure
+
+- World structure follows `world-location-architecture.md`.
+- `defineWorld` owns regions and the starting location/spawn.
+- `defineRegion` groups related locations and shared defaults.
+- `defineLocation` owns bounds, spawn points, chunked tilemaps, authored
+  entities, and connections.
+- Connections are typed graph edges: edge, door, ladder, portal, fall, debug.
+- Chunked tilemaps keep large maps in data files and stream/render/cache near the
+  camera.
+- Engine validation catches broken location ids, spawn ids, connection targets,
+  chunk paths, tile ids, and invalid spawn/trigger placement before first frame.
+- Travel is engine-owned; player/controller code should not manually load
+  locations.
+
 ### Interaction Physics
 
 - `PhysicsBody`: position, velocity, mass, restitution, friction, collision layers.

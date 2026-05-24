@@ -15,11 +15,14 @@ Sprite and item content architecture details live in
 `sprite-content-architecture.md`; this file shows how that model should feel
 from game code.
 
+World structure details live in `world-location-architecture.md`; this file uses
+the same region/location/chunk model in the pseudo project.
+
 The ideal workflow is:
 
 1. Define assets once.
-2. Register characters, equipment, items, tiles, actors, sounds, and scenes as
-   TypeScript modules.
+2. Register characters, equipment, items, tiles, actors, sounds, world
+   locations, and debug scenes as TypeScript modules.
 3. Start the engine with a single Deno-run entrypoint.
 4. Use debug tools to inspect the runtime.
 
@@ -60,14 +63,14 @@ The same game code should be able to run through:
 - Plain TypeScript modules over custom file formats, except where external
   assets already have strong formats (`.png`, `.json`, `.tmj`, `.ogg`, etc.).
 - One obvious path for common tasks: add character sprite, add equipment, add
-  item, add sound, add tile, add player, add mob, add scene.
+  item, add sound, add tile, add player, add mob, add location, add debug scene.
 - Engine systems are reusable; game files define content and behavior.
 - Favor declarative definitions for content and imperative code for unique game
   logic.
 - Prefer typed config objects and small factories over inheritance-heavy APIs.
 - Keep platform bindings at the edge.
 - Make debug rooms cheap to write.
-- Make production scenes data-driven enough to refactor safely.
+- Make production locations data-driven enough to refactor safely.
 - Validate content at startup with clear errors.
 
 ## Ideal Project Shape
@@ -102,6 +105,19 @@ packages/game/
         starter-items.ts
     tilesets/
       cave.tileset.ts
+    world/
+      world.ts
+      regions/
+        cave.region.ts
+      locations/
+        cave/
+          entrance.location.ts
+          depths.location.ts
+      maps/
+        cave/
+          entrance/
+            terrain.layer.json
+            collision.layer.json
     scenes/
       debug-room.scene.ts
       physics-lab.scene.ts
@@ -177,8 +193,8 @@ await engine.run()
 
 ### `src/game.ts`
 
-The game definition should connect global settings, assets, and scenes. It
-should not contain real gameplay code.
+The game definition should connect global settings, assets, world structure, and
+debug scenes. It should not contain real gameplay code.
 
 ```ts
 import { defineGame } from '@strange-path/engine'
@@ -188,6 +204,7 @@ import { content } from './content'
 import { debugRoom } from './scenes/debug-room.scene'
 import { lightingLab } from './scenes/lighting-lab.scene'
 import { physicsLab } from './scenes/physics-lab.scene'
+import { worldMap } from './world/world'
 
 export const game = defineGame({
     id: 'strange-path-debug-harness',
@@ -206,6 +223,7 @@ export const game = defineGame({
     world: {
         gravity: [0, 1400],
         units: 'pixels',
+        map: worldMap,
     },
 
     renderer: {
@@ -223,8 +241,12 @@ export const game = defineGame({
         },
     },
 
-    scenes: [debugRoom, physicsLab, lightingLab],
-    startScene: 'debug-room',
+    debugScenes: [debugRoom, physicsLab, lightingLab],
+    start: {
+        kind: 'world',
+        location: 'cave.entrance',
+        spawn: 'start',
+    },
 })
 ```
 
@@ -424,7 +446,7 @@ export const starterItems = [
 
 Adding a tile should mean giving a frame a name and attaching engine behavior to
 it. Collision, interaction, rendering, and default sounds should live in the
-tileset, not in scene code.
+tileset, not in location or debug-scene code.
 
 ```ts
 import { autotile4, defineTileset, oneWayTile, playSound, setTile, solidTile, tile } from '@strange-path/engine'
@@ -481,6 +503,121 @@ export const caveTileset = defineTileset({
             },
         }),
     },
+})
+```
+
+### `src/world/world.ts`
+
+The world graph should be data, not custom scene code. It names the regions and
+the starting location/spawn.
+
+```ts
+import { defineWorld } from '@strange-path/engine'
+
+import { caveRegion } from './regions/cave.region'
+
+export const worldMap = defineWorld({
+    regions: [caveRegion],
+    start: {
+        location: 'cave.entrance',
+        spawn: 'start',
+    },
+})
+```
+
+### `src/world/regions/cave.region.ts`
+
+Regions group related locations and shared defaults.
+
+```ts
+import { defineRegion } from '@strange-path/engine'
+
+import { caveDepths } from '../locations/cave/depths.location'
+import { caveEntrance } from '../locations/cave/entrance.location'
+
+export const caveRegion = defineRegion({
+    id: 'cave',
+    tilesets: ['cave'],
+    defaults: {
+        ambientLight: '#101014',
+        music: 'caveLoop',
+    },
+    locations: [caveEntrance, caveDepths],
+})
+```
+
+### `src/world/locations/cave/entrance.location.ts`
+
+Locations own spawn points and connections. Big tile data lives in chunk files.
+
+```ts
+import { chunkedTilemap, connection, defineLocation, edgeConnection, rect } from '@strange-path/engine'
+
+export const caveEntrance = defineLocation({
+    id: 'cave.entrance',
+    region: 'cave',
+    bounds: rect([0, 0, 1280, 360]),
+
+    tilemap: chunkedTilemap('world/maps/cave/entrance', {
+        chunkSize: [32, 32],
+        preloadRadius: 2,
+        unloadRadius: 4,
+    }),
+
+    spawnPoints: {
+        start: [80, 240],
+        fromDepths: [1180, 240],
+    },
+
+    connections: [
+        edgeConnection('right', {
+            id: 'to-depths-edge',
+            to: { location: 'cave.depths', spawn: 'fromEntrance' },
+            transition: 'pan',
+        }),
+
+        connection({
+            id: 'to-depths-door',
+            kind: 'door',
+            trigger: rect([1210, 190, 32, 70]),
+            action: 'interact',
+            to: { location: 'cave.depths', spawn: 'fromEntranceDoor' },
+            transition: 'fade',
+        }),
+    ],
+})
+```
+
+### `src/world/locations/cave/depths.location.ts`
+
+Target locations define their own spawn points and return connections.
+
+```ts
+import { chunkedTilemap, defineLocation, edgeConnection, rect } from '@strange-path/engine'
+
+export const caveDepths = defineLocation({
+    id: 'cave.depths',
+    region: 'cave',
+    bounds: rect([0, 0, 1600, 420]),
+
+    tilemap: chunkedTilemap('world/maps/cave/depths', {
+        chunkSize: [32, 32],
+        preloadRadius: 2,
+        unloadRadius: 4,
+    }),
+
+    spawnPoints: {
+        fromEntrance: [64, 240],
+        fromEntranceDoor: [96, 240],
+    },
+
+    connections: [
+        edgeConnection('left', {
+            id: 'to-entrance-edge',
+            to: { location: 'cave.entrance', spawn: 'fromDepths' },
+            transition: 'pan',
+        }),
+    ],
 })
 ```
 
@@ -678,6 +815,9 @@ Scenes should be easy to read. Small debug rooms can use ASCII maps. Larger
 production maps can use imported data later, but the scene API should feel the
 same.
 
+This debug scene intentionally uses an inline ASCII map. Production world layout
+should use the region/location/chunk model shown above.
+
 ```ts
 import { asciiTilemap, defineScene, vec } from '@strange-path/engine'
 
@@ -743,6 +883,7 @@ export const debugRoom = defineScene({
                 spawnCrate: () => world.spawn(crate, { at: world.pointer.worldPosition() }),
                 knockPlayer: () => world.physics.applyImpulse(hero, vec(240, -220)),
                 playTileSound: () => world.audio.play('tileInteract', { at: hero }),
+                travelDepths: () => world.travel.to('cave.depths', { spawn: 'fromEntrance' }),
             },
         })
     },
@@ -812,10 +953,29 @@ export const caveTileset = defineTileset({
 })
 ```
 
-### Place a tile in a scene
+### Place a tile in the loaded location
 
 ```ts
 world.tilemap('terrain').setTile({ x: 12, y: 8 }, 'gemSwitch')
+```
+
+### Connect two locations
+
+```ts
+edgeConnection('right', {
+    id: 'to-depths',
+    to: { location: 'cave.depths', spawn: 'fromEntrance' },
+    transition: 'pan',
+})
+```
+
+### Travel from debug code
+
+```ts
+world.travel.to('cave.depths', {
+    spawn: 'fromEntrance',
+    transition: 'fade',
+})
 ```
 
 ### Add a mob that plays sound on hit
@@ -889,13 +1049,16 @@ copy wholesale.
 
 - Keep the entrypoint tiny and boring.
 - Put all content in normal source files or asset folders.
-- Define assets by stable ids, then reference ids from scenes, entities, tiles,
-  sounds, and reactions.
+- Define assets by stable ids, then reference ids from locations, debug scenes,
+  entities, tiles, sounds, and reactions.
 - Define characters, equipment, and items through content modules that register
   at startup and validate before rendering.
 - Resolve content into runtime handles once; avoid stringly-typed lookups inside
   hot loops.
-- Use scenes as isolated modules with clear lifecycle.
+- Use debug scenes as isolated harness modules with clear lifecycle.
+- Use regions, locations, and connections for world structure; keep player code
+  out of travel orchestration.
+- Keep large tilemaps chunked and external to TypeScript gameplay files.
 - Use prefabs/actors for spawnable objects.
 - Use components for reusable behavior and small systems for cross-entity logic.
 - Keep fixed-timestep simulation separate from rendering.
@@ -905,7 +1068,8 @@ copy wholesale.
   reaction list, sound, state change, and debug visibility.
 - Treat hit feedback as an engine feature: damage, knockback, hitstop, flash,
   sound, i-frames, and event logging.
-- Validate asset ids and scene definitions before the first frame.
+- Validate asset ids, world definitions, and debug scene definitions before the
+  first frame.
 - Make debug overlays available for every engine-owned system.
 - Keep platform APIs behind adapters so desktop packaging is not a rewrite.
 
@@ -920,6 +1084,8 @@ copy wholesale.
   definitions, and resolved character appearances.
 - Tile atlases, tilemaps, collision extraction, interaction, and optional
   autotiling.
+- World graph, regions, locations, spawn points, connections, travel,
+  transitions, chunk streaming, and world validation.
 - Entity world, component storage, queries, spawning, and despawning.
 - Side-view physics, contacts, triggers, platforms, and interaction responses.
 - Input sources, action mapping, buffering, recording, and replay.
@@ -938,7 +1104,8 @@ copy wholesale.
 - Tile names and visual theme choices.
 - Tile-specific reactions when engine defaults are not enough.
 - Entity and prefab definitions.
-- Scene composition.
+- Debug scene composition.
+- Region/location/chunk organization and authored connection data.
 - Tuning values for movement, physics, combat, AI, lighting, and audio.
 - Game-specific systems when engine defaults are not enough.
 - Actual game content, once the engine is ready for it.
@@ -950,6 +1117,7 @@ Prefer this:
 ```ts
 world.spawn(slime, { at: [240, 120] })
 world.tilemap('terrain').setTile({ x: 10, y: 14 }, 'stone')
+world.travel.to('cave.depths', { spawn: 'fromEntrance' })
 world.audio.play('tileInteract', { at: [160, 112] })
 world.physics.applyImpulse(playerId, [220, -120])
 ```
@@ -989,6 +1157,8 @@ Every north-star API should have a matching way to inspect it:
   events.
 - Tiles: tile id, collision type, interaction range, autotile mask, chunk id,
   and dirty state.
+- World: current region, current location, loaded chunks, spawn points,
+  connection triggers, target labels, validation errors, and travel state.
 - Tile interactions: actor, tile position, action, reaction list, sound, and
   result.
 - Entities: id, tags, components, enabled state, and current system state.

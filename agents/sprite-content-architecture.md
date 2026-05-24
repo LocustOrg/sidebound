@@ -53,7 +53,7 @@ Game packages own content modules and gameplay systems:
 ## Borrowed Patterns
 
 - Bevy separates image assets, texture atlas layouts, sprite components, and
-  animation systems. Follow the same separation: image URL, frame layout,
+  animation systems. Follow the same separation: asset id/path, frame layout,
   animation state, and draw call are distinct concepts.
 - tModLoader makes content registration explicit and local to each content type.
   Follow that model with one small module per character, item, or equipment piece.

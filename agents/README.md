@@ -8,10 +8,13 @@ Read them before making engine or demo changes.
 1. `engine.md` — what the engine is, its constraints, mandatory systems, and implementation rules.
 2. `roadmap.md` — what to build next, in priority order.
 3. `sprite-content-architecture.md` — sprite assets, content registration, and character/item architecture.
-4. `north-star-engine.md` — the target Deno-first, code-first developer experience and ideal API shape.
+4. `world-location-architecture.md` — regions, locations, connections, chunked maps, travel, and validation.
+5. `north-star-engine.md` — the target Deno-first, code-first developer experience and ideal API shape.
 
 ## Default Behavior
 
 All tasks are engine development tasks. Focus on `packages/engine` and
-`packages/game`. No game content, world lore, or narrative work until the
-engine roadmap through Phase 5 is complete.
+`packages/game`. `packages/game` is a demo/debug harness until the engine
+roadmap through Phase 10 is complete. No real game content, world lore,
+narrative work, progression, inventory, quests, or polished level design before
+Phase 11.
