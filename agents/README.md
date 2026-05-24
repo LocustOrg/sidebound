@@ -12,6 +12,8 @@ Read them before making engine, gameplay, map, or worldbuilding changes.
 5. `demo-scope.md` - what the first playable demo should prove.
 6. `world-rules.md` - world, storytelling, and map rules.
 7. `implementation-rules.md` - repo and coding constraints for agents.
+8. `sprite-content-architecture.md` - sprite assets, content registration, and
+   character/item architecture.
 
 ## Agent Roles
 

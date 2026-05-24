@@ -1,3 +1,8 @@
+export * from './assets'
+export * from './content'
+export * from './sprites'
+export * from './sprites/character-renderer'
+
 export type PixelLoop = {
     update(deltaSeconds: number): void
     render(context: CanvasRenderingContext2D): void

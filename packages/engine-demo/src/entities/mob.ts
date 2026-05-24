@@ -1,7 +1,6 @@
 import type { Rect, Vec2 } from '../core/geometry'
 import { approach, rectsIntersect } from '../core/geometry'
-import { Animator } from '../sprites/animator'
-import type { SpriteSheet } from '../sprites/sprite-sheet'
+import { Animator, type SpriteSheet } from '@strange-path/engine'
 import { MobState, resolveMobState } from './mob-states'
 
 /**
