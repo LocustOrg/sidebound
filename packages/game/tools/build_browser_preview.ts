@@ -52,11 +52,13 @@ async function bundleGame(options: { readonly minify: boolean }): Promise<void> 
     }
 }
 
-const liveReloadScript = `<script>(() => {
-    const ws = new WebSocket(\`ws://\${location.host}\`);
-    ws.onmessage = (e) => { if (e.data === 'reload') location.reload(); };
-    ws.onclose = () => setTimeout(() => location.reload(), 1000);
-})()</script>`
+const liveReloadScript = `
+<script>
+    const ws = new WebSocket(\`ws://\${location.host}\`)
+    ws.onmessage = (e) => { if (e.data === 'reload') location.reload() }
+    ws.onclose = () => setTimeout(() => location.reload(), 1000)
+</script>
+`
 
 export async function buildBrowserPreview(options: { readonly minify?: boolean; readonly liveReload?: boolean } = {}): Promise<void> {
     await removeIfExists(distDir)
