@@ -1,14 +1,14 @@
 import {
     AssetStore,
-    createLoadedEquipmentDefinition,
-    loadSpriteSheet,
-    type CharacterAppearance,
     type Canvas2DPreviewPlatform,
+    type CharacterAppearance,
     type ContentRegistry,
+    createLoadedEquipmentDefinition,
     type ItemDefinition,
+    loadSpriteSheet,
     type SpriteSheet,
 } from '@sidebound/engine'
-import { demoContent, demoContentIds } from './index'
+import { demoContent, demoContentIds } from './mod.ts'
 
 export type LoadedDemoContent = {
     readonly registry: ContentRegistry
@@ -26,14 +26,28 @@ export type ContentLoadSummary = {
 
 async function loadCharacterAppearance(registry: ContentRegistry, assets: AssetStore, characterId: string): Promise<CharacterAppearance> {
     const definition = registry.getCharacter(characterId)
-    const base = await loadSpriteSheet(assets, definition.atlas, definition.frame.width, definition.frame.height, definition.frame.columns, definition.frame.rows)
+    const base = await loadSpriteSheet(
+        assets,
+        definition.atlas,
+        definition.frame.width,
+        definition.frame.height,
+        definition.frame.columns,
+        definition.frame.rows,
+    )
     const equipmentEntries = await Promise.all(
         registry.getEquipmentDefinitions().map(async (equipment) => {
             const visualLayers = await Promise.all(
                 equipment.layers.map(async (layer) => ({
                     id: layer.id,
                     order: layer.order,
-                    spriteSheet: await loadSpriteSheet(assets, layer.atlas, definition.frame.width, definition.frame.height, definition.frame.columns, definition.frame.rows),
+                    spriteSheet: await loadSpriteSheet(
+                        assets,
+                        layer.atlas,
+                        definition.frame.width,
+                        definition.frame.height,
+                        definition.frame.columns,
+                        definition.frame.rows,
+                    ),
                 })),
             )
 
@@ -48,7 +62,7 @@ async function loadCharacterAppearance(registry: ContentRegistry, assets: AssetS
     }
 }
 
-async function loadItemIconSheet(assets: AssetStore, item: ItemDefinition): Promise<SpriteSheet> {
+function loadItemIconSheet(assets: AssetStore, item: ItemDefinition): Promise<SpriteSheet> {
     return loadSpriteSheet(assets, item.icon, item.pickup.size.width, item.pickup.size.height, 1, 1)
 }
 

@@ -1,9 +1,9 @@
 import { ContentRegistry } from '@sidebound/engine'
-import { spriteAssets } from './assets'
-import { playerCharacter } from './characters/player'
-import { ironSwordEquipment } from './equipment/iron-sword'
-import { redCapeEquipment } from './equipment/red-cape'
-import { ironSwordItem, redCapeItem } from './items/starter-items'
+import { spriteAssets } from './assets.ts'
+import { playerCharacter } from './characters/player.ts'
+import { ironSwordEquipment } from './equipment/iron-sword.ts'
+import { redCapeEquipment } from './equipment/red-cape.ts'
+import { ironSwordItem, redCapeItem } from './items/starter-items.ts'
 
 export const demoContent = new ContentRegistry()
     .registerImageAssets(spriteAssets)

@@ -1,9 +1,9 @@
-import type { Rect, Vec2 } from '../../core'
-import type { RenderContext } from '../../platform/render-context'
-import type { Canvas2DPreviewRenderFrame } from '../../platform/renderer'
-import type { Canvas2DPreviewPlatform, Canvas2DPreviewSurface } from '../../platform/adapter'
-import { type LightSource, type RayHit, RayLighting } from '../../lighting'
-import type { RenderLayer } from '../pipeline'
+import type { Rect, Vec2 } from '../../core/mod.ts'
+import type { RenderContext } from '../../platform/render-context.ts'
+import type { Canvas2DPreviewRenderFrame } from '../../platform/renderer.ts'
+import type { Canvas2DPreviewPlatform, Canvas2DPreviewSurface } from '../../platform/adapter.ts'
+import type { LightSource, RayHit, RayLighting } from '../../lighting/mod.ts'
+import type { RenderLayer } from '../pipeline.ts'
 
 export type SunLight = {
     x: number

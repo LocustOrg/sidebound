@@ -1,4 +1,4 @@
-import type { Canvas2DPreviewRenderFrame } from '../platform/renderer'
+import type { Canvas2DPreviewRenderFrame } from '../platform/renderer.ts'
 
 export interface RenderLayer {
     readonly order: number

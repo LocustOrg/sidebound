@@ -1,5 +1,5 @@
 import type { Canvas2DPreviewRenderFrame, RenderContext, RenderLayer } from '@sidebound/engine'
-import type { Level, PlacedTile } from '../../world/types'
+import type { Level, PlacedTile } from '../../world/types.ts'
 
 export class TerrainLayer implements RenderLayer {
     readonly order = 10

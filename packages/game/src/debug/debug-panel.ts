@@ -1,5 +1,5 @@
-import type { SoundButtonState } from '../systems/audio'
-import { requireElement } from '../core/dom'
+import type { SoundButtonState } from '../systems/audio.ts'
+import { requireElement } from '../core/dom.ts'
 import { clamp, type Vec2 } from '@sidebound/engine'
 
 export type DebugWindowSettings = {
@@ -103,7 +103,7 @@ function createDebugPanelElements(): DebugPanelElements {
 
 function readDebugWindowSettings(): DebugWindowSettings {
     try {
-        const value = window.localStorage.getItem(debugWindowStorageKey)
+        const value = globalThis.localStorage.getItem(debugWindowStorageKey)
 
         if (!value) {
             return {}
@@ -127,7 +127,7 @@ function saveDebugWindowSettings(nextSettings: DebugWindowSettings): void {
     try {
         const currentSettings = readDebugWindowSettings()
 
-        window.localStorage.setItem(
+        globalThis.localStorage.setItem(
             debugWindowStorageKey,
             JSON.stringify({
                 ...currentSettings,
@@ -265,10 +265,10 @@ export class DebugPanel {
             this.resetPosition()
         }
 
-        window.addEventListener('resize', this.keepInViewport)
-        window.addEventListener('pointermove', this.moveDrag)
-        window.addEventListener('pointerup', this.stopDrag)
-        window.addEventListener('pointercancel', this.stopDrag)
+        globalThis.addEventListener('resize', this.keepInViewport)
+        globalThis.addEventListener('pointermove', this.moveDrag)
+        globalThis.addEventListener('pointerup', this.stopDrag)
+        globalThis.addEventListener('pointercancel', this.stopDrag)
         this.elements.handle.addEventListener('pointerdown', this.startDrag)
         this.elements.handle.addEventListener('keydown', this.moveWithKeyboard)
         this.elements.reset.addEventListener('click', this.resetPosition)
@@ -368,7 +368,7 @@ export class DebugPanel {
     private readonly resetPosition = (): void => {
         const stageRect = this.elements.stage.getBoundingClientRect()
         const panelRect = this.elements.panel.getBoundingClientRect()
-        const left = Math.min(stageRect.right - panelRect.width - 16, window.innerWidth - panelRect.width - panelMargin)
+        const left = Math.min(stageRect.right - panelRect.width - 16, globalThis.innerWidth - panelRect.width - panelMargin)
         const top = Math.max(stageRect.top + 16, panelMargin)
 
         this.setPosition(left, top)
@@ -382,8 +382,8 @@ export class DebugPanel {
 
     private setPosition(left: number, top: number): void {
         const rect = this.elements.panel.getBoundingClientRect()
-        const maxLeft = Math.max(panelMargin, window.innerWidth - rect.width - panelMargin)
-        const maxTop = Math.max(panelMargin, window.innerHeight - rect.height - panelMargin)
+        const maxLeft = Math.max(panelMargin, globalThis.innerWidth - rect.width - panelMargin)
+        const maxTop = Math.max(panelMargin, globalThis.innerHeight - rect.height - panelMargin)
 
         this.elements.panel.style.left = `${clamp(left, panelMargin, maxLeft)}px`
         this.elements.panel.style.top = `${clamp(top, panelMargin, maxTop)}px`

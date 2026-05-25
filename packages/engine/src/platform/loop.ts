@@ -1,4 +1,4 @@
-import type { AnimationFrameClock } from './clock'
+import type { AnimationFrameClock } from './clock.ts'
 
 export type EngineFrame = {
     readonly now: number

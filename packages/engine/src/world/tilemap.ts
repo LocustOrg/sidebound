@@ -1,4 +1,4 @@
-import type { Rect, Vec2 } from '../core'
+import type { Rect, Vec2 } from '../core/mod.ts'
 
 export type TileCollision = 'none' | 'solid'
 export type TileLightOcclusion = 'none' | 'opaque' | 'vertical-bar'

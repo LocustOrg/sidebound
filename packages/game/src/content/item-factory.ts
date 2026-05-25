@@ -1,5 +1,5 @@
 import type { ContentRegistry, SpriteSheet, Vec2 } from '@sidebound/engine'
-import type { PickupItemEntity } from '../entities/item-entity'
+import type { PickupItemEntity } from '../entities/item-entity.ts'
 
 export class ItemFactory {
     private readonly registry: ContentRegistry

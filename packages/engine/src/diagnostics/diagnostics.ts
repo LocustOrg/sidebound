@@ -1,8 +1,8 @@
-import { smooth } from '../core'
-import type { Rect } from '../core'
-import type { RenderContext } from '../platform/render-context'
-import type { Canvas2DPreviewRenderFrame } from '../platform/renderer'
-import type { RenderLayer } from '../rendering'
+import { smooth } from '../core/mod.ts'
+import type { Rect } from '../core/mod.ts'
+import type { RenderContext } from '../platform/render-context.ts'
+import type { Canvas2DPreviewRenderFrame } from '../platform/renderer.ts'
+import type { RenderLayer } from '../rendering/mod.ts'
 
 export type FrameDiagnostics = {
     fps: number

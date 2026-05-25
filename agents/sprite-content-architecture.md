@@ -41,7 +41,7 @@ Game packages own content modules and gameplay systems:
 ## Registration Lifecycle
 
 1. Content modules export definitions through `define*` helpers.
-2. A game content index registers every definition with `ContentRegistry`.
+2. A game content assembly module registers every definition with `ContentRegistry`.
 3. Startup validates duplicate IDs, missing asset references, invalid frame
    indices, unknown equipment references, and incompatible atlas sizes.
 4. `AssetStore` preloads all referenced images.
@@ -66,7 +66,8 @@ Prefer files such as:
 - `content/equipment/red-cape.ts`
 - `content/equipment/iron-sword.ts`
 - `content/items/starter-items.ts`
-- `content/index.ts`
+- `content/mod.ts`
 
 Each content file should be understandable in isolation and should not mutate
-global game state at import time. Registration belongs in the content index.
+global game state at import time. Registration belongs in a named content
+assembly module, with `content/mod.ts` only re-exporting it.

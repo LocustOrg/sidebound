@@ -1,5 +1,5 @@
-import type { AssetId, ImageAssetDefinition } from '../assets'
-import type { SpriteClipDefinition } from '../sprites'
+import type { AssetId, ImageAssetDefinition } from '../assets/asset-store.ts'
+import type { SpriteClipDefinition } from '../sprites/sprite-sheet.ts'
 
 export type ContentId = string
 

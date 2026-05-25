@@ -1,6 +1,4 @@
 min_version = "2024.0.0"
 
 [tools]
-node = "25.6.0"
-"npm:pnpm" = "11.2.2"
-
+deno = "latest"

@@ -7,9 +7,8 @@
 > Sidebound is in an early alpha stage. The engine API, package layout, runtime,
 > rendering layer, content model, and demo harness will change a lot.
 >
-> Most upcoming changes should be treated as breaking changes. One major planned
-> example is the transition from the current pnpm/Node workspace toward a
-> Deno-first engine and desktop runtime path.
+> Most upcoming changes should be treated as breaking changes. The workspace is
+> now Deno-first, and the next major runtime step is the SDL-backed desktop path.
 >
 > Use this repository as active engine research and development, not as a stable
 > production dependency yet.
@@ -45,10 +44,10 @@ audio, input, storage, and tooling should be portable outside the browser.
 ## Current Commands
 
 ```sh
-pnpm install
-pnpm dev
-pnpm check
-pnpm build
+mise install
+mise exec -- deno task dev
+mise exec -- deno task check
+mise exec -- deno task build
 ```
 
 ## Direction

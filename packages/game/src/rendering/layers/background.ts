@@ -1,5 +1,5 @@
 import type { Canvas2DPreviewRenderFrame, RenderLayer } from '@sidebound/engine'
-import type { Level } from '../../world/types'
+import type { Level } from '../../world/types.ts'
 
 export class BackgroundLayer implements RenderLayer {
     readonly order = 0

@@ -70,7 +70,8 @@ export class InputManager {
     }
 
     readPlayerFrame(): PlayerInputFrame {
-        const horizontal = Number(this.pressedKeys.has('arrowright') || this.pressedKeys.has('d')) - Number(this.pressedKeys.has('arrowleft') || this.pressedKeys.has('a'))
+        const horizontal = Number(this.pressedKeys.has('arrowright') || this.pressedKeys.has('d')) -
+            Number(this.pressedKeys.has('arrowleft') || this.pressedKeys.has('a'))
         const jumpQueued = this.jumpQueued
         const jumpHeld = this.pressedKeys.has('arrowup') || this.pressedKeys.has('w') || this.pressedKeys.has(' ')
         const downHeld = this.pressedKeys.has('arrowdown') || this.pressedKeys.has('s')

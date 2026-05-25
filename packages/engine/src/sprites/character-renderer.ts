@@ -1,7 +1,7 @@
-import type { CharacterDefinition, EquipmentDefinition } from '../content'
-import { resolveEquipmentLayerOrder } from '../content'
-import type { RenderContext } from '../platform/render-context'
-import type { SpriteSheet } from './index'
+import type { CharacterDefinition, EquipmentDefinition } from '../content/mod.ts'
+import { resolveEquipmentLayerOrder } from '../content/mod.ts'
+import type { RenderContext } from '../platform/render-context.ts'
+import type { SpriteSheet } from './sprite-sheet.ts'
 
 export type EquipmentLoadout = Partial<Record<string, string>>
 

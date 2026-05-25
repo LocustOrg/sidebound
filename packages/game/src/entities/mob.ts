@@ -1,7 +1,7 @@
-import type { Rect, Vec2, RenderContext } from '@sidebound/engine'
+import type { Rect, RenderContext, Vec2 } from '@sidebound/engine'
 import { approach, rectsIntersect } from '@sidebound/engine'
 import { Animator, type SpriteSheet } from '@sidebound/engine'
-import { MobState, resolveMobState } from './mob-states'
+import { MobState, resolveMobState } from './mob-states.ts'
 
 /**
  * Physics configuration for a Mob.
@@ -203,7 +203,16 @@ export class Mob {
         const justLanded = this.grounded && !wasGrounded
 
         // Resolve state
-        const nextState = resolveMobState(this.mobState, this.grounded, this.vx, this.vy, inputHorizontal, justLanded, justJumped, this.physics.stoppingThreshold)
+        const nextState = resolveMobState(
+            this.mobState,
+            this.grounded,
+            this.vx,
+            this.vy,
+            inputHorizontal,
+            justLanded,
+            justJumped,
+            this.physics.stoppingThreshold,
+        )
 
         this.transitionState(nextState)
     }

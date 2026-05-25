@@ -1,4 +1,4 @@
-import type { ImageSource, RenderContext } from './render-context'
+import type { ImageSource, RenderContext } from './render-context.ts'
 
 export type Canvas2DPreviewSurface = {
     readonly context: RenderContext

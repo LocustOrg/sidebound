@@ -1,6 +1,6 @@
 import type { Rect } from '@sidebound/engine'
 import { rectsIntersect } from '@sidebound/engine'
-import { getPickupItemRect, type PickupItemEntity } from '../entities/item-entity'
+import { getPickupItemRect, type PickupItemEntity } from '../entities/item-entity.ts'
 
 export type EquipmentHolder = {
     getRect(): Rect

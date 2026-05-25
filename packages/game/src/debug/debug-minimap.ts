@@ -1,5 +1,5 @@
 import type { Rect, SunLight, Vec2 } from '@sidebound/engine'
-import type { PlacedTile, TileMaterial } from '../world/types'
+import type { PlacedTile, TileMaterial } from '../world/types.ts'
 
 export type MinimapConfig = {
     canvas: HTMLCanvasElement
@@ -54,7 +54,12 @@ export class DebugMinimap {
 
         for (const tile of this.tiles) {
             ctx.fillStyle = this.getTileColor(tile.material)
-            ctx.fillRect(Math.floor(tile.x * scaleX), Math.floor(tile.y * scaleY), Math.max(1, Math.ceil(tile.width * scaleX)), Math.max(1, Math.ceil(tile.height * scaleY)))
+            ctx.fillRect(
+                Math.floor(tile.x * scaleX),
+                Math.floor(tile.y * scaleY),
+                Math.max(1, Math.ceil(tile.width * scaleX)),
+                Math.max(1, Math.ceil(tile.height * scaleY)),
+            )
         }
 
         // Sun positions (small dots)

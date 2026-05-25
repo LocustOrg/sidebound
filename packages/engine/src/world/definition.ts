@@ -1,5 +1,4 @@
-import { rect, type Rect, type Vec2 } from '../core'
-export * from './tilemap'
+import { type Rect, rect, type Vec2 } from '../core/mod.ts'
 
 export type WorldId = string
 export type RegionId = string

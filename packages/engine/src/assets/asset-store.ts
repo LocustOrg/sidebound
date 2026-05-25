@@ -1,5 +1,5 @@
-import type { ImageSource } from '../platform/render-context'
-import type { Canvas2DPreviewPlatform } from '../platform/adapter'
+import type { ImageSource } from '../platform/render-context.ts'
+import type { Canvas2DPreviewPlatform } from '../platform/adapter.ts'
 
 export type AssetId = string
 
@@ -50,7 +50,7 @@ export class AssetStore {
         }
     }
 
-    async loadImage(id: AssetId): Promise<ImageAsset> {
+    loadImage(id: AssetId): Promise<ImageAsset> {
         const definition = this.imageDefinitions.get(id)
 
         if (!definition) {

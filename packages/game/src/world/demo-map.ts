@@ -1,5 +1,15 @@
-import { assertValidWorldDefinition, chunkedTilemap, defineLocation, defineRegion, defineWorld, edgeConnection, rect, TileMapBuilder, TileRegistry } from '@sidebound/engine'
-import type { Level, TileMaterial, Viewport } from './types'
+import {
+    assertValidWorldDefinition,
+    chunkedTilemap,
+    defineLocation,
+    defineRegion,
+    defineWorld,
+    edgeConnection,
+    rect,
+    TileMapBuilder,
+    TileRegistry,
+} from '@sidebound/engine'
+import type { Level, TileMaterial, Viewport } from './types.ts'
 
 export const tileSize = 28
 export const viewport: Viewport = { width: 450, height: 250 }

@@ -1,0 +1,14 @@
+{
+    "name": "@sidebound/game",
+    "exports": "./src/main.ts",
+    "imports": {
+        "vite": "npm:vite@8.0.14"
+    },
+    "tasks": {
+        "dev": "deno run --node-modules-dir=auto --allow-env --allow-read --allow-write --allow-net --allow-sys --allow-ffi npm:vite@8.0.14 --host 0.0.0.0 .",
+        "build": "deno check src/main.ts vite.config.ts && deno run --node-modules-dir=auto --allow-env --allow-read --allow-write --allow-net --allow-sys --allow-ffi npm:vite@8.0.14 build .",
+        "preview": "deno run --node-modules-dir=auto --allow-env --allow-read --allow-net --allow-sys --allow-ffi npm:vite@8.0.14 preview --host 0.0.0.0 .",
+        "typecheck": "deno check src/main.ts vite.config.ts",
+        "check": "deno task typecheck"
+    }
+}

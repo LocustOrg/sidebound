@@ -95,7 +95,7 @@ packages/game/
     game.ts
     assets.ts
     content/
-      index.ts
+      mod.ts
       characters/
         player.character.ts
         slime.character.ts
@@ -149,8 +149,8 @@ The game should run through Deno directly.
         "compile:desktop": "deno compile --allow-read --allow-env --allow-write --allow-ffi --output dist/sidebound src/main.ts"
     },
     "imports": {
-        "@sidebound/engine": "../engine/src/index.ts",
-        "@sidebound/platform-deno": "../platform-deno/src/index.ts"
+        "@sidebound/engine": "../engine/src/mod.ts",
+        "@sidebound/platform-deno": "../platform-deno/src/mod.ts"
     }
 }
 ```
@@ -324,10 +324,11 @@ export const assets = defineAssets({
 })
 ```
 
-### `src/content/index.ts`
+### `src/content/content.ts`
 
 Content registration should be explicit and centralized. Individual content
-modules should export definitions; the index decides what enters the game.
+modules should export definitions; a named assembly module decides what enters
+the game.
 
 ```ts
 import { defineContent } from '@sidebound/engine'
@@ -342,6 +343,14 @@ export const content = defineContent({
     equipment: [redCape],
     items: starterItems,
 })
+```
+
+### `src/content/mod.ts`
+
+Barrel modules stay export-only.
+
+```ts
+export * from './content.ts'
 ```
 
 ### `src/content/characters/player.character.ts`

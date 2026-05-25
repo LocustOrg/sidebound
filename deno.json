@@ -1,0 +1,55 @@
+{
+    "workspace": [
+        "packages/engine",
+        "packages/platform-browser-preview",
+        "packages/game"
+    ],
+    "nodeModulesDir": "auto",
+    "compilerOptions": {
+        "lib": [
+            "deno.window",
+            "dom",
+            "dom.iterable",
+            "dom.asynciterable",
+            "esnext"
+        ],
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true
+    },
+    "lint": {
+        "rules": {
+            "tags": [
+                "recommended"
+            ]
+        },
+        "exclude": [
+            "packages/game/dist"
+        ]
+    },
+    "fmt": {
+        "include": [
+            "deno.json",
+            "packages/engine",
+            "packages/platform-browser-preview",
+            "packages/game"
+        ],
+        "exclude": [
+            "packages/game/dist"
+        ],
+        "indentWidth": 4,
+        "lineWidth": 160,
+        "semiColons": false,
+        "singleQuote": true
+    },
+    "tasks": {
+        "dev": "deno task --cwd packages/game dev",
+        "build": "deno task --cwd packages/game build",
+        "preview": "deno task --cwd packages/game preview",
+        "typecheck": "deno check packages/engine/src/mod.ts packages/platform-browser-preview/src/mod.ts packages/game/src/main.ts packages/game/vite.config.ts",
+        "lint": "deno lint packages/engine/src packages/platform-browser-preview/src packages/game/src packages/game/vite.config.ts",
+        "check": "deno task typecheck && deno task lint",
+        "format": "deno fmt"
+    }
+}

@@ -15,17 +15,17 @@ import {
     updateFrameDiagnostics,
 } from '@sidebound/engine'
 import { BrowserPlatformAdapter, PixelEngine } from '@sidebound/platform-browser-preview'
-import { requireElement } from './core/dom'
-import { DebugMinimap } from './debug/debug-minimap'
-import { DebugPanel } from './debug/debug-panel'
-import { PlayerMob } from './entities/player-mob'
-import { BackgroundLayer, DebugLayer, EntityLayer, TerrainLayer } from './rendering/layers'
-import { ItemFactory } from './content/item-factory'
-import { loadDemoContent, type LoadedDemoContent } from './content/load-demo-content'
-import { demoContentIds, type DemoItemId } from './content'
-import { DemoAudio } from './systems/audio'
-import { ItemSystem } from './systems/item-system'
-import { tileSize, viewport, world } from './world/demo-map'
+import { requireElement } from './core/dom.ts'
+import { DebugMinimap } from './debug/debug-minimap.ts'
+import { DebugPanel } from './debug/debug-panel.ts'
+import { PlayerMob } from './entities/player-mob.ts'
+import { BackgroundLayer, DebugLayer, EntityLayer, TerrainLayer } from './rendering/layers/mod.ts'
+import { ItemFactory } from './content/item-factory.ts'
+import { loadDemoContent, type LoadedDemoContent } from './content/load-demo-content.ts'
+import { demoContentIds, type DemoItemId } from './content/mod.ts'
+import { DemoAudio } from './systems/audio.ts'
+import { ItemSystem } from './systems/item-system.ts'
+import { tileSize, viewport, world } from './world/demo-map.ts'
 
 type Diagnostics = FrameDiagnostics & {
     rayMs: number
@@ -36,10 +36,10 @@ type Diagnostics = FrameDiagnostics & {
 function createKeyboardInputSource(): KeyboardInputSource {
     return {
         addEventListener(type, listener) {
-            window.addEventListener(type, listener)
+            globalThis.addEventListener(type, listener)
         },
         removeEventListener(type, listener) {
-            window.removeEventListener(type, listener)
+            globalThis.removeEventListener(type, listener)
         },
     }
 }
@@ -265,7 +265,9 @@ export class DemoApplication {
 
     private logMapInfo(): void {
         console.log(
-            `[Content] characters=${this.loadedContent.summary.characters.join(', ')} equipment=${this.loadedContent.summary.equipment.join(', ')} items=${this.loadedContent.summary.items.join(', ')} atlases=${this.loadedContent.summary.atlases.length}`,
+            `[Content] characters=${this.loadedContent.summary.characters.join(', ')} equipment=${this.loadedContent.summary.equipment.join(', ')} items=${
+                this.loadedContent.summary.items.join(', ')
+            } atlases=${this.loadedContent.summary.atlases.length}`,
         )
         console.log(
             `[Map] ${this.mapTilesW}×${this.mapTilesH} tiles (${world.width}×${world.height}px), ${world.solids.length} solid rects, ${world.lightOccluders.length} light occluders, ${this.sunLights.length} suns`,

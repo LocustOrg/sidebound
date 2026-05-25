@@ -7,11 +7,11 @@ import {
     type RenderContext,
     type Vec2,
 } from '@sidebound/engine'
-import type { SoundCue } from '../systems/audio'
-import { controls } from '../core/config'
-import { CharacterRenderComponent } from './character-render-component'
-import { Mob, type MobPhysics } from './mob'
-import { MobState } from './mob-states'
+import type { SoundCue } from '../systems/audio.ts'
+import { controls } from '../core/config.ts'
+import { CharacterRenderComponent } from './character-render-component.ts'
+import { Mob, type MobPhysics } from './mob.ts'
+import { MobState } from './mob-states.ts'
 
 const PLAYER_PHYSICS: MobPhysics = {
     maxSpeed: controls.maxSpeed,

@@ -1,7 +1,7 @@
-import { EngineLoop, type AnimationFrameClock, type RenderContext, type Renderer2D } from '@sidebound/engine'
-import { BrowserAnimationFrameClock } from './clock'
-import { Canvas2DPreviewRenderer } from './renderer-canvas2d'
-import { toRenderContext } from './render-context'
+import { type AnimationFrameClock, EngineLoop, type RenderContext, type Renderer2D } from '@sidebound/engine'
+import { BrowserAnimationFrameClock } from './clock.ts'
+import { Canvas2DPreviewRenderer } from './renderer-canvas2d.ts'
+import { toRenderContext } from './render-context.ts'
 
 export type PixelLoop = {
     update(deltaSeconds: number): void

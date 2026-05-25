@@ -1,5 +1,5 @@
 import { defineItem } from '@sidebound/engine'
-import { spriteAssetIds } from '../assets'
+import { spriteAssetIds } from '../assets.ts'
 
 export const redCapeItem = defineItem({
     id: 'redCapeItem',

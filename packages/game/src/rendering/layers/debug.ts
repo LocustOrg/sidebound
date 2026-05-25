@@ -1,4 +1,4 @@
-import type { Canvas2DPreviewRenderFrame, RenderLayer, RenderContext } from '@sidebound/engine'
+import type { Canvas2DPreviewRenderFrame, RenderContext, RenderLayer } from '@sidebound/engine'
 import type { Rect, Vec2 } from '@sidebound/engine'
 import type { RayHit } from '@sidebound/engine'
 

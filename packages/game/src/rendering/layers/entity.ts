@@ -1,7 +1,7 @@
-import type { Canvas2DPreviewRenderFrame, RenderLayer, RenderContext } from '@sidebound/engine'
+import type { Canvas2DPreviewRenderFrame, RenderContext, RenderLayer } from '@sidebound/engine'
 import { clamp } from '@sidebound/engine'
-import type { Mob } from '../../entities/mob'
-import type { PickupItemEntity } from '../../entities/item-entity'
+import type { Mob } from '../../entities/mob.ts'
+import type { PickupItemEntity } from '../../entities/item-entity.ts'
 
 /**
  * Draws all mob entities with shadow and aura effects.

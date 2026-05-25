@@ -1,4 +1,4 @@
-import type { Vec2 } from '../core'
+import type { Vec2 } from '../core/mod.ts'
 
 export type PointerEventFrame = {
     readonly id: number

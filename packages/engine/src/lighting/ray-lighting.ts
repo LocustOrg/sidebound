@@ -1,4 +1,4 @@
-import { clamp, cross, type Rect, type Segment, type Vec2 } from '../core'
+import { clamp, cross, type Rect, type Segment, type Vec2 } from '../core/mod.ts'
 
 export type LightColor = {
     r: number

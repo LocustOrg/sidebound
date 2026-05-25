@@ -81,7 +81,7 @@ packages/
   platform-sdl/
     deno.json
     src/
-      index.ts
+      mod.ts
       app.ts
       assets.ts
       clock.ts
@@ -92,10 +92,9 @@ packages/
       window.ts
 
   platform-browser-preview/
-    package.json
-    tsconfig.json
+    deno.json
     src/
-      index.ts
+      mod.ts
       app.ts
       assets.ts
       clock.ts
@@ -241,14 +240,38 @@ render(frame: RenderFrame): void
 5. Keep `RenderPipeline.update(deltaSeconds)` unchanged.
 6. Move all browser-only classes from `packages/engine/src/platform/browser.ts`
    to `packages/platform-browser-preview/src`.
-7. `packages/engine/src/index.ts` must export only engine-owned interfaces and
+7. `packages/engine/src/mod.ts` must export only engine-owned interfaces and
    pure systems.
 
 Done when:
 
 - `rg -n "document|window|HTMLCanvas|CanvasRenderingContext|AudioContext|localStorage|requestAnimationFrame" packages/engine/src` returns nothing.
 - `packages/game` still runs through the browser preview adapter.
-- `pnpm typecheck && pnpm lint && pnpm build` passes.
+- `deno task check && deno task build` passes through the mise-managed Deno toolchain.
+
+## Phase 1.5 - Deno Workspace Cutover
+
+Goal: make Deno the only active workspace toolchain before adding SDL code.
+
+1. Select latest Deno through mise in `.mise.toml`.
+2. Add root `deno.json` with workspace members, import/package names, lint,
+   format, check, build, and browser-preview dev tasks.
+3. Add package-level `deno.json` files for `packages/engine`,
+   `packages/platform-browser-preview`, and `packages/game`.
+4. Use `mod.ts` for module barrels, never `index.ts`; keep every `mod.ts`
+   export-only and move implementation into named modules.
+5. Replace extensionless local imports with explicit `.ts` or `/mod.ts`
+   imports.
+6. Remove pnpm/Node workspace metadata and TypeScript/ESLint/Prettier configs
+   that duplicate Deno-owned tooling.
+
+Done when:
+
+- `mise exec -- deno task check` passes.
+- `mise exec -- deno task build` builds the browser preview.
+- `find packages -path '*/src/*' -name 'index.ts' -print` returns nothing.
+- No `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `tsconfig*.json`,
+  or `eslint.config.ts` files remain.
 
 ## Phase 2 - Add `packages/platform-sdl`
 
@@ -259,14 +282,14 @@ Goal: create a minimal SDL window that can clear, present, and exit.
 ```json
 {
     "tasks": {
-        "check": "deno check src/index.ts",
+        "check": "deno check src/mod.ts",
         "dev": "deno run --allow-read --allow-env --allow-ffi src/dev.ts",
         "compile:mac": "deno compile --allow-read --allow-env --allow-ffi --include ../../packages/game/assets --output ../../dist/sidebound src/dev.ts",
         "compile:win": "deno compile --target x86_64-pc-windows-msvc --allow-read --allow-env --allow-ffi --include ../../packages/game/assets --output ../../dist/sidebound.exe src/dev.ts"
     },
     "imports": {
         "@divy/sdl2": "jsr:@divy/sdl2@0.15.0",
-        "@sidebound/engine": "../engine/src/index.ts"
+        "@sidebound/engine": "../engine/src/mod.ts"
     }
 }
 ```
@@ -282,7 +305,7 @@ Goal: create a minimal SDL window that can clear, present, and exit.
       `canvas.clear()`.
     - `endFrame()` calls `canvas.present()`.
     - Implement `fillRect`, `strokeRect`, `drawLine`, and texture copy first.
-4. Add `packages/platform-sdl/src/index.ts`:
+4. Add `packages/platform-sdl/src/mod.ts`:
 
 ```ts
 export { createSdlRuntime } from './app.ts'
@@ -435,8 +458,8 @@ Goal: `packages/game` runs directly with Deno + SDL.
         "compile:win": "deno compile --target x86_64-pc-windows-msvc --allow-read --allow-env --allow-ffi --include assets --output ../../dist/sidebound.exe src/main.ts"
     },
     "imports": {
-        "@sidebound/engine": "../engine/src/index.ts",
-        "@sidebound/platform-sdl": "../platform-sdl/src/index.ts"
+        "@sidebound/engine": "../engine/src/mod.ts",
+        "@sidebound/platform-sdl": "../platform-sdl/src/mod.ts"
     },
     "compile": {
         "include": ["assets"]
@@ -540,15 +563,13 @@ Done when:
 
 Goal: SDL is the primary harness; browser is optional.
 
-1. Root `package.json` scripts:
+1. Root `deno.json` tasks:
     - `dev` -> Deno SDL task.
     - `dev:browser` -> browser preview task.
-    - `check` -> Deno checks + TypeScript checks.
-2. `packages/game/package.json` may remain only for browser preview if Vite is
-   still useful.
-3. `packages/game/index.html` moves to `packages/platform-browser-preview` or
+    - `check` -> Deno checks and lint.
+2. `packages/game/index.html` moves to `packages/platform-browser-preview` or
    `packages/game/browser-preview`.
-4. Update `agents/roadmap.md` Phase 0/1 notes to mark browser preview as
+3. Update `agents/roadmap.md` Phase 0/1 notes to mark browser preview as
    secondary.
 
 Done when:
@@ -579,11 +600,10 @@ Add checks before deleting browser fallback:
     - create texture from one tiny generated surface.
     - present one frame.
 4. CI matrix:
-    - `pnpm typecheck`.
-    - `pnpm lint`.
-    - `deno check packages/platform-sdl/src/index.ts`.
+    - `deno task check`.
+    - `deno task build` while browser preview exists.
+    - `deno check packages/platform-sdl/src/mod.ts`.
     - `deno check packages/game/src/main.ts`.
-    - Browser build only while browser preview exists.
 
 ## Exact Current-Code Moves
 
@@ -654,7 +674,7 @@ SDL becomes the default when all are true:
 
 ## Recommended Order For The Next Agent
 
-1. Finish Phase 1 before creating SDL code.
+1. Finish Phase 1 and Phase 1.5 before creating SDL code.
 2. Add `packages/platform-sdl` and render a rectangle.
 3. Convert render layers to `Renderer2D` command calls.
 4. Load one sprite sheet as an SDL texture.

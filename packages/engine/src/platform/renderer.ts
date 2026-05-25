@@ -1,5 +1,5 @@
-import type { Rect, Vec2 } from '../core'
-import type { RenderContext } from './render-context'
+import type { Rect, Vec2 } from '../core/mod.ts'
+import type { RenderContext } from './render-context.ts'
 
 export type ColorRgba = {
     readonly r: number

@@ -1,4 +1,4 @@
-import { clamp, smoothDamp, type Rect, type Vec2 } from '../core'
+import { clamp, type Rect, smoothDamp, type Vec2 } from '../core/mod.ts'
 
 export type CameraTarget = {
     x: number
@@ -80,7 +80,7 @@ function createCameraState(): CameraState {
 }
 
 export class SideViewCamera {
-    readonly state = createCameraState()
+    readonly state: CameraState = createCameraState()
     private readonly world: CameraBounds
     private readonly viewport: CameraBounds
     private readonly settings: SideViewCameraSettings
@@ -114,7 +114,8 @@ export class SideViewCamera {
 
     update(deltaSeconds: number, target: CameraTarget): void {
         const speedRatio = clamp(Math.abs(target.vx) / 72, 0, 1)
-        const lookAheadDistance = this.settings.idleLookAheadDistance + (this.settings.movingLookAheadDistance - this.settings.idleLookAheadDistance) * speedRatio
+        const lookAheadDistance = this.settings.idleLookAheadDistance +
+            (this.settings.movingLookAheadDistance - this.settings.idleLookAheadDistance) * speedRatio
         const targetLookAhead = target.facing * lookAheadDistance
         const lookAheadSmoothing = 1 - Math.exp(-deltaSeconds * this.settings.lookAheadResponse)
 

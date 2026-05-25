@@ -1,14 +1,4 @@
-import type {
-    ColorRgba,
-    DrawOptions,
-    Rect,
-    Renderer2D,
-    RendererImageSource,
-    RenderContext,
-    RenderTargetHandle,
-    TextureHandle,
-    Vec2,
-} from '@sidebound/engine'
+import type { ColorRgba, DrawOptions, Rect, RenderContext, Renderer2D, RendererImageSource, RenderTargetHandle, TextureHandle, Vec2 } from '@sidebound/engine'
 
 type CanvasTexture = TextureHandle & {
     readonly source: RendererImageSource
@@ -52,10 +42,10 @@ export class Canvas2DPreviewRenderer implements Renderer2D {
         }
     }
 
-    async loadTexture(id: string, source: RendererImageSource): Promise<TextureHandle> {
+    loadTexture(id: string, source: RendererImageSource): Promise<TextureHandle> {
         const texture = { id, width: source.width, height: source.height, source }
         this.textures.set(id, texture)
-        return texture
+        return Promise.resolve(texture)
     }
 
     drawTexture(texture: TextureHandle, source: Rect, dest: Rect, options: DrawOptions = {}): void {

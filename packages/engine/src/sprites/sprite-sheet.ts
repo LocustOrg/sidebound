@@ -1,6 +1,6 @@
-import type { AssetId, AssetStore } from '../assets'
-import type { ImageSource, RenderContext } from '../platform/render-context'
-import type { Canvas2DPreviewPlatform } from '../platform/adapter'
+import type { AssetId, AssetStore } from '../assets/asset-store.ts'
+import type { ImageSource, RenderContext } from '../platform/render-context.ts'
+import type { Canvas2DPreviewPlatform } from '../platform/adapter.ts'
 
 export type SpriteFrame = {
     readonly col: number
@@ -121,7 +121,14 @@ export class SpriteSheet {
     }
 }
 
-export async function loadSpriteSheet(assetStore: AssetStore, assetId: AssetId, frameWidth: number, frameHeight: number, columns: number, rows: number): Promise<SpriteSheet> {
+export async function loadSpriteSheet(
+    assetStore: AssetStore,
+    assetId: AssetId,
+    frameWidth: number,
+    frameHeight: number,
+    columns: number,
+    rows: number,
+): Promise<SpriteSheet> {
     const image = await assetStore.loadImage(assetId)
     const layout = new TextureAtlasLayout({ frameWidth, frameHeight, columns, rows })
 
