@@ -1,6 +1,6 @@
 import type { Rect, Vec2 } from '../../core/mod.ts'
 import type { RenderContext } from '../../platform/render-context.ts'
-import type { Canvas2DPreviewRenderFrame } from '../../platform/renderer.ts'
+import type { Canvas2DPreviewRenderFrame, RenderFrame } from '../../platform/renderer.ts'
 import type { Canvas2DPreviewPlatform, Canvas2DPreviewSurface } from '../../platform/adapter.ts'
 import type { LightSource, RayHit, RayLighting } from '../../lighting/mod.ts'
 import type { RenderLayer } from '../pipeline.ts'
@@ -141,8 +141,12 @@ export class LightingLayer implements RenderLayer {
         }
     }
 
-    render(frame: Canvas2DPreviewRenderFrame): void {
-        const { context, camera } = frame
+    render(frame: RenderFrame): void {
+        const previewFrame = frame as Canvas2DPreviewRenderFrame
+        const context = previewFrame.context
+        if (!context) return
+
+        const { camera } = frame
         this.lastCamera = camera
         this.offCtx.clearRect(0, 0, this.viewportWidth, this.viewportHeight)
 

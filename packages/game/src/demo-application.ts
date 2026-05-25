@@ -14,7 +14,7 @@ import {
     SideViewCamera,
     updateFrameDiagnostics,
 } from '@sidebound/engine'
-import { BrowserPlatformAdapter, PixelEngine } from '@sidebound/platform-browser'
+import { PixelEngine, PlatformBrowserAdapter } from '@sidebound/platform-browser'
 import { requireElement } from './core/dom.ts'
 import { DebugMinimap } from './debug/debug-minimap.ts'
 import { DebugPanel } from './debug/debug-panel.ts'
@@ -70,7 +70,7 @@ export class DemoApplication {
     }
 
     static async create(): Promise<DemoApplication> {
-        const platform = new BrowserPlatformAdapter()
+        const platform = new PlatformBrowserAdapter()
         return new DemoApplication(await loadDemoContent(platform), platform)
     }
 
@@ -239,10 +239,11 @@ export class DemoApplication {
     private render(context: RenderContext, renderer: Renderer2D): void {
         const renderStart = performance.now()
         const cameraRect = this.camera.getRect()
+        const frame = { context, renderer, camera: cameraRect }
 
         context.save()
         context.translate(-cameraRect.x, -cameraRect.y)
-        this.pipeline.render({ context, renderer, camera: cameraRect })
+        this.pipeline.render(frame)
         context.restore()
 
         this.diagnostics.renderMs = performance.now() - renderStart

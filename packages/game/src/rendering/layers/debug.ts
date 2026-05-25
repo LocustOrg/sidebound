@@ -1,4 +1,4 @@
-import type { Canvas2DPreviewRenderFrame, RenderContext, RenderLayer } from '@sidebound/engine'
+import type { Canvas2DPreviewRenderFrame, RenderContext, RenderFrame, RenderLayer } from '@sidebound/engine'
 import type { Rect, Vec2 } from '@sidebound/engine'
 import type { RayHit } from '@sidebound/engine'
 
@@ -35,8 +35,9 @@ export class DebugLayer implements RenderLayer {
         this.lightPolygonProvider = provider
     }
 
-    render(frame: Canvas2DPreviewRenderFrame): void {
-        const { context } = frame
+    render(frame: RenderFrame): void {
+        const { context } = frame as Canvas2DPreviewRenderFrame
+        if (!context) return
 
         if (this.showCollision) {
             this.drawCollision(context)

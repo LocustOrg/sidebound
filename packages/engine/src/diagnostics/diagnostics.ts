@@ -1,7 +1,7 @@
 import { smooth } from '../core/mod.ts'
 import type { Rect } from '../core/mod.ts'
 import type { RenderContext } from '../platform/render-context.ts'
-import type { Canvas2DPreviewRenderFrame } from '../platform/renderer.ts'
+import type { Canvas2DPreviewRenderFrame, RenderFrame } from '../platform/renderer.ts'
 import type { RenderLayer } from '../rendering/mod.ts'
 
 export type FrameDiagnostics = {
@@ -66,11 +66,16 @@ export class DebugOverlayLayer implements RenderLayer {
         }
     }
 
-    render(frame: Canvas2DPreviewRenderFrame): void {
+    render(frame: RenderFrame): void {
         this.ensureSorted()
+        const previewFrame = frame as Canvas2DPreviewRenderFrame
+
+        if (!previewFrame.context) {
+            return
+        }
 
         for (const hook of this.hooks) {
-            hook.render(frame.context, frame.camera, this.flags)
+            hook.render(previewFrame.context, frame.camera, this.flags)
         }
     }
 

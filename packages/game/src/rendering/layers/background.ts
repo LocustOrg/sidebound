@@ -1,4 +1,4 @@
-import type { Canvas2DPreviewRenderFrame, RenderLayer } from '@sidebound/engine'
+import type { Canvas2DPreviewRenderFrame, RenderFrame, RenderLayer } from '@sidebound/engine'
 import type { Level } from '../../world/types.ts'
 
 export class BackgroundLayer implements RenderLayer {
@@ -9,8 +9,10 @@ export class BackgroundLayer implements RenderLayer {
         this.world = world
     }
 
-    render(frame: Canvas2DPreviewRenderFrame): void {
-        const { context } = frame
+    render(frame: RenderFrame): void {
+        const { context } = frame as Canvas2DPreviewRenderFrame
+        if (!context) return
+
         const { width, height } = this.world
 
         const gradient = context.createLinearGradient(0, 0, 0, height)

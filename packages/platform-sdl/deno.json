@@ -1,0 +1,13 @@
+{
+    "name": "@sidebound/platform-sdl",
+    "version": "0.0.1",
+    "exports": "./src/mod.ts",
+    "tasks": {
+        "check": "deno check src/mod.ts",
+        "dev": "deno run --allow-read --allow-write --allow-env --allow-ffi src/dev.ts"
+    },
+    "imports": {
+        "@sdl3/sdl3-deno": "jsr:@sdl3/sdl3-deno@^2.2.0",
+        "@sidebound/engine": "../engine/src/mod.ts"
+    }
+}

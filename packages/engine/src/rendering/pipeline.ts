@@ -1,9 +1,9 @@
-import type { Canvas2DPreviewRenderFrame } from '../platform/renderer.ts'
+import type { RenderFrame } from '../platform/renderer.ts'
 
 export interface RenderLayer {
     readonly order: number
     update?(deltaSeconds: number): void
-    render(frame: Canvas2DPreviewRenderFrame): void
+    render(frame: RenderFrame): void
 }
 
 export class RenderPipeline {
@@ -42,7 +42,7 @@ export class RenderPipeline {
         }
     }
 
-    render(frame: Canvas2DPreviewRenderFrame): void {
+    render(frame: RenderFrame): void {
         this.ensureSorted()
 
         for (const layer of this.layers) {

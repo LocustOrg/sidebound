@@ -3,7 +3,7 @@ import { serveDir } from '@std/http/file-server'
 const packageRoot = new URL('../', import.meta.url)
 const distDir = new URL('dist/', packageRoot)
 let rebuildTimeout: ReturnType<typeof setTimeout> | undefined
-let buildBrowserPreview: ((options?: { readonly minify?: boolean; readonly liveReload?: boolean }) => Promise<void>) | undefined
+let buildPlatformBrowserPreview: ((options?: { readonly minify?: boolean; readonly liveReload?: boolean }) => Promise<void>) | undefined
 
 const liveReloadClients = new Set<WebSocket>()
 
@@ -18,9 +18,10 @@ function parsePort(): number {
     return port
 }
 
-async function rebuildBrowserPreview(): Promise<void> {
-    buildBrowserPreview ??= (await import('./build_browser_preview.ts')).buildBrowserPreview
-    await buildBrowserPreview({ liveReload: Deno.args.includes('--watch') })
+async function rebuildPlatformBrowserPreview(): Promise<void> {
+    const previewBuilder = await import('./build_browser_preview.ts')
+    buildPlatformBrowserPreview ??= previewBuilder.buildPlatformBrowserPreview
+    await buildPlatformBrowserPreview({ liveReload: Deno.args.includes('--watch') })
 }
 
 function notifyClients(): void {
@@ -35,8 +36,8 @@ function scheduleBuild(): void {
     clearTimeout(rebuildTimeout)
     rebuildTimeout = setTimeout(async () => {
         try {
-            await rebuildBrowserPreview()
-            console.log('Rebuilt browser preview')
+            await rebuildPlatformBrowserPreview()
+            console.log('Rebuilt platform-browser preview')
             notifyClients()
         } catch (error) {
             console.error(error)
@@ -44,7 +45,7 @@ function scheduleBuild(): void {
     }, 75)
 }
 
-function watchBrowserPreviewSources(): void {
+function watchPlatformBrowserPreviewSources(): void {
     const watcher = Deno.watchFs([
         decodeURIComponent(new URL('index.html', packageRoot).pathname),
         decodeURIComponent(new URL('src/', packageRoot).pathname),
@@ -76,13 +77,13 @@ function handleRequest(request: Request): Response | Promise<Response> {
 }
 
 if (!Deno.args.includes('--skip-build')) {
-    await rebuildBrowserPreview()
+    await rebuildPlatformBrowserPreview()
 }
 
 if (Deno.args.includes('--watch')) {
-    watchBrowserPreviewSources()
+    watchPlatformBrowserPreviewSources()
 }
 
 const port = parsePort()
-console.log(`Serving Sidebound browser preview at http://localhost:${port}/`)
+console.log(`Serving Sidebound platform-browser preview at http://localhost:${port}/`)
 Deno.serve({ hostname: '0.0.0.0', port }, handleRequest)

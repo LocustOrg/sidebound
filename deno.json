@@ -2,7 +2,8 @@
     "workspace": [
         "packages/engine",
         "packages/game",
-        "packages/platform-browser"
+        "packages/platform-browser",
+        "packages/platform-sdl"
     ],
     "compilerOptions": {
         "lib": [
@@ -32,7 +33,8 @@
             "deno.json",
             "packages/engine",
             "packages/game",
-            "packages/platform-browser"
+            "packages/platform-browser",
+            "packages/platform-sdl"
         ],
         "exclude": [
             "packages/game/dist"
@@ -44,7 +46,6 @@
     },
     "tasks": {
         "dev": "deno task --cwd packages/game dev",
-        "kill": "",
         "build": "deno task --cwd packages/game build",
         "preview": "deno task --cwd packages/game preview",
         "typecheck": "deno check packages/engine/src/mod.ts packages/platform-browser/src/mod.ts packages/game/src/main.ts packages/game/tools/build_browser_preview.ts packages/game/tools/serve_browser_preview.ts",

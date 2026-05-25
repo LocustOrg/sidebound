@@ -1,7 +1,7 @@
 import type { Canvas2DPreviewPlatform, Canvas2DPreviewSurface, ImageSource } from '@sidebound/engine'
 import { toRenderContext } from './render-context.ts'
 
-export class BrowserPlatformAdapter implements Canvas2DPreviewPlatform {
+export class PlatformBrowserAdapter implements Canvas2DPreviewPlatform {
     loadImage(url: string): Promise<ImageSource> {
         return new Promise((resolve, reject) => {
             const image = new Image()

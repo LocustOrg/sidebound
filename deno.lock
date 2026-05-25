@@ -4,6 +4,10 @@
     "jsr:@deno/cache-dir@0.13.2": "0.13.2",
     "jsr:@deno/emit@0.46.0": "0.46.0",
     "jsr:@deno/graph@~0.73.1": "0.73.1",
+    "jsr:@denosaurs/byte-type@~0.4.1": "0.4.1",
+    "jsr:@g9wp/ptr@~0.3.2": "0.3.2",
+    "jsr:@sdl3/sdl3-deno@*": "2.2.0",
+    "jsr:@sdl3/sdl3-deno@^2.2.0": "2.2.0",
     "jsr:@std/assert@0.223": "0.223.0",
     "jsr:@std/bytes@0.223": "0.223.0",
     "jsr:@std/cli@^1.0.29": "1.0.29",
@@ -11,6 +15,7 @@
     "jsr:@std/fmt@0.223": "0.223.0",
     "jsr:@std/fmt@^1.0.10": "1.0.10",
     "jsr:@std/fs@0.223": "0.223.0",
+    "jsr:@std/fs@^1.0.19": "1.0.23",
     "jsr:@std/fs@^1.0.23": "1.0.23",
     "jsr:@std/html@^1.0.6": "1.0.6",
     "jsr:@std/http@^1.1.0": "1.1.0",
@@ -19,6 +24,7 @@
     "jsr:@std/media-types@^1.1.0": "1.1.0",
     "jsr:@std/net@^1.0.6": "1.0.6",
     "jsr:@std/path@0.223": "0.223.0",
+    "jsr:@std/path@^1.1.2": "1.1.4",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/streams@^1.1.0": "1.1.0"
   },
@@ -43,6 +49,21 @@
     "@deno/graph@0.73.1": {
       "integrity": "cd69639d2709d479037d5ce191a422eabe8d71bb68b0098344f6b07411c84d41"
     },
+    "@denosaurs/byte-type@0.4.1": {
+      "integrity": "bf18e895a057482b21926cecf0a9c5fe57f544cbe535c1419f45b5cd090250d3"
+    },
+    "@g9wp/ptr@0.3.2": {
+      "integrity": "30123682986f851f6907aaf460c6dde4658ce6715556495f890574ce0a592bed"
+    },
+    "@sdl3/sdl3-deno@2.2.0": {
+      "integrity": "6d9278762194b16beff3a6adad41a97bcb8188a9903a9f0947066fdbc2dbda87",
+      "dependencies": [
+        "jsr:@denosaurs/byte-type",
+        "jsr:@g9wp/ptr",
+        "jsr:@std/fs@^1.0.19",
+        "jsr:@std/path@^1.1.2"
+      ]
+    },
     "@std/assert@0.223.0": {
       "integrity": "eb8d6d879d76e1cc431205bd346ed4d88dc051c6366365b1af47034b0670be24"
     },
@@ -65,7 +86,11 @@
       "integrity": "3b4b0550b2c524cbaaa5a9170c90e96cbb7354e837ad1bdaf15fc9df1ae9c31c"
     },
     "@std/fs@1.0.23": {
-      "integrity": "3ecbae4ce4fee03b180fa710caff36bb5adb66631c46a6460aaad49515565a37"
+      "integrity": "3ecbae4ce4fee03b180fa710caff36bb5adb66631c46a6460aaad49515565a37",
+      "dependencies": [
+        "jsr:@std/internal",
+        "jsr:@std/path@^1.1.4"
+      ]
     },
     "@std/html@1.0.6": {
       "integrity": "eaf759c8141e0733ca30eb49e4c08d8e6ca442b85c4d51f9894a56f502993e08"
@@ -122,6 +147,11 @@
         "dependencies": [
           "jsr:@deno/emit@0.46.0",
           "jsr:@std/http@^1.1.0"
+        ]
+      },
+      "packages/platform-sdl": {
+        "dependencies": [
+          "jsr:@sdl3/sdl3-deno@^2.2.0"
         ]
       }
     }

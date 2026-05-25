@@ -2,3 +2,13 @@ min_version = "2024.0.0"
 
 [tools]
 deno = "latest"
+
+[env]
+# SDL3 shared library path for @sdl3/sdl3-deno FFI loading.
+# Install: brew install sdl3
+DENO_SDL3_PATH = "/opt/homebrew/lib"
+
+[tasks.setup]
+description = "Install native dependencies"
+run = "brew install sdl3 sdl3_image"
+

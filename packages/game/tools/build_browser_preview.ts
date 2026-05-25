@@ -60,7 +60,7 @@ const liveReloadScript = `
 </script>
 `
 
-export async function buildBrowserPreview(options: { readonly minify?: boolean; readonly liveReload?: boolean } = {}): Promise<void> {
+export async function buildPlatformBrowserPreview(options: { readonly minify?: boolean; readonly liveReload?: boolean } = {}): Promise<void> {
     await removeIfExists(distDir)
     await Deno.mkdir(distAssetsDir, { recursive: true })
 
@@ -76,5 +76,5 @@ export async function buildBrowserPreview(options: { readonly minify?: boolean; 
 }
 
 if (import.meta.main) {
-    await buildBrowserPreview({ minify: Deno.args.includes('--minify') })
+    await buildPlatformBrowserPreview({ minify: Deno.args.includes('--minify') })
 }
