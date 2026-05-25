@@ -40,7 +40,7 @@ Reference links:
 
 - `packages/engine` must not import `@divy/sdl2`, `Deno`, `document`, `window`,
   `HTMLCanvasElement`, `CanvasRenderingContext2D`, Web Audio, `localStorage`, or
-  Vite APIs.
+  browser-preview tooling APIs.
 - `packages/game` must become a Deno debug harness. It may define demo content,
   debug scenes, and platform choice, but it must not own reusable engine systems.
 - SDL-specific code belongs in `packages/platform-sdl`.
@@ -264,12 +264,15 @@ Goal: make Deno the only active workspace toolchain before adding SDL code.
    imports.
 6. Remove pnpm/Node workspace metadata and TypeScript/ESLint/Prettier configs
    that duplicate Deno-owned tooling.
+7. Remove Vite from the game harness; browser preview builds and serves through
+   Deno and JSR packages only.
 
 Done when:
 
 - `mise exec -- deno task check` passes.
 - `mise exec -- deno task build` builds the browser preview.
 - `find packages -path '*/src/*' -name 'index.ts' -print` returns nothing.
+- Live config and source contain no npm-prefixed imports and no Vite config.
 - No `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `tsconfig*.json`,
   or `eslint.config.ts` files remain.
 

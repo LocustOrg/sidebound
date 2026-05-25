@@ -97,7 +97,7 @@ and minimap.
 
 ## Phase 0.5 - Deno Migration and Platform Abstraction
 
-Move the project from pnpm/Node to Deno immediately after Phase 0 extraction.
+Move the project from pnpm/Node/Vite to Deno immediately after Phase 0 extraction.
 The engine must run as a desktop app through `deno compile` without requiring a
 browser. Browser preview remains available as a development adapter.
 
@@ -114,11 +114,12 @@ Reference: https://deno.com/blog/deno-compile-executable-programs
 - All `document.createElement`, `new Image()`, `HTMLCanvasElement`,
   `HTMLImageElement`, and `CanvasRenderingContext2D` references removed from
   engine core and moved behind the platform adapter.
-- `@sidebound/platform-browser` adapter implementing `PlatformAdapter` for
+- `@sidebound/platform-browser-preview` adapter implementing `PlatformAdapter` for
   browser-based development preview.
 - Deno workspace configuration (`deno.json`) replacing `package.json`,
-  `pnpm-workspace.yaml`, and `pnpm-lock.yaml`.
-- Import maps pointing engine and platform packages to local source.
+  `pnpm-workspace.yaml`, `pnpm-lock.yaml`, and Vite config.
+- Deno workspace package resolution pointing engine and platform packages to
+  local source.
 - `deno compile` target producing a standalone desktop executable.
 - Engine loop using platform-provided clock instead of `requestAnimationFrame`
   directly.

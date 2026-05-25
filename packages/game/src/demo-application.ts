@@ -71,6 +71,7 @@ export class DemoApplication {
 
     static async create(): Promise<DemoApplication> {
         const platform = new BrowserPlatformAdapter()
+        console.log(12434234)
 
         return new DemoApplication(await loadDemoContent(platform), platform)
     }

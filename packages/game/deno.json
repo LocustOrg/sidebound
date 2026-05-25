@@ -2,13 +2,14 @@
     "name": "@sidebound/game",
     "exports": "./src/main.ts",
     "imports": {
-        "vite": "npm:vite@8.0.14"
+        "@deno/emit": "jsr:@deno/emit@0.46.0",
+        "@std/http": "jsr:@std/http@^1.1.0"
     },
     "tasks": {
-        "dev": "deno run --node-modules-dir=auto --allow-env --allow-read --allow-write --allow-net --allow-sys --allow-ffi npm:vite@8.0.14 --host 0.0.0.0 .",
-        "build": "deno check src/main.ts vite.config.ts && deno run --node-modules-dir=auto --allow-env --allow-read --allow-write --allow-net --allow-sys --allow-ffi npm:vite@8.0.14 build .",
-        "preview": "deno run --node-modules-dir=auto --allow-env --allow-read --allow-net --allow-sys --allow-ffi npm:vite@8.0.14 preview --host 0.0.0.0 .",
-        "typecheck": "deno check src/main.ts vite.config.ts",
+        "dev": "deno run --allow-env=PORT,DENO_DIR,HOME,DENO_AUTH_TOKENS --allow-net=0.0.0.0:5173,localhost:5173,jsr.io --allow-read --allow-write tools/serve_browser_preview.ts --watch",
+        "build": "deno check src/main.ts tools/build_browser_preview.ts tools/serve_browser_preview.ts && deno run --allow-env=DENO_DIR,HOME,DENO_AUTH_TOKENS --allow-net=jsr.io --allow-read --allow-write tools/build_browser_preview.ts --minify",
+        "preview": "deno task build && deno run --allow-env=PORT --allow-net --allow-read tools/serve_browser_preview.ts --skip-build --no-watch",
+        "typecheck": "deno check src/main.ts tools/build_browser_preview.ts tools/serve_browser_preview.ts",
         "check": "deno task typecheck"
     }
 }
