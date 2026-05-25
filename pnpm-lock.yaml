@@ -46,6 +46,9 @@ importers:
             '@sidebound/engine':
                 specifier: workspace:*
                 version: link:../engine
+            '@sidebound/platform-browser-preview':
+                specifier: workspace:*
+                version: link:../platform-browser-preview
         devDependencies:
             typescript:
                 specifier: ~6.0.2
@@ -53,6 +56,16 @@ importers:
             vite:
                 specifier: ^8.0.12
                 version: 8.0.14(@types/node@25.9.1)(jiti@2.7.0)
+
+    packages/platform-browser-preview:
+        dependencies:
+            '@sidebound/engine':
+                specifier: workspace:*
+                version: link:../engine
+        devDependencies:
+            typescript:
+                specifier: ~6.0.2
+                version: 6.0.3
 
 packages:
     '@emnapi/core@1.10.0':

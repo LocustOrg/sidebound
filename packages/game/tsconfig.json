@@ -4,7 +4,8 @@
         "types": ["vite/client"],
         "noEmit": true,
         "paths": {
-            "@sidebound/engine": ["../engine/src/index.ts"]
+            "@sidebound/engine": ["../engine/src/index.ts"],
+            "@sidebound/platform-browser-preview": ["../platform-browser-preview/src/index.ts"]
         }
     },
     "include": ["src"]

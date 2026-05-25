@@ -1,5 +1,5 @@
 import type { ImageSource } from '../platform/render-context'
-import type { PlatformAdapter } from '../platform/adapter'
+import type { Canvas2DPreviewPlatform } from '../platform/adapter'
 
 export type AssetId = string
 
@@ -27,9 +27,9 @@ export function imageHandle(id: AssetId): AssetHandle<'image'> {
 export class AssetStore {
     private readonly imageDefinitions = new Map<AssetId, ImageAssetDefinition>()
     private readonly images = new Map<AssetId, Promise<ImageAsset>>()
-    private readonly platform: PlatformAdapter
+    private readonly platform: Canvas2DPreviewPlatform
 
-    constructor(platform: PlatformAdapter) {
+    constructor(platform: Canvas2DPreviewPlatform) {
         this.platform = platform
     }
 

@@ -1,13 +1,13 @@
 import type { ImageSource, RenderContext } from './render-context'
 
-export type OffscreenSurface = {
+export type Canvas2DPreviewSurface = {
     readonly context: RenderContext
     readonly image: ImageSource
     readonly width: number
     readonly height: number
 }
 
-export type PlatformAdapter = {
+export type Canvas2DPreviewPlatform = {
     loadImage(url: string): Promise<ImageSource>
-    createOffscreenSurface(width: number, height: number): OffscreenSurface
+    createOffscreenSurface(width: number, height: number): Canvas2DPreviewSurface
 }

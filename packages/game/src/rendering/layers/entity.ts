@@ -1,5 +1,4 @@
-import type { RenderLayer, RenderContext } from '@sidebound/engine'
-import type { Rect } from '@sidebound/engine'
+import type { Canvas2DPreviewRenderFrame, RenderLayer, RenderContext } from '@sidebound/engine'
 import { clamp } from '@sidebound/engine'
 import type { Mob } from '../../entities/mob'
 import type { PickupItemEntity } from '../../entities/item-entity'
@@ -26,7 +25,9 @@ export class EntityLayer implements RenderLayer {
         if (index !== -1) this.mobs.splice(index, 1)
     }
 
-    render(context: RenderContext, _camera: Rect): void {
+    render(frame: Canvas2DPreviewRenderFrame): void {
+        const { context } = frame
+
         for (const item of this.itemProvider()) {
             this.drawItem(context, item)
         }

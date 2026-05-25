@@ -1,6 +1,7 @@
 import type { Rect, Vec2 } from '../../core'
 import type { RenderContext } from '../../platform/render-context'
-import type { OffscreenSurface, PlatformAdapter } from '../../platform/adapter'
+import type { Canvas2DPreviewRenderFrame } from '../../platform/renderer'
+import type { Canvas2DPreviewPlatform, Canvas2DPreviewSurface } from '../../platform/adapter'
 import { type LightSource, type RayHit, RayLighting } from '../../lighting'
 import type { RenderLayer } from '../pipeline'
 
@@ -22,7 +23,7 @@ type CachedLight = LightDebugEntry & {
 }
 
 export type LightingLayerOptions = {
-    readonly platform: PlatformAdapter
+    readonly platform: Canvas2DPreviewPlatform
     readonly ambientColor?: string
     readonly cullPadding?: number
 }
@@ -31,7 +32,7 @@ export class LightingLayer implements RenderLayer {
     readonly order = 30
 
     private readonly lighting: RayLighting
-    private readonly offscreen: OffscreenSurface
+    private readonly offscreen: Canvas2DPreviewSurface
     private readonly offCtx: RenderContext
     private readonly viewportWidth: number
     private readonly viewportHeight: number
@@ -140,7 +141,8 @@ export class LightingLayer implements RenderLayer {
         }
     }
 
-    render(context: RenderContext, camera: Rect): void {
+    render(frame: Canvas2DPreviewRenderFrame): void {
+        const { context, camera } = frame
         this.lastCamera = camera
         this.offCtx.clearRect(0, 0, this.viewportWidth, this.viewportHeight)
 

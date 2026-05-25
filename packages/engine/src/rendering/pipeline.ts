@@ -1,10 +1,9 @@
-import type { Rect } from '../core'
-import type { RenderContext } from '../platform/render-context'
+import type { Canvas2DPreviewRenderFrame } from '../platform/renderer'
 
 export interface RenderLayer {
     readonly order: number
     update?(deltaSeconds: number): void
-    render(context: RenderContext, camera: Rect): void
+    render(frame: Canvas2DPreviewRenderFrame): void
 }
 
 export class RenderPipeline {
@@ -43,11 +42,11 @@ export class RenderPipeline {
         }
     }
 
-    render(context: RenderContext, camera: Rect): void {
+    render(frame: Canvas2DPreviewRenderFrame): void {
         this.ensureSorted()
 
         for (const layer of this.layers) {
-            layer.render(context, camera)
+            layer.render(frame)
         }
     }
 

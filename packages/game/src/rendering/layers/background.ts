@@ -1,6 +1,5 @@
-import type { RenderLayer, RenderContext } from '@sidebound/engine'
+import type { Canvas2DPreviewRenderFrame, RenderLayer } from '@sidebound/engine'
 import type { Level } from '../../world/types'
-import type { Rect } from '@sidebound/engine'
 
 export class BackgroundLayer implements RenderLayer {
     readonly order = 0
@@ -10,7 +9,8 @@ export class BackgroundLayer implements RenderLayer {
         this.world = world
     }
 
-    render(context: RenderContext, _camera: Rect): void {
+    render(frame: Canvas2DPreviewRenderFrame): void {
+        const { context } = frame
         const { width, height } = this.world
 
         const gradient = context.createLinearGradient(0, 0, 0, height)

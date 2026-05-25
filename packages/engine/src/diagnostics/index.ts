@@ -1,6 +1,7 @@
 import { smooth } from '../core'
 import type { Rect } from '../core'
 import type { RenderContext } from '../platform/render-context'
+import type { Canvas2DPreviewRenderFrame } from '../platform/renderer'
 import type { RenderLayer } from '../rendering'
 
 export type FrameDiagnostics = {
@@ -65,11 +66,11 @@ export class DebugOverlayLayer implements RenderLayer {
         }
     }
 
-    render(context: RenderContext, camera: Rect): void {
+    render(frame: Canvas2DPreviewRenderFrame): void {
         this.ensureSorted()
 
         for (const hook of this.hooks) {
-            hook.render(context, camera, this.flags)
+            hook.render(frame.context, frame.camera, this.flags)
         }
     }
 

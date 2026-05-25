@@ -1,4 +1,4 @@
-import type { Rect, RenderContext, RenderLayer } from '@sidebound/engine'
+import type { Canvas2DPreviewRenderFrame, RenderContext, RenderLayer } from '@sidebound/engine'
 import type { Level, PlacedTile } from '../../world/types'
 
 export class TerrainLayer implements RenderLayer {
@@ -9,7 +9,9 @@ export class TerrainLayer implements RenderLayer {
         this.tiles = world.tiles
     }
 
-    render(context: RenderContext, _camera: Rect): void {
+    render(frame: Canvas2DPreviewRenderFrame): void {
+        const { context } = frame
+
         for (const tile of this.tiles) {
             switch (tile.material) {
                 case 'wall':

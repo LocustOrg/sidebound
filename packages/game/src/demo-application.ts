@@ -1,20 +1,20 @@
 import {
     AttachedLight,
-    BrowserPlatformAdapter,
+    type Canvas2DPreviewPlatform,
     createFrameDiagnostics,
     type FrameDiagnostics,
     InputManager,
     type KeyboardInputSource,
     LightingLayer,
-    PixelEngine,
     PointLight,
-    type PlatformAdapter,
     RayLighting,
     type RenderContext,
+    type Renderer2D,
     RenderPipeline,
     SideViewCamera,
     updateFrameDiagnostics,
 } from '@sidebound/engine'
+import { BrowserPlatformAdapter, PixelEngine } from '@sidebound/platform-browser-preview'
 import { requireElement } from './core/dom'
 import { DebugMinimap } from './debug/debug-minimap'
 import { DebugPanel } from './debug/debug-panel'
@@ -75,7 +75,7 @@ export class DemoApplication {
         return new DemoApplication(await loadDemoContent(platform), platform)
     }
 
-    private constructor(loadedContent: LoadedDemoContent, platform: PlatformAdapter) {
+    private constructor(loadedContent: LoadedDemoContent, platform: Canvas2DPreviewPlatform) {
         const canvas = requireElement<HTMLCanvasElement>('#game')
         const minimapCanvas = requireElement<HTMLCanvasElement>('#debug-minimap')
         const lighting = new RayLighting(world.lightOccluders)
@@ -124,7 +124,7 @@ export class DemoApplication {
             background: '#1e1a2e',
             loop: {
                 update: (deltaSeconds) => this.update(deltaSeconds),
-                render: (context) => this.render(context),
+                render: (context, renderer) => this.render(context, renderer),
             },
         })
     }
@@ -237,13 +237,13 @@ export class DemoApplication {
         this.diagnostics.updateMs = performance.now() - updateStart
     }
 
-    private render(context: RenderContext): void {
+    private render(context: RenderContext, renderer: Renderer2D): void {
         const renderStart = performance.now()
         const cameraRect = this.camera.getRect()
 
         context.save()
         context.translate(-cameraRect.x, -cameraRect.y)
-        this.pipeline.render(context, cameraRect)
+        this.pipeline.render({ context, renderer, camera: cameraRect })
         context.restore()
 
         this.diagnostics.renderMs = performance.now() - renderStart

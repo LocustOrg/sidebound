@@ -1,9 +1,8 @@
 /**
- * Platform-agnostic 2D rendering context.
+ * Temporary canvas-shaped 2D rendering context for the browser preview path.
  *
- * This interface defines the subset of 2D drawing operations the engine needs.
- * Browser adapters implement it via CanvasRenderingContext2D; future Deno/desktop
- * adapters may use WebGPU, SDL, or other backends.
+ * The SDL runtime uses Renderer2D commands instead of pretending every backend
+ * behaves like this API.
  */
 
 export type ImageSource = {

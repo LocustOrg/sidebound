@@ -1,23 +1,19 @@
+import type { AnimationFrameClock } from './clock'
+
 export type EngineFrame = {
     readonly now: number
     readonly deltaSeconds: number
 }
 
-export type EngineClock = {
-    now(): number
-    requestFrame(callback: (now: number) => void): number
-    cancelFrame(frameId: number): void
-}
-
 export type EngineLoopOptions = {
-    readonly clock: EngineClock
+    readonly clock: AnimationFrameClock
     readonly update: (frame: EngineFrame) => void
     readonly render?: (frame: EngineFrame) => void
     readonly maxDeltaSeconds?: number
 }
 
 export class EngineLoop {
-    private readonly clock: EngineClock
+    private readonly clock: AnimationFrameClock
     private readonly updateFrame: (frame: EngineFrame) => void
     private readonly renderFrame: ((frame: EngineFrame) => void) | undefined
     private readonly maxDeltaSeconds: number

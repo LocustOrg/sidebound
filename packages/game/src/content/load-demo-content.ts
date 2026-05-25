@@ -3,9 +3,9 @@ import {
     createLoadedEquipmentDefinition,
     loadSpriteSheet,
     type CharacterAppearance,
+    type Canvas2DPreviewPlatform,
     type ContentRegistry,
     type ItemDefinition,
-    type PlatformAdapter,
     type SpriteSheet,
 } from '@sidebound/engine'
 import { demoContent, demoContentIds } from './index'
@@ -58,7 +58,7 @@ async function loadItemIconSheets(registry: ContentRegistry, assets: AssetStore)
     return Object.fromEntries(entries)
 }
 
-export async function loadDemoContent(platform: PlatformAdapter): Promise<LoadedDemoContent> {
+export async function loadDemoContent(platform: Canvas2DPreviewPlatform): Promise<LoadedDemoContent> {
     demoContent.assertValid()
 
     const assets = new AssetStore(platform)

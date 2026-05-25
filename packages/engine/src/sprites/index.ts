@@ -1,6 +1,6 @@
 import type { AssetId, AssetStore } from '../assets'
 import type { ImageSource, RenderContext } from '../platform/render-context'
-import type { PlatformAdapter } from '../platform/adapter'
+import type { Canvas2DPreviewPlatform } from '../platform/adapter'
 
 export type SpriteFrame = {
     readonly col: number
@@ -135,7 +135,7 @@ export async function loadSpriteSheet(assetStore: AssetStore, assetId: AssetId, 
 }
 
 export function createProceduralSheet(
-    platform: PlatformAdapter,
+    platform: Canvas2DPreviewPlatform,
     frameWidth: number,
     frameHeight: number,
     columns: number,
@@ -151,7 +151,7 @@ export function createProceduralSheet(
 }
 
 export function createBitmapSheet(
-    platform: PlatformAdapter,
+    platform: Canvas2DPreviewPlatform,
     frameWidth: number,
     frameHeight: number,
     columns: number,

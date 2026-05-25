@@ -1,10 +1,11 @@
-import { type EngineClock, EngineLoop } from './loop'
-import type { ImageSource, RenderContext } from './render-context'
-import type { OffscreenSurface, PlatformAdapter } from './adapter'
+import { EngineLoop, type AnimationFrameClock, type RenderContext, type Renderer2D } from '@sidebound/engine'
+import { BrowserAnimationFrameClock } from './clock'
+import { Canvas2DPreviewRenderer } from './renderer-canvas2d'
+import { toRenderContext } from './render-context'
 
 export type PixelLoop = {
     update(deltaSeconds: number): void
-    render(context: RenderContext): void
+    render(context: RenderContext, renderer: Renderer2D): void
 }
 
 export type PixelScale = number | 'css'
@@ -21,6 +22,7 @@ export type PixelCanvasSurfaceOptions = {
 export type PixelCanvasSurface = {
     readonly canvas: HTMLCanvasElement
     readonly context: RenderContext
+    readonly renderer: Renderer2D
     readonly width: number
     readonly height: number
     readonly platformScale: number
@@ -30,57 +32,7 @@ export type PixelCanvasSurface = {
 
 export type PixelEngineOptions = PixelCanvasSurfaceOptions & {
     readonly loop: PixelLoop
-    readonly clock?: EngineClock
-}
-
-function toRenderContext(context: CanvasRenderingContext2D): RenderContext {
-    return context as unknown as RenderContext
-}
-
-export class BrowserAnimationFrameClock implements EngineClock {
-    now(): number {
-        return performance.now()
-    }
-
-    requestFrame(callback: (now: number) => void): number {
-        return requestAnimationFrame(callback)
-    }
-
-    cancelFrame(frameId: number): void {
-        cancelAnimationFrame(frameId)
-    }
-}
-
-export class BrowserPlatformAdapter implements PlatformAdapter {
-    loadImage(url: string): Promise<ImageSource> {
-        return new Promise((resolve, reject) => {
-            const image = new Image()
-            image.onload = () => resolve(image)
-            image.onerror = () => reject(new Error(`Failed to load image from ${url}`))
-            image.src = url
-        })
-    }
-
-    createOffscreenSurface(width: number, height: number): OffscreenSurface {
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-
-        if (!ctx) {
-            throw new Error('Failed to create offscreen canvas context')
-        }
-
-        ctx.imageSmoothingEnabled = false
-        const context = toRenderContext(ctx)
-
-        return {
-            context,
-            image: canvas,
-            width,
-            height,
-        }
-    }
+    readonly clock?: AnimationFrameClock
 }
 
 export function configurePixelCanvas(canvas: HTMLCanvasElement, width: number, height: number, scale: PixelScale = 4, platformScale = 1): void {
@@ -128,6 +80,7 @@ export function createPixelCanvasSurface(options: PixelCanvasSurfaceOptions): Pi
     return {
         canvas,
         context,
+        renderer: new Canvas2DPreviewRenderer(context, width, height),
         width,
         height,
         platformScale,
@@ -155,7 +108,7 @@ export class PixelEngine {
             update: ({ deltaSeconds }) => options.loop.update(deltaSeconds),
             render: () => {
                 this.surface.clear()
-                options.loop.render(this.surface.context)
+                options.loop.render(this.surface.context, this.surface.renderer)
             },
         })
     }
