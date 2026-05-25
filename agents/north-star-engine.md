@@ -53,7 +53,7 @@ The same game code should be able to run through:
 
 - `@sidebound/platform-deno` for the intended runtime.
 - `@sidebound/platform-desktop` later for packaged desktop apps.
-- `@sidebound/platform-browser-preview` only as a development preview adapter,
+- `@sidebound/platform-browser` only as a development preview adapter,
   not as the engine's native architecture.
 
 ## Design Principles

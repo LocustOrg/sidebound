@@ -37,7 +37,7 @@ async function bundleGame(options: { readonly minify: boolean }): Promise<void> 
         importMap: {
             imports: {
                 '@sidebound/engine': new URL('../engine/src/mod.ts', packageRoot).href,
-                '@sidebound/platform-browser-preview': new URL('../platform-browser-preview/src/mod.ts', packageRoot).href,
+                '@sidebound/platform-browser': new URL('../platform-browser/src/mod.ts', packageRoot).href,
             },
         },
         minify: options.minify,

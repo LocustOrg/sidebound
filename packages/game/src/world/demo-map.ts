@@ -37,8 +37,6 @@ const MAP_ROWS = [
     row('       C             .          C'),
     row(),
     row('     ######        GGGGGG        ######'),
-    row('     ######        GGGGGG        ######'),
-    row('     ######        GGGGGG        ######'),
     row('                    G  G'),
     row('          C         G  G       .'),
     row('                    GGGG'),

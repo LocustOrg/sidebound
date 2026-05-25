@@ -1,8 +1,8 @@
 {
     "workspace": [
         "packages/engine",
-        "packages/platform-browser-preview",
-        "packages/game"
+        "packages/game",
+        "packages/platform-browser"
     ],
     "compilerOptions": {
         "lib": [
@@ -31,8 +31,8 @@
         "include": [
             "deno.json",
             "packages/engine",
-            "packages/platform-browser-preview",
-            "packages/game"
+            "packages/game",
+            "packages/platform-browser"
         ],
         "exclude": [
             "packages/game/dist"
@@ -47,8 +47,8 @@
         "kill": "",
         "build": "deno task --cwd packages/game build",
         "preview": "deno task --cwd packages/game preview",
-        "typecheck": "deno check packages/engine/src/mod.ts packages/platform-browser-preview/src/mod.ts packages/game/src/main.ts packages/game/tools/build_browser_preview.ts packages/game/tools/serve_browser_preview.ts",
-        "lint": "deno lint packages/engine/src packages/platform-browser-preview/src packages/game/src packages/game/tools",
+        "typecheck": "deno check packages/engine/src/mod.ts packages/platform-browser/src/mod.ts packages/game/src/main.ts packages/game/tools/build_browser_preview.ts packages/game/tools/serve_browser_preview.ts",
+        "lint": "deno lint packages/engine/src packages/platform-browser/src packages/game/src packages/game/tools",
         "check": "deno task typecheck && deno task lint",
         "format": "deno fmt"
     }

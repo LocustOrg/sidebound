@@ -14,7 +14,7 @@ import {
     SideViewCamera,
     updateFrameDiagnostics,
 } from '@sidebound/engine'
-import { BrowserPlatformAdapter, PixelEngine } from '@sidebound/platform-browser-preview'
+import { BrowserPlatformAdapter, PixelEngine } from '@sidebound/platform-browser'
 import { requireElement } from './core/dom.ts'
 import { DebugMinimap } from './debug/debug-minimap.ts'
 import { DebugPanel } from './debug/debug-panel.ts'

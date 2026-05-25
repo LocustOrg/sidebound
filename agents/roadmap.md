@@ -114,7 +114,7 @@ Reference: https://deno.com/blog/deno-compile-executable-programs
 - All `document.createElement`, `new Image()`, `HTMLCanvasElement`,
   `HTMLImageElement`, and `CanvasRenderingContext2D` references removed from
   engine core and moved behind the platform adapter.
-- `@sidebound/platform-browser-preview` adapter implementing `PlatformAdapter` for
+- `@sidebound/platform-browser` adapter implementing `PlatformAdapter` for
   browser-based development preview.
 - Deno workspace configuration (`deno.json`) replacing `package.json`,
   `pnpm-workspace.yaml`, `pnpm-lock.yaml`, and Vite config.

@@ -44,7 +44,7 @@ Reference links:
 - `packages/game` must become a Deno debug harness. It may define demo content,
   debug scenes, and platform choice, but it must not own reusable engine systems.
 - SDL-specific code belongs in `packages/platform-sdl`.
-- Browser-specific code belongs in `packages/platform-browser-preview` or an
+- Browser-specific code belongs in `packages/platform-browser` or an
   explicitly named `browser-preview` submodule. It must not remain mixed into
   engine core.
 - Rendering migration must use explicit renderer commands or renderer interfaces.
@@ -91,7 +91,7 @@ packages/
       storage.ts
       window.ts
 
-  platform-browser-preview/
+  platform-browser/
     deno.json
     src/
       mod.ts
@@ -239,7 +239,7 @@ render(frame: RenderFrame): void
 
 5. Keep `RenderPipeline.update(deltaSeconds)` unchanged.
 6. Move all browser-only classes from `packages/engine/src/platform/browser.ts`
-   to `packages/platform-browser-preview/src`.
+   to `packages/platform-browser/src`.
 7. `packages/engine/src/mod.ts` must export only engine-owned interfaces and
    pure systems.
 
@@ -257,7 +257,7 @@ Goal: make Deno the only active workspace toolchain before adding SDL code.
 2. Add root `deno.json` with workspace members, import/package names, lint,
    format, check, build, and browser-preview dev tasks.
 3. Add package-level `deno.json` files for `packages/engine`,
-   `packages/platform-browser-preview`, and `packages/game`.
+   `packages/platform-browser`, and `packages/game`.
 4. Use `mod.ts` for module barrels, never `index.ts`; keep every `mod.ts`
    export-only and move implementation into named modules.
 5. Replace extensionless local imports with explicit `.ts` or `/mod.ts`
@@ -570,7 +570,7 @@ Goal: SDL is the primary harness; browser is optional.
     - `dev` -> Deno SDL task.
     - `dev:browser` -> browser preview task.
     - `check` -> Deno checks and lint.
-2. `packages/game/index.html` moves to `packages/platform-browser-preview` or
+2. `packages/game/index.html` moves to `packages/platform-browser` or
    `packages/game/browser-preview`.
 3. Update `agents/roadmap.md` Phase 0/1 notes to mark browser preview as
    secondary.
@@ -614,7 +614,7 @@ Perform these after Phase 1 interfaces exist:
 
 | Current file                                     | Target                                                                                          |
 | ------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `packages/engine/src/platform/browser.ts`        | `packages/platform-browser-preview/src/app.ts`, `renderer-canvas2d.ts`, `clock.ts`, `assets.ts` |
+| `packages/engine/src/platform/browser.ts`        | `packages/platform-browser/src/app.ts`, `renderer-canvas2d.ts`, `clock.ts`, `assets.ts` |
 | `packages/engine/src/platform/adapter.ts`        | split into `packages/engine/src/platform/renderer.ts`, `assets.ts`, `storage.ts`                |
 | `packages/engine/src/platform/render-context.ts` | replace with `packages/engine/src/rendering/renderer.ts` command API                            |
 | `packages/game/src/debug/debug-panel.ts`         | keep browser-only; build SDL debug overlay later                                                |

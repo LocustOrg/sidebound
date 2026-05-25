@@ -49,7 +49,7 @@ function watchBrowserPreviewSources(): void {
         decodeURIComponent(new URL('index.html', packageRoot).pathname),
         decodeURIComponent(new URL('src/', packageRoot).pathname),
         decodeURIComponent(new URL('../engine/src/', packageRoot).pathname),
-        decodeURIComponent(new URL('../platform-browser-preview/src/', packageRoot).pathname),
+        decodeURIComponent(new URL('../platform-browser/src/', packageRoot).pathname),
     ])
 
     void (async () => {

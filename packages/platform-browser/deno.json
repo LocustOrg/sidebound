@@ -1,5 +1,5 @@
 {
-    "name": "@sidebound/platform-browser-preview",
+    "name": "@sidebound/platform-browser",
     "exports": "./src/mod.ts",
     "tasks": {
         "typecheck": "deno check src/mod.ts",
