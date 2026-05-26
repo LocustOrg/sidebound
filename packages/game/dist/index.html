@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Sidebound Debug Harness</title>
+        <link rel="stylesheet" href="/assets/style.css" />
+    </head>
+    <body>
+        <main id="app">
+            <section class="stage" aria-label="Engine demo stage">
+                <canvas id="game" aria-label="Single area side-view ray tracing demo viewport"></canvas>
+                <aside id="debug-panel" class="panel" aria-label="Engine demo controls and diagnostics">
+                    <div class="panel-title">
+                        <span
+                            id="debug-panel-handle"
+                            class="panel-handle"
+                            role="button"
+                            tabindex="0"
+                            aria-label="Move diagnostics window. Drag with pointer or use arrow keys."
+                        >Diagnostics</span>
+                        <button id="debug-panel-reset" class="panel-reset" type="button">Reset</button>
+                    </div>
+                    <div class="panel-section">
+                        <button id="sound-toggle" type="button">Enable sound</button>
+                        <button id="pause-toggle" type="button" aria-pressed="false">Pause game</button>
+                    </div>
+                    <div class="panel-section">
+                        <label>
+                            <input id="debug-lighting" type="checkbox" checked />
+                            Lighting rays
+                        </label>
+                        <label>
+                            <input id="debug-collision" type="checkbox" checked />
+                            Collision
+                        </label>
+                        <label>
+                            <input id="debug-noclip" type="checkbox" />
+                            No-clip
+                        </label>
+                    </div>
+                    <dl class="metrics">
+                        <div>
+                            <dt>FPS</dt>
+                            <dd id="metric-fps">0</dd>
+                        </div>
+                        <div>
+                            <dt>Frame</dt>
+                            <dd id="metric-frame">0ms</dd>
+                        </div>
+                        <div>
+                            <dt>Update</dt>
+                            <dd id="metric-update">0ms</dd>
+                        </div>
+                        <div>
+                            <dt>Render</dt>
+                            <dd id="metric-render">0ms</dd>
+                        </div>
+                        <div>
+                            <dt>Ray time</dt>
+                            <dd id="metric-ray-time">0ms</dd>
+                        </div>
+                        <div>
+                            <dt>Rays</dt>
+                            <dd id="metric-rays">0</dd>
+                        </div>
+                        <div>
+                            <dt>Checks</dt>
+                            <dd id="metric-checks">0</dd>
+                        </div>
+                        <div>
+                            <dt>Memory</dt>
+                            <dd id="metric-memory">n/a</dd>
+                        </div>
+                        <div>
+                            <dt>Grounded</dt>
+                            <dd id="metric-grounded">false</dd>
+                        </div>
+                        <div>
+                            <dt>Velocity</dt>
+                            <dd id="metric-velocity">0, 0</dd>
+                        </div>
+                        <div>
+                            <dt>Map</dt>
+                            <dd id="metric-map-size">—</dd>
+                        </div>
+                        <div>
+                            <dt>Solids</dt>
+                            <dd id="metric-solids">0</dd>
+                        </div>
+                        <div>
+                            <dt>Occluders</dt>
+                            <dd id="metric-occluders">0</dd>
+                        </div>
+                        <div>
+                            <dt>Suns</dt>
+                            <dd id="metric-suns">0 / 0</dd>
+                        </div>
+                    </dl>
+                    <div class="panel-section minimap-section">
+                        <canvas id="debug-minimap" width="252" height="76" aria-label="Level minimap"></canvas>
+                    </div>
+                </aside>
+            </section>
+        </main>
+        <script type="module" src="/assets/main.js"></script>
+        
+<script>
+    const ws = new WebSocket(`ws://${location.host}`)
+    ws.onmessage = (e) => { if (e.data === 'reload') location.reload() }
+    ws.onclose = () => setTimeout(() => location.reload(), 1000)
+</script>
+
+    </body>
+</html>
