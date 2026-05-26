@@ -13,25 +13,42 @@ debug controls, but only to validate engine APIs. Avoid lore, progression,
 inventory, quests, procedural content, polished level design, or any feature
 whose main purpose is to make the demo feel like a finished game.
 
-## Current State
+## Active Work
 
-The engine package (`@sidebound/engine`) is currently a thin canvas loop. Most
-reusable systems still live in `engine-demo`, which is being removed.
+The roadmap starts from remaining engine work only:
 
-Reusable systems move into `@sidebound/engine`. Demo-specific wiring moves
-into `packages/game`, where it becomes the engine validation harness.
+- Fixed-step lifecycle and deterministic simulation.
+- Renderer, sprite, diagnostics, and lighting paths that do not depend on
+  Canvas2D preview types.
+- SDL3 texture loading, sprite drawing, render targets, and game runtime wiring.
+- Engine-owned entity, component, physics, collision, interaction, and combat
+  systems.
+- Runtime world travel, chunk streaming, validation depth, and persistence.
+- Tests, profiling, diagnostics, and package/compile automation.
 
-The old demo proves these behaviors and should keep proving them during the
-extraction:
+## Runtime Policy
 
-- Player movement.
-- Gravity.
-- AABB collision against static rectangles.
-- Smooth side-view camera follow.
-- Ray-based lighting.
-- Layered rendering.
-- Sprite animation.
-- Debug panel and minimap.
+SDL3 is the primary runtime and renderer target. Browser preview is temporary
+migration scaffolding, not a parallel product surface. Do not add new browser
+renderer features; only keep the preview working long enough to compare behavior
+while SDL3 reaches debug-room parity.
+
+## SDL3 Cutover Milestones
+
+1. Replace engine-owned `RenderContext` and `Canvas2DPreview*` dependencies with
+   `Renderer2D`, texture handles, and platform asset payloads.
+2. Implement SDL3 texture loading, `drawTexture`, render targets, and blend
+   behavior needed for sprites, UI/debug overlays, and basic lighting.
+3. Convert game terrain, entity, debug, background, sprite, item, and lighting
+   layers to `Renderer2D` commands or SDL3-compatible textures.
+4. Add an SDL3 game entrypoint that runs the debug room with movement, camera,
+   collision, sprites, item pickups, and collision debug.
+5. Move browser-only debug panel, minimap, and audio behind platform services or
+   drop them from the SDL3 milestone until platform replacements exist.
+6. Make SDL3 the default `dev` task and keep browser preview only as a temporary
+   migration task.
+7. Delete the browser renderer after SDL3 parity and compile/package smoke
+   coverage.
 
 ## Phase Rules
 
@@ -44,101 +61,6 @@ Every phase should produce three things:
 
 Do not add game content unless it directly proves an engine feature. Prefer
 small, artificial test rooms over authored gameplay.
-
----
-
-## Phase 0 - Engine Core Extraction
-
-Move reusable systems from `engine-demo` into `@sidebound/engine`, then move
-demo-specific setup into `packages/game`. Delete `engine-demo` after parity is
-restored.
-
-### Engine Deliverables
-
-- `Vec2`, `Rect`, `Segment`, and numeric helpers (`clamp`, `approach`,
-  `smoothDamp`).
-- Renderer/platform bootstrap helpers: surface creation, resize handling,
-  pixel-art scaling, and platform-scale support.
-- `EngineLoop` or equivalent platform-clock wrapper with `start()`, `stop()`, and
-  `dispose()`.
-- `RenderPipeline` and `RenderLayer` interface.
-- Sprite primitives: `SpriteSheet`, `AnimationClip`, `Animator`.
-- Content primitives from `sprite-content-architecture.md`: `AssetStore`,
-  `TextureAtlasLayout`, `ContentRegistry`, `defineCharacter`,
-  `defineEquipment`, and `defineItem`.
-- World primitives from `world-location-architecture.md`: `defineWorld`,
-  `defineRegion`, `defineLocation`, `connection`, `edgeConnection`, and
-  `chunkedTilemap`.
-- `SideViewCamera` with bounds, smoothing, integer pixel snapping, and viewport
-  conversion helpers.
-- `InputManager` for keyboard input and a typed `PlayerInputFrame`.
-- Ray-lighting primitives: `RayLighting`, `PointLight`, occluder segments, and
-  spatial query helpers.
-- Minimal diagnostics primitives used by the demo: frame counters, debug flags,
-  and overlay hooks.
-- Clean public exports from `@sidebound/engine`.
-
-### Demo Harness Proof
-
-- `packages/game` imports engine systems instead of copying or redefining them.
-- The old demo behavior still works after extraction.
-- Player sprite, demo map, debug panel platform wiring, and temporary assets live
-  in `packages/game`.
-- `engine-demo` package, workspace entry, scripts, and stale dist output are
-  removed.
-
-### Done When
-
-`engine-demo` no longer exists, `packages/game` runs through engine APIs, and the
-demo still proves movement, collision, camera, lighting, sprites, debug panel,
-and minimap.
-
----
-
-## Phase 0.5 - Deno Migration and Platform Abstraction
-
-Move the project from pnpm/Node/Vite to Deno immediately after Phase 0 extraction.
-The engine must run as a desktop app through `deno compile` without requiring a
-browser. Browser preview remains available as a development adapter.
-
-Reference: https://deno.com/blog/deno-compile-executable-programs
-
-### Engine Deliverables
-
-- `RenderContext` interface that replaces direct `CanvasRenderingContext2D` usage
-  in `RenderLayer`, `RenderPipeline`, `SpriteSheet`, `CharacterRenderer`, and
-  diagnostics.
-- `PlatformAdapter` interface owning: window/surface creation, image loading,
-  offscreen buffer creation, clock/timers, input source, storage, and audio
-  backend.
-- All `document.createElement`, `new Image()`, `HTMLCanvasElement`,
-  `HTMLImageElement`, and `CanvasRenderingContext2D` references removed from
-  engine core and moved behind the platform adapter.
-- `@sidebound/platform-browser` adapter implementing `PlatformAdapter` for
-  browser-based development preview.
-- Deno workspace configuration (`deno.json`) replacing `package.json`,
-  `pnpm-workspace.yaml`, `pnpm-lock.yaml`, and Vite config.
-- Deno workspace package resolution pointing engine and platform packages to
-  local source.
-- `deno compile` target producing a standalone desktop executable.
-- Engine loop using platform-provided clock instead of `requestAnimationFrame`
-  directly.
-
-### Demo Harness Proof
-
-- `packages/game` still runs in browser through the browser platform adapter.
-- Engine core passes `deno check` with no browser type dependencies.
-- `deno compile` produces an executable (rendering backend may be stubbed
-  initially; windowing and loop must work).
-- No `document`, `window`, `HTMLCanvasElement`, `HTMLImageElement`,
-  `CanvasRenderingContext2D`, `requestAnimationFrame`, or `localStorage` in
-  engine core source files.
-
-### Done When
-
-The engine has zero direct browser API usage, `packages/game` still runs in
-browser preview, the project builds and typechecks through Deno, and
-`deno compile` produces a runnable binary.
 
 ---
 
@@ -181,8 +103,8 @@ Turn rendering from demo code into a reusable side-view rendering module.
 
 - Stable layer order: background, terrain, entities, lighting, particles/FX, UI,
   debug.
-- `RenderContext` with surface size, camera transform, elapsed time, and debug
-  flags.
+- `Renderer2D`/`RenderFrame` commands with surface size, camera transform,
+  elapsed time, and debug flags.
 - Offscreen render-target helpers for cached terrain and light buffers.
 - Dirty tracking hooks for layers that can avoid full redraws.
 - Pixel-perfect scaling and camera snapping rules.

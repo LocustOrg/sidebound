@@ -6,6 +6,10 @@ This file describes the target developer experience for `@sidebound/engine`.
 It is not a statement of what exists today. It is the north-star API shape for
 the engine roadmap.
 
+Current delta from this target: `createEngine`, `defineGame`, engine-owned
+entities/physics/combat, SDL3 texture rendering, direct game boot through SDL3,
+and browser renderer deletion are still roadmap work.
+
 The engine should be code-first and Deno-first. There is no Unity/Unreal-style
 editor, no hidden scene database, and no required visual authoring tool. A game
 should be built from normal TypeScript files, asset folders, typed data
@@ -49,12 +53,15 @@ Those APIs may exist behind a platform adapter, but game code should only see
 engine-owned interfaces for windowing, rendering, input, audio, storage, timers,
 and debug UI.
 
-The same game code should be able to run through:
+The same game code should run through:
 
-- `@sidebound/platform-deno` for the intended runtime.
-- `@sidebound/platform-desktop` later for packaged desktop apps.
-- `@sidebound/platform-browser` only as a development preview adapter,
-  not as the engine's native architecture.
+- `@sidebound/platform-sdl` for the intended desktop runtime.
+
+Packaging helpers may wrap the SDL3 runtime for releases, but they should not
+introduce a second production runtime platform.
+
+Do not keep `@sidebound/platform-browser` in the final engine architecture. It
+is migration scaffolding only and should be deleted after SDL3 parity.
 
 ## Design Principles
 
@@ -150,7 +157,7 @@ The game should run through Deno directly.
     },
     "imports": {
         "@sidebound/engine": "../engine/src/mod.ts",
-        "@sidebound/platform-deno": "../platform-deno/src/mod.ts"
+        "@sidebound/platform-sdl": "../platform-sdl/src/mod.ts"
     }
 }
 ```
@@ -162,15 +169,15 @@ game definition, and start the engine.
 
 ```ts
 import { createEngine } from '@sidebound/engine'
-import { createDenoPlatform } from '@sidebound/platform-deno'
+import { createSdlRuntime } from '@sidebound/platform-sdl'
 
 import { game } from './game'
 
-const platform = await createDenoPlatform({
+const runtime = await createSdlRuntime({
     appId: 'sidebound.debug-harness',
     window: {
         title: 'Sidebound Debug Harness',
-        size: [1280, 720],
+        logicalSize: [1280, 720],
         minSize: [768, 432],
         pixelScale: 'integer-fit',
     },
@@ -180,10 +187,10 @@ const platform = await createDenoPlatform({
 })
 
 const engine = await createEngine({
-    platform,
+    runtime,
     game,
     debug: {
-        enabled: platform.env.dev,
+        enabled: true,
         openOnStart: true,
     },
 })

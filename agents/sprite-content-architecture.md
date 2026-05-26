@@ -8,13 +8,24 @@ systems consume loaded appearances and resolved asset handles.
 
 - Keep sprite rendering platform-renderer-first and pixel-crisp.
 - Keep game/content code free of direct browser APIs; renderer-specific handles
-  belong behind the Deno platform adapter and engine asset layer.
+  belong behind platform adapters and the engine asset layer.
+- Target SDL3 texture handles first. Browser image/canvas handles are temporary
+  compatibility code and should not shape the public sprite API.
 - Keep simulation state separate from render state.
 - Resolve content, assets, frame layouts, and equipment layers during startup.
 - Avoid stringly-typed lookups inside hot render loops.
 - Make new content additive: adding an item or equipment piece should not require
   changes to `PlayerMob`, `ItemSystem`, `main.ts`, or renderer internals.
 - Keep gameplay rules in systems and content effects, not in visual animation code.
+
+## Open Work
+
+- Replace `ImageSource`/`RenderContext` sprite drawing with `Renderer2D`
+  texture handles so SDL3 is the primary sprite path.
+- Add a declarative content assembly helper such as `defineContent` if it keeps
+  registration clearer than constructing `ContentRegistry` directly.
+- Move pickup/equipment gameplay systems into engine APIs only after the entity
+  model exists.
 
 ## Engine Responsibilities
 

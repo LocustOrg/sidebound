@@ -1,10 +1,25 @@
-# Deno + SDL Migration Plan
+# Deno + SDL3 Migration Plan
 
 ## Intent
 
 Move `sidebound` from a browser-preview-first runtime to a Deno executable
-runtime backed by SDL2. The browser preview may remain as a development adapter,
-but it must not define engine architecture.
+runtime backed by SDL3. Browser preview may remain only as temporary comparison
+scaffolding, and it must not define engine architecture.
+
+## End Goal
+
+SDL3 is the base layer of the engine. The final project should not maintain
+browser, desktop, Deno, and SDL as parallel runtime platforms.
+
+The engine may keep small engine-owned seams such as `Renderer2D`, input frames,
+texture handles, clocks, storage, and asset payloads, but those are internal
+engine contracts and test seams, not a promise of multiple production platforms.
+Only the SDL3 runtime package imports `@sdl3/sdl3-deno`; gameplay and reusable
+engine systems use engine-owned types.
+
+The browser renderer should be deleted after SDL3 debug-room parity and package
+smoke coverage. If a browser preview is ever useful later, it must be rebuilt as
+a separate experimental tool outside this engine workspace.
 
 This plan is intentionally precise. Follow it in order. Do not skip a phase just
 because the browser harness still works.
@@ -21,38 +36,73 @@ because the browser harness still works.
 - Use current Deno CLI flags in new code. The older Flappy Bird blog example uses
   `--unstable-ffi`, but the current Deno FFI docs show `--allow-ffi` as the
   required permission.
-- `@divy/sdl2` is the practical SDL2 binding to target first. It exposes
-  `WindowBuilder`, `Window.events()`, `Canvas`, `TextureCreator`, `Surface`,
-  `Texture`, `Rect`, and `EventType`.
-- `littledivy/flappybird` proves the shape: Deno + SDL2 + `deno compile`, with
-  images embedded as generated JS and native SDL libraries installed or bundled
-  beside the executable.
+- Use `@sdl3/sdl3-deno` for the SDL runtime, with all direct imports isolated
+  to `packages/platform-sdl`.
+- The older Deno Flappy Bird example remains useful only as a packaging shape:
+  Deno + native graphics binding + `deno compile` + native libraries beside the
+  executable.
 
 Reference links:
 
 - Deno compile docs: https://docs.deno.com/runtime/reference/cli/compile/
 - Deno FFI docs: https://docs.deno.com/runtime/fundamentals/ffi/
-- `@divy/sdl2` docs: https://jsr.io/@divy/sdl2/doc
+- `@sdl3/sdl3-deno` package: https://jsr.io/@sdl3/sdl3-deno
 - Deno compile blog / Flappy Bird example: https://deno.com/blog/deno-compile-executable-programs
 - Example repo: https://github.com/littledivy/flappybird
 
 ## Non-Negotiables
 
-- `packages/engine` must not import `@divy/sdl2`, `Deno`, `document`, `window`,
-  `HTMLCanvasElement`, `CanvasRenderingContext2D`, Web Audio, `localStorage`, or
-  browser-preview tooling APIs.
+- `packages/engine` must not import `@sdl3/sdl3-deno`, `Deno`, `document`,
+  `window`, `HTMLCanvasElement`, `CanvasRenderingContext2D`, Web Audio,
+  `localStorage`, or browser-preview tooling APIs.
 - `packages/game` must become a Deno debug harness. It may define demo content,
   debug scenes, and platform choice, but it must not own reusable engine systems.
-- SDL-specific code belongs in `packages/platform-sdl`.
-- Browser-specific code belongs in `packages/platform-browser` or an
-  explicitly named `browser-preview` submodule. It must not remain mixed into
-  engine core.
+- SDL3-specific code belongs in `packages/platform-sdl`.
+- Browser-specific code may exist only during migration, isolated in
+  `packages/platform-browser` or an explicitly named browser-preview submodule.
+  It must be deleted before the migration is done.
 - Rendering migration must use explicit renderer commands or renderer interfaces.
-  Do not keep pretending an SDL canvas is a DOM-like canvas 2D context.
-- Each phase must keep either the browser harness or the SDL harness runnable.
+  Do not keep pretending an SDL3 canvas is a DOM-like canvas 2D context.
+- Each phase must keep either the browser harness or the SDL3 harness runnable.
   Prefer a temporary dual-runtime period over a giant cutover.
+- Do not add new browser renderer features. Browser code may be touched only to
+  preserve temporary preview behavior while SDL3 catches up.
 
-## Target Package Layout
+## Active Work
+
+- Remove `Canvas2DPreviewPlatform`, `RenderContext`, and browser-shaped image
+  handles from engine-owned sprite, character, diagnostics, asset, and lighting
+  code.
+- Implement SDL3 texture loading/drawing and render targets.
+- Convert game render layers and lighting effects from Canvas2D calls to
+  `Renderer2D` commands or platform-specific textures.
+- Boot `packages/game` through SDL3 instead of the browser preview.
+- Add `deno compile` tasks and native-library packaging.
+
+## Reachable Cutover Plan
+
+1. **Freeze browser renderer scope.** No new browser rendering, DOM debug, Web
+   Audio, or Canvas2D lighting work unless it is required to keep comparison
+   parity during migration.
+2. **Create the renderer seam.** Remove engine-owned `RenderContext` and
+   `Canvas2DPreview*` dependencies from sprites, character rendering,
+   diagnostics, assets, and lighting.
+3. **Make SDL3 draw real assets.** Implement image loading, texture handles,
+   `drawTexture`, render targets, and the small set of blend modes needed for
+   sprites and debug overlays.
+4. **Port layers one at a time.** Convert terrain first, then entities/items,
+   then debug overlays, then lighting. Each converted layer must render through
+   `Renderer2D`.
+5. **Boot the debug room in SDL3.** Start without minimap, DOM debug panel, audio,
+   and full light compositing; keep movement, camera, collision, sprites, item
+   pickups, and collision debug working.
+6. **Make SDL3 default.** Switch `dev` to SDL3, move browser to `dev:browser`, and
+   add compile/package tasks.
+7. **Delete the browser renderer.** Remove browser renderer code once SDL3
+   parity and package smoke coverage are stable. Keep only test doubles and
+   SDL3 as the real runtime layer.
+
+## Desired Final File Structure
 
 ```txt
 packages/
@@ -65,16 +115,20 @@ packages/
       diagnostics/
       input/
       lighting/
-      platform/
+      runtime/
+        assets.ts
         clock.ts
-        input-source.ts
+        input.ts
+        loop.ts
         renderer.ts
         storage.ts
       rendering/
         commands.ts
         pipeline.ts
-        renderer.ts
-        sprites.ts
+        layers/
+          debug.ts
+          lighting.ts
+          sprites.ts
       sprites/
       world/
 
@@ -84,23 +138,14 @@ packages/
       mod.ts
       app.ts
       assets.ts
+      audio.ts
       clock.ts
       input.ts
+      runtime.ts
       renderer.ts
       sdl-types.ts
       storage.ts
       window.ts
-
-  platform-browser/
-    deno.json
-    src/
-      mod.ts
-      app.ts
-      assets.ts
-      clock.ts
-      input.ts
-      renderer-canvas2d.ts
-      storage.ts
 
   game/
     deno.json
@@ -117,9 +162,14 @@ packages/
       systems/
 ```
 
+No `packages/platform-browser` remains in the final layout. No engine source
+file imports DOM, Canvas2D, browser storage, Web Audio, or requestAnimationFrame.
+
 ## Target Runtime APIs
 
-Engine code should see these interfaces, not SDL or DOM classes.
+Engine code should see these interfaces, not SDL3 or DOM classes. These
+interfaces are for engine cleanliness and tests; SDL3 is still the only
+production runtime target.
 
 ```ts
 export type EngineClock = {
@@ -145,7 +195,7 @@ export type EngineRuntime = {
 }
 
 export type EngineRuntimeLoop = {
-    update(deltaSeconds: number): void
+    update(deltaSeconds: number, input: InputEvents): void
     render(frame: RenderFrame): void
 }
 ```
@@ -212,167 +262,53 @@ export type InputEvents = {
 
 ## Phase 1 - Runtime Boundary Cleanup
 
-Goal: make engine runtime interfaces honest before SDL code exists.
+Goal: finish making engine runtime interfaces honest.
 
-1. In `packages/engine/src/platform`, split the current platform types:
-    - `clock.ts`: `EngineClock`, `AnimationFrameClock` only if browser preview
-      still needs it.
-    - `renderer.ts`: `Renderer2D`, `RenderFrame`, `TextureHandle`,
-      `RenderTargetHandle`, `DrawOptions`.
-    - `input-source.ts`: `InputSource`, `InputEvents`, pointer/key event types.
-    - `storage.ts`: `KeyValueStorage`.
-2. Rename the current `PlatformAdapter` to `Canvas2DPreviewPlatform` or delete
-   it after its responsibilities are moved.
-3. Replace `RenderContext` in engine-owned code with `Renderer2D` where possible.
-   Keep a temporary `Canvas2DRenderContext` only inside browser preview.
-4. Change `RenderLayer` from:
-
-```ts
-render(context: RenderContext, camera: Rect): void
-```
-
-to:
-
-```ts
-render(frame: RenderFrame): void
-```
-
-5. Keep `RenderPipeline.update(deltaSeconds)` unchanged.
-6. Move all browser-only classes from `packages/engine/src/platform/browser.ts`
-   to `packages/platform-browser/src`.
-7. `packages/engine/src/mod.ts` must export only engine-owned interfaces and
-   pure systems.
+- Replace `RenderContext` in engine-owned sprites, character rendering,
+  diagnostics, asset loading, and lighting with `Renderer2D`/texture-oriented
+  interfaces.
+- Move or delete `Canvas2DPreviewPlatform`, `Canvas2DPreviewSurface`, and
+  `Canvas2DPreviewRenderFrame` from engine public APIs once their users are
+  converted.
+- Keep the browser preview adapter compiling while this happens, but do not
+  improve or expand its renderer.
 
 Done when:
 
-- `rg -n "document|window|HTMLCanvas|CanvasRenderingContext|AudioContext|localStorage|requestAnimationFrame" packages/engine/src` returns nothing.
+- Engine-owned runtime code no longer exposes `Canvas2DPreview*` or
+  `RenderContext` as the normal sprite/lighting/diagnostics path.
 - `packages/game` still runs through the browser preview adapter.
 - `deno task check && deno task build` passes through the mise-managed Deno toolchain.
 
-## Phase 1.5 - Deno Workspace Cutover
+## Phase 2 - SDL3 Renderer And Packaging Work
 
-Goal: make Deno the only active workspace toolchain before adding SDL code.
+1. Implement asset-backed image loading for SDL3.
+2. Implement texture creation/copy and `Renderer2D.drawTexture`.
+3. Implement render targets or an explicit fallback path for cached terrain,
+   debug overlays, and light masks.
+4. Implement only the blend/composite behavior required by the next SDL3
+   milestone.
+5. Add SDL3 package checks to root `check` once native binding availability is
+   reliable in CI.
 
-1. Select latest Deno through mise in `.mise.toml`.
-2. Add root `deno.json` with workspace members, import/package names, lint,
-   format, check, build, and browser-preview dev tasks.
-3. Add package-level `deno.json` files for `packages/engine`,
-   `packages/platform-browser`, and `packages/game`.
-4. Use `mod.ts` for module barrels, never `index.ts`; keep every `mod.ts`
-   export-only and move implementation into named modules.
-5. Replace extensionless local imports with explicit `.ts` or `/mod.ts`
-   imports.
-6. Remove pnpm/Node workspace metadata and TypeScript/ESLint/Prettier configs
-   that duplicate Deno-owned tooling.
-7. Remove Vite from the game harness; browser preview builds and serves through
-   Deno and JSR packages only.
+## Phase 3 - SDL3 Event Loop And Input
 
-Done when:
+Goal: SDL3 owns runtime events; engine receives typed input frames.
 
-- `mise exec -- deno task check` passes.
-- `mise exec -- deno task build` builds the browser preview.
-- `find packages -path '*/src/*' -name 'index.ts' -print` returns nothing.
-- Live config and source contain no npm-prefixed imports and no Vite config.
-- No `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `tsconfig*.json`,
-  or `eslint.config.ts` files remain.
-
-## Phase 2 - Add `packages/platform-sdl`
-
-Goal: create a minimal SDL window that can clear, present, and exit.
-
-1. Add `packages/platform-sdl/deno.json`:
-
-```json
-{
-    "tasks": {
-        "check": "deno check src/mod.ts",
-        "dev": "deno run --allow-read --allow-env --allow-ffi src/dev.ts",
-        "compile:mac": "deno compile --allow-read --allow-env --allow-ffi --include ../../packages/game/assets --output ../../dist/sidebound src/dev.ts",
-        "compile:win": "deno compile --target x86_64-pc-windows-msvc --allow-read --allow-env --allow-ffi --include ../../packages/game/assets --output ../../dist/sidebound.exe src/dev.ts"
-    },
-    "imports": {
-        "@divy/sdl2": "jsr:@divy/sdl2@0.15.0",
-        "@sidebound/engine": "../engine/src/mod.ts"
-    }
-}
-```
-
-2. Add `packages/platform-sdl/src/window.ts`:
-    - Import `WindowBuilder` and `EventType` from `@divy/sdl2`.
-    - Create a window with logical size.
-    - Expose `window.canvas()` as the SDL drawing backend.
-    - Expose `for await (const event of window.events())` through a runtime
-      `run()` loop.
-3. Add `packages/platform-sdl/src/renderer.ts`:
-    - `beginFrame(clearColor)` calls `canvas.setDrawColor(...)` then
-      `canvas.clear()`.
-    - `endFrame()` calls `canvas.present()`.
-    - Implement `fillRect`, `strokeRect`, `drawLine`, and texture copy first.
-4. Add `packages/platform-sdl/src/mod.ts`:
-
-```ts
-export { createSdlRuntime } from './app.ts'
-```
-
-5. Add a tiny dev entry in `packages/platform-sdl/src/dev.ts` that opens a
-   450x250 window, clears it, draws one rectangle, and exits on quit.
+- Replace or extend `InputManager` so browser preview and SDL3 can both feed the
+  same action-frame reducer.
+- Wire SDL3 input into the game player controller.
+- Keep browser preview input working during the dual-runtime period.
 
 Done when:
 
-- `deno task --config packages/platform-sdl/deno.json check` passes.
-- `deno task --config packages/platform-sdl/deno.json dev` opens a window,
-  renders a rectangle, and exits cleanly.
-
-## Phase 3 - SDL Event Loop And Input
-
-Goal: SDL owns runtime events; engine receives typed input frames.
-
-1. Implement SDL event conversion in `packages/platform-sdl/src/input.ts`.
-2. Map SDL events:
-    - `EventType.Quit` -> `quitRequested = true`.
-    - `EventType.KeyDown` -> `keysDown`, `keysHeld.add(key)`.
-    - `EventType.KeyUp` -> `keysUp`, `keysHeld.delete(key)`.
-    - `EventType.MouseButtonDown` -> `pointerDown`.
-    - `EventType.MouseButtonUp` -> `pointerUp`.
-3. Normalize key names into the existing `InputManager` vocabulary:
-    - SDL space scancode -> `' '`.
-    - left/right/up/down -> `'arrowleft'`, `'arrowright'`, `'arrowup'`,
-      `'arrowdown'`.
-    - letter keys -> lowercase letters.
-4. Replace `InputManager`'s browser listener dependency with a source that can
-   accept event batches from either SDL or browser preview.
-5. The SDL runtime loop should have this control flow:
-
-```ts
-for await (const event of window.events()) {
-    inputQueue.push(event)
-
-    if (event.type !== EventType.Draw) {
-        continue
-    }
-
-    const inputEvents = inputQueue.flush()
-    runtimeInput.apply(inputEvents)
-    loop.update(deltaSeconds)
-    renderer.beginFrame(clearColor)
-    loop.render({ renderer, camera })
-    renderer.endFrame()
-}
-```
-
-6. Do not use `Atomics.wait()` as the long-term frame limiter. Use SDL draw
-   events first. If draw events are too fast, add an `EngineClock.sleep(ms)`
-   implementation in the SDL runtime and document why.
-
-Done when:
-
-- SDL harness can quit via window close.
+- SDL3 and browser preview share the same action-frame reducer.
 - Keyboard left/right/jump input affects the player.
 - Browser preview input still works.
 
 ## Phase 4 - Texture And Asset Loading
 
-Goal: load game images as SDL textures through the asset layer.
+Goal: load game images as SDL3 textures through the asset layer.
 
 1. Replace `ImageSource` with an engine-owned asset payload:
 
@@ -386,16 +322,17 @@ export type ImageAssetSource = { kind: 'file'; path: string } | { kind: 'bytes';
 { id: 'characters/player/base', path: 'assets/sprites/player-base.png' }
 ```
 
-3. For development, `SdlAssetLoader` reads files from
-   `packages/game/assets/...` using `Deno.readFile`.
+3. For development, keep using `SdlAssetLoader.loadBytes()` and
+   `resolvePath()` to read files from `packages/game/assets/...`.
 4. For compiled executables, support both:
     - `deno compile --include packages/game/assets`.
-    - generated asset modules if SDL image loading requires real byte buffers.
+    - generated asset modules if SDL3 image loading requires real byte buffers.
 5. Implement `SdlRenderer.loadTexture(id, source)`:
     - If `source.kind === 'file'`, prefer `Surface.fromFile(path)` if supported.
-    - If `source.kind === 'bytes'`, use `Surface.fromRaw(...)` or a generated raw
-      image module, matching `@divy/sdl2` capabilities.
-    - Convert surface to texture via `canvas.textureCreator().createTextureFromSurface(surface)`.
+    - If `source.kind === 'bytes'`, use the image/surface path exposed by
+      `@sdl3/sdl3-deno`, or generate raw image modules if the binding requires
+      real byte buffers.
+    - Convert the decoded surface/image data to an SDL3 texture.
     - Cache texture by id.
     - Free intermediate surfaces after texture creation if the binding exposes
       `free()`.
@@ -404,15 +341,15 @@ export type ImageAssetSource = { kind: 'file'; path: string } | { kind: 'bytes';
 
 Done when:
 
-- Player base sheet, cape sheets, sword sheet, and item icons load in SDL.
+- Player base sheet, cape sheets, sword sheet, and item icons load in SDL3.
 - Texture dimensions are validated against `TextureAtlasLayout`.
 - Missing asset errors include asset id and resolved path.
 
 ## Phase 5 - Replace Canvas 2D Drawing With Renderer Commands
 
-Goal: make every current layer render through `Renderer2D`.
+Goal: make every game layer render through `Renderer2D`.
 
-Layer-by-layer conversion:
+Layer-by-layer conversion order:
 
 1. `TerrainLayer`
     - `fillRect` -> `renderer.fillRect`.
@@ -421,7 +358,7 @@ Layer-by-layer conversion:
     - sprite draw -> `renderer.drawTexture`.
     - item draw -> `renderer.drawTexture`.
     - ground shadow: replace ellipse gradient with one of:
-        - a prebuilt shadow texture, preferred for SDL.
+        - a prebuilt shadow texture, preferred for SDL3.
         - a simple alpha rectangle until texture support lands.
     - subtle aura: delete temporarily or replace with an aura texture.
 3. `BackgroundLayer`
@@ -432,11 +369,11 @@ Layer-by-layer conversion:
     - `strokeRect` -> `renderer.strokeRect`.
     - rays -> `renderer.drawLine`.
     - radius circles: approximate with a 32-segment polyline helper.
-5. `LightingLayer`
+5. `LightingLayer`, after terrain/entities/debug are working in SDL3
     - Stop relying on `globalCompositeOperation = 'destination-out'`.
-    - Implement a CPU-generated light mask texture or a simpler first SDL pass:
+    - Implement a CPU-generated light mask texture or a simpler first SDL3 pass:
         - draw dark overlay bands/rectangles.
-        - draw visibility polygons as tinted transparent triangles only if SDL
+        - draw visibility polygons as tinted transparent triangles only if SDL3
           blend mode supports it.
     - Keep ray casting engine-owned; only the mask compositing is platform/render
       specific.
@@ -444,33 +381,22 @@ Layer-by-layer conversion:
 Done when:
 
 - `rg -n "createLinearGradient|createRadialGradient|globalCompositeOperation|ellipse|drawImage|CanvasRenderingContext" packages/game/src packages/engine/src` finds no required runtime code outside browser preview.
-- SDL renders terrain, player, items, debug collision, and basic lighting.
+- SDL3 renders terrain, player, items, debug collision, and basic lighting.
 
 ## Phase 6 - Deno Game Entrypoint
 
-Goal: `packages/game` runs directly with Deno + SDL.
+Goal: `packages/game` runs directly with Deno + SDL3.
 
-1. Add `packages/game/deno.json`:
-
-```json
-{
-    "tasks": {
-        "check": "deno check src/main.ts",
-        "dev": "deno run --allow-read --allow-env --allow-ffi src/main.ts",
-        "compile:mac": "deno compile --allow-read --allow-env --allow-ffi --include assets --output ../../dist/sidebound src/main.ts",
-        "compile:win": "deno compile --target x86_64-pc-windows-msvc --allow-read --allow-env --allow-ffi --include assets --output ../../dist/sidebound.exe src/main.ts"
-    },
-    "imports": {
-        "@sidebound/engine": "../engine/src/mod.ts",
-        "@sidebound/platform-sdl": "../platform-sdl/src/mod.ts"
-    },
-    "compile": {
-        "include": ["assets"]
-    }
-}
-```
-
-2. Replace `packages/game/src/main.ts` with:
+1. Add SDL3 tasks to `packages/game/deno.json` without deleting the browser
+   preview path immediately:
+    - `dev:sdl`
+    - `compile:mac`
+    - `compile:win`
+2. Add `main.sdl.ts` first, then make `main.ts` SDL3 after parity. Move browser
+   preview to `main.browser.ts`.
+3. Introduce the smallest engine boot abstraction needed to share content,
+   world, input, and render layer setup across browser and SDL3.
+4. Target shape:
 
 ```ts
 import { createEngine } from '@sidebound/engine'
@@ -482,9 +408,8 @@ const runtime = await createSdlRuntime({
     appId: 'sidebound.debug-harness',
     window: {
         title: 'Sidebound Debug Harness',
-        logicalSize: [450, 250],
-        pixelScale: 'integer-fit',
-        resizable: true,
+        width: 450,
+        height: 250,
     },
     assets: {
         root: new URL('../assets/', import.meta.url),
@@ -495,15 +420,14 @@ const engine = await createEngine({ runtime, game })
 await engine.run()
 ```
 
-3. Add `packages/game/src/game.ts` with the current content registry, world,
-   renderer layer list, and debug-scene list.
-4. Keep the browser preview entrypoint separately named:
-   `packages/game/src/main.browser.ts`.
+5. Add `packages/game/src/game.ts` with the content registry, world, renderer
+   layer list, and debug-scene list.
 
 Done when:
 
 - `deno task --config packages/game/deno.json check` passes.
-- `deno task --config packages/game/deno.json dev` runs the current debug room.
+- `deno task --config packages/game/deno.json dev:sdl` runs the debug room, or
+  `dev` does after the final cutover.
 
 ## Phase 7 - Package Native Libraries
 
@@ -514,11 +438,11 @@ macOS:
 1. Require local dev dependency install:
 
 ```sh
-brew install sdl2 sdl2_image sdl2_ttf
+brew install sdl3 sdl3_image
 ```
 
-2. Support `DENO_SDL2_PATH=/opt/homebrew/lib/` and
-   `DENO_SDL2_PATH=/usr/local/lib/`.
+2. Support `DENO_SDL3_PATH=/opt/homebrew/lib/` and
+   `DENO_SDL3_PATH=/usr/local/lib/`.
 3. Compile:
 
 ```sh
@@ -537,9 +461,8 @@ deno task --config packages/game/deno.json compile:win
 ```
 
 2. Bundle beside the `.exe`:
-    - `SDL2.dll`
-    - `SDL2_image.dll`
-    - any transitive DLLs required by SDL2_image.
+    - SDL3 runtime DLLs required by `@sdl3/sdl3-deno`.
+    - SDL3_image or other image-loading DLLs if the texture path uses them.
 3. Use `--icon assets/app.ico` once an icon exists.
 
 Linux:
@@ -551,35 +474,40 @@ deno compile --target x86_64-unknown-linux-gnu --allow-read --allow-env --allow-
 ```
 
 2. Document required system packages:
-    - `libsdl2`
-    - `libsdl2-image`
-    - `libsdl2-ttf`
+    - SDL3 runtime package.
+    - SDL3 image package if texture loading depends on it.
 3. AppImage/Flatpak packaging comes later.
 
 Done when:
 
 - A macOS local executable runs from `dist/`.
 - The release folder documents required native library placement.
-- CI can at least `deno check` the SDL entrypoint.
+- CI can at least `deno check` the SDL3 entrypoint.
 
-## Phase 8 - Remove Browser As The Main Harness
+## Phase 8 - Delete Browser Runtime
 
-Goal: SDL is the primary harness; browser is optional.
+Goal: SDL3 is the only real runtime layer.
 
 1. Root `deno.json` tasks:
-    - `dev` -> Deno SDL task.
-    - `dev:browser` -> browser preview task.
-    - `check` -> Deno checks and lint.
-2. `packages/game/index.html` moves to `packages/platform-browser` or
-   `packages/game/browser-preview`.
-3. Update `agents/roadmap.md` Phase 0/1 notes to mark browser preview as
-   secondary.
+    - `dev` -> Deno SDL3 task.
+    - delete `dev:browser` after SDL3 parity unless a temporary migration task
+      is still needed.
+    - `check` -> Deno checks and lint, including `packages/platform-sdl` when
+      native binding availability is reliable in CI.
+2. Delete `packages/platform-browser` and `packages/game/index.html`.
+3. Delete browser-only build/serve tools once SDL3 compile/package tasks replace
+   them.
+4. Keep `agents/roadmap.md` runtime notes aligned with SDL3 as the only
+   supported runtime layer.
 
 Done when:
 
 - `deno task --config packages/game/deno.json dev` is the normal way to run the
   debug harness.
-- Browser preview can be deleted without changing engine or game logic.
+- Browser preview has been deleted from the main engine workspace.
+- No engine API names, types, or docs describe Canvas2D as the normal rendering
+  path.
+- No workspace task depends on DOM, Canvas2D, Web Audio, or browser serving.
 
 ## Phase 9 - Tests And CI
 
@@ -597,7 +525,7 @@ Add checks before deleting browser fallback:
     - fake `Renderer2D` records commands from `RenderPipeline`.
     - sprite draw emits correct source/destination rects.
     - debug layer emits rect/line commands.
-3. SDL smoke test:
+3. SDL3 smoke test:
     - create hidden window if supported.
     - create renderer.
     - create texture from one tiny generated surface.
@@ -610,27 +538,30 @@ Add checks before deleting browser fallback:
 
 ## Exact Current-Code Moves
 
-Perform these after Phase 1 interfaces exist:
+Use this as the remaining move list:
 
-| Current file                                     | Target                                                                                          |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `packages/engine/src/platform/browser.ts`        | `packages/platform-browser/src/app.ts`, `renderer-canvas2d.ts`, `clock.ts`, `assets.ts` |
-| `packages/engine/src/platform/adapter.ts`        | split into `packages/engine/src/platform/renderer.ts`, `assets.ts`, `storage.ts`                |
-| `packages/engine/src/platform/render-context.ts` | replace with `packages/engine/src/rendering/renderer.ts` command API                            |
-| `packages/game/src/debug/debug-panel.ts`         | keep browser-only; build SDL debug overlay later                                                |
-| `packages/game/src/debug/debug-minimap.ts`       | convert to `Renderer2D` commands or SDL texture                                                 |
-| `packages/game/src/systems/audio.ts`             | move to browser preview; replace with SDL audio later                                           |
-| `packages/game/src/main.ts`                      | Deno SDL entrypoint                                                                             |
-| `packages/game/index.html`                       | browser preview only                                                                            |
+| Current file/path                                | Target                                                                                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `packages/engine/src/platform/{clock,input-source,renderer,storage,loop}.ts` | Rename/move to `packages/engine/src/runtime/*` as engine-owned contracts, not multi-platform promises. |
+| `packages/engine/src/platform/adapter.ts`        | Delete after assets/sprites/lighting stop depending on browser-preview types.                    |
+| `packages/engine/src/platform/render-context.ts` | Delete after engine-owned usage moves to `Renderer2D` commands.                                  |
+| `packages/engine/src/assets/asset-store.ts`      | Replace `ImageSource` loading with platform-neutral image asset payloads and texture handles.     |
+| `packages/engine/src/sprites/*`                  | Draw through `Renderer2D.drawTexture` instead of `RenderContext.drawImage`.                       |
+| `packages/engine/src/rendering/layers/lighting.ts` | Split ray casting from browser compositing; add SDL3-compatible mask/texture path.                |
+| `packages/engine/src/diagnostics/diagnostics.ts` | Convert overlay hooks to renderer commands; delete browser-only hooks.                           |
+| `packages/game/src/rendering/layers/*`           | Convert terrain/entity/debug/background drawing to `Renderer2D` commands or textures.             |
+| `packages/game/src/debug/debug-panel.ts`         | Replace with SDL3/platform debug overlay or delete.                                              |
+| `packages/game/src/debug/debug-minimap.ts`       | Convert to `Renderer2D` commands or SDL3 texture.                                                |
+| `packages/game/src/systems/audio.ts`             | Replace with SDL3/platform audio; delete browser copy after transition.                           |
+| `packages/game/src/main.ts`                      | Deno SDL3 entrypoint after parity.                                                               |
+| `packages/game/index.html`                       | Delete after SDL3 is default.                                                                    |
 
-## First SDL Milestone Scope
+## Next SDL3 Milestone Scope
 
 Do not try to port every visual effect at once.
 
-The first SDL milestone must show:
+The next SDL3 milestone must show:
 
-- One window.
-- Pixel-art logical resolution.
 - Player sprite.
 - Item sprite.
 - Terrain rectangles.
@@ -639,7 +570,7 @@ The first SDL milestone must show:
 - Collision debug boxes.
 - Quit handling.
 
-The first SDL milestone may temporarily omit:
+The next SDL3 milestone may temporarily omit:
 
 - Gradients.
 - Aura.
@@ -651,23 +582,22 @@ The first SDL milestone may temporarily omit:
 
 ## Cutover Criteria
 
-SDL becomes the default when all are true:
+SDL3 becomes the default when all are true:
 
-1. `deno task --config packages/game/deno.json dev` runs the current debug room.
+1. `deno task --config packages/game/deno.json dev` runs the debug room.
 2. Player movement, gravity, AABB collision, camera follow, sprite animation,
    item pickups, and debug collision overlay work.
 3. `deno compile` produces a local macOS executable that runs outside the repo
    when native libraries are available.
-4. `packages/engine/src` contains no browser or SDL imports.
-5. Browser preview is clearly optional and shares engine/game definitions with
-   SDL.
+4. `packages/engine/src` contains no browser or SDL3 imports.
+5. Browser runtime is deleted from the main engine workspace.
 
 ## Risks
 
-- SDL2 canvas is not Canvas 2D. Gradients, compositing, text metrics, and
+- SDL3 rendering is not Canvas 2D. Gradients, compositing, text metrics, and
   clipping must be replaced, approximated, or moved to texture/render-target
   code.
-- `@divy/sdl2` is FFI-backed and may have breaking changes. Pin exact JSR
+- `@sdl3/sdl3-deno` is FFI-backed and may have breaking changes. Pin exact JSR
   versions and isolate all imports in `packages/platform-sdl`.
 - `deno compile` can include assets, but native SDL libraries still need
   platform packaging.
@@ -677,11 +607,12 @@ SDL becomes the default when all are true:
 
 ## Recommended Order For The Next Agent
 
-1. Finish Phase 1 and Phase 1.5 before creating SDL code.
-2. Add `packages/platform-sdl` and render a rectangle.
-3. Convert render layers to `Renderer2D` command calls.
-4. Load one sprite sheet as an SDL texture.
-5. Run the existing demo room in SDL with no lighting.
-6. Add debug collision overlay.
-7. Rebuild lighting as an SDL-compatible mask.
+1. Finish removing `Canvas2DPreview` dependencies from engine-owned sprites,
+   assets, diagnostics, and lighting.
+2. Implement SDL3 texture loading and `drawTexture`.
+3. Convert game render layers to `Renderer2D` command calls.
+4. Load one player sprite sheet as an SDL3 texture.
+5. Run the existing demo room in SDL3 with lighting temporarily disabled.
+6. Add SDL3 debug collision overlay.
+7. Rebuild lighting as an SDL3-compatible mask or texture path.
 8. Make `deno compile` work on macOS.

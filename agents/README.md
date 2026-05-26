@@ -10,7 +10,20 @@ Read them before making engine or demo changes.
 3. `sprite-content-architecture.md` — sprite assets, content registration, and character/item architecture.
 4. `world-location-architecture.md` — regions, locations, connections, chunked maps, travel, and validation.
 5. `north-star-engine.md` — the target Deno-first, code-first developer experience and ideal API shape.
-6. `deno-sdl-migration.md` — exact migration plan from browser preview to a Deno + SDL runtime.
+6. `deno-sdl-migration.md` — active migration plan from browser preview to a Deno + SDL3 runtime.
+
+## Active Focus
+
+The next agents should focus on fixed-step lifecycle, removing
+`Canvas2DPreview` dependencies from engine-owned rendering/sprites/diagnostics,
+wiring the SDL3 runtime into the demo, and moving entity/physics/combat systems
+out of `packages/game` only when the engine API is ready.
+
+## Runtime Policy
+
+SDL3 is the primary runtime goal. The browser renderer is temporary scaffolding:
+keep it compiling while SDL3 reaches debug-room parity, but do not add new
+browser-renderer features or shape engine APIs around Canvas2D.
 
 ## Default Behavior
 

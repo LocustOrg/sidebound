@@ -19,23 +19,23 @@ combat, lighting, and pathfinding assume a side-view world.
 
 Do not build top-down, three-quarter, isometric, or hybrid movement systems.
 
-## Current Architecture
+## Active Architecture Gaps
 
-| Package             | Role               | State                                                                                                                  |
-| ------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `@sidebound/engine` | All engine systems | Thin today — only owns the old browser rAF loop and canvas scaling. Will absorb reusable systems behind platform APIs. |
-| `game`              | Game demo          | Will use engine APIs to prove the feel. Currently minimal.                                                             |
-
-`engine-demo` is being deleted. All reusable systems move into `@sidebound/engine`;
-game-specific demo code moves into `game`.
+- Fixed timestep and lifecycle controls.
+- Engine-owned entity, component, physics, collision, interaction, and combat
+  systems.
+- SDL-safe sprite, lighting, diagnostics, and render-target paths that do not
+  rely on Canvas2D preview types.
+- Platform audio, storage-backed debug settings, and non-DOM debug UI.
+- Game demo boot through SDL3, followed by browser renderer deletion.
 
 ## Mandatory Systems
 
 ### Rendering
 
 - 2D renderer behind an engine-owned interface.
-- Browser canvas can exist as a preview adapter, but game code never depends on
-  canvas or DOM APIs directly.
+- SDL3 is the primary renderer target. Browser canvas exists only as temporary
+  migration scaffolding; game code never depends on canvas or DOM APIs directly.
 - Layered pipeline: background → terrain → entities → lighting → particles/FX → UI/HUD → debug.
 - Each layer implements `RenderLayer` interface with optional dirty tracking.
 - Pixel-art scaling must stay crisp (nearest-neighbor).
@@ -139,7 +139,7 @@ game-specific demo code moves into `game`.
 ## Implementation Rules
 
 - Engine code targets Deno-compatible TypeScript first; native browser APIs stay
-  behind platform adapters.
+  behind temporary preview adapters until the browser renderer is removed.
 - A platform adapter owns the window, renderer surface, input source, audio
   backend, storage, timers, and debug UI.
 - Performance is an engine feature, not a late cleanup task.
@@ -170,18 +170,20 @@ game-specific demo code moves into `game`.
 - Networking / multiplayer (deferred indefinitely).
 - Top-down, isometric, or hybrid perspectives.
 
-## Platform Direction: Deno First
+## Platform Direction: Deno + SDL3 First
 
-The intended runtime platform is **Deno**. Browser preview can remain useful for
-development, but browser APIs must not define the engine architecture. The
-future desktop app path should not require rewriting game code.
+The intended runtime platform is **Deno + SDL3**. Browser preview is temporary
+migration scaffolding, not a long-term renderer target. Browser APIs must not
+define the engine architecture, and new renderer work should land on
+`Renderer2D`, SDL textures, render targets, and platform-owned services.
 
 To enable this:
 
 - Keep all game logic (physics, entities, combat, input processing) as pure
   TypeScript with zero DOM/browser dependencies.
-- Renderer is behind an interface; Canvas, WebGPU, SDL, or any native surface is
-  a platform implementation detail.
+- Renderer is behind an interface; SDL3 is the first-class implementation.
+  Canvas-shaped `RenderContext` and `Canvas2DPreview` paths must be removed
+  during the SDL cutover.
 - Input source is behind an abstraction; keyboard, gamepad, pointer, and touch
   events are normalized before systems see them.
 - Audio is behind an interface; sample playback, spatial panning, and buses do
@@ -189,4 +191,6 @@ To enable this:
 - Storage, timers, debug UI, and file access are behind explicit platform
   services.
 - No `document`, `window`, DOM, Web Audio, `localStorage`, or
-  `requestAnimationFrame` access in engine core or game code.
+  `requestAnimationFrame` access in engine core. Browser-only demo code must
+  stay isolated and move behind platform services or be deleted before SDL3
+  becomes the default runtime.

@@ -26,6 +26,13 @@ The rule:
 - Regions own location lists.
 - The engine owns validation, loading, unloading, travel, and persistence.
 
+## Open Work
+
+- Runtime `TravelSystem`, transition hooks, connection trigger following, chunk
+  streaming, chunk collision/render/light caches, reachability validation,
+  reciprocal-link validation, tile-id validation against registered tilesets,
+  persistence hooks, and SDL3-rendered world debug overlays.
+
 ## Ideal File Shape
 
 ```txt
