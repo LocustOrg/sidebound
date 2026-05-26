@@ -1,6 +1,5 @@
 {
     "workspace": [
-        "lint-rules",
         "packages/engine",
         "packages/game",
         "packages/platform-browser",
@@ -20,9 +19,6 @@
         "noFallthroughCasesInSwitch": true
     },
     "lint": {
-        "plugins": [
-            "./lint-rules/sidebound-lint-plugin.ts"
-        ],
         "rules": {
             "tags": [
                 "recommended"
@@ -35,7 +31,6 @@
     "fmt": {
         "include": [
             "deno.json",
-            "lint-rules/**/*.ts",
             "packages/engine/**/*.ts",
             "packages/game/**/*.ts",
             "packages/platform-browser/**/*.ts",
