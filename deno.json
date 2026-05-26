@@ -25,7 +25,8 @@
             ]
         },
         "exclude": [
-            "packages/game/dist"
+            "packages/game/dist",
+            "dist"
         ]
     },
     "fmt": {
@@ -37,7 +38,8 @@
             "packages/platform-sdl/**/*.ts"
         ],
         "exclude": [
-            "packages/game/dist"
+            "packages/game/dist",
+            "dist"
         ],
         "indentWidth": 4,
         "lineWidth": 180,
@@ -46,10 +48,14 @@
     },
     "tasks": {
         "dev": "deno task --cwd packages/game dev",
-        "build": "deno task --cwd packages/game build",
-        "preview": "deno task --cwd packages/game preview",
-        "typecheck": "deno check packages/engine/**/*.ts packages/platform-browser/**/*.ts packages/game/**/*.ts packages/game/tools/build_browser_preview.ts packages/game/tools/serve_browser_preview.ts",
-        "lint": "deno lint packages/engine/src packages/platform-browser/src packages/game/src packages/game/tools",
+        "dev:browser": "deno task --cwd packages/game dev:browser",
+        "compile:mac": "deno task --cwd packages/game compile:mac",
+        "compile:mac-arm64": "deno task --cwd packages/game compile:mac-arm64",
+        "compile:win": "deno task --cwd packages/game compile:win",
+        "compile:linux": "deno task --cwd packages/game compile:linux",
+        "build:browser": "deno task --cwd packages/game build:browser",
+        "typecheck": "deno check packages/engine/**/*.ts packages/platform-browser/**/*.ts packages/platform-sdl/**/*.ts packages/game/**/*.ts packages/game/tools/build_browser_preview.ts packages/game/tools/serve_browser_preview.ts",
+        "lint": "deno lint packages/engine/src packages/platform-browser/src packages/platform-sdl/src packages/game/src packages/game/tools",
         "check": "deno task typecheck && deno task lint",
         "format": "deno fmt"
     }

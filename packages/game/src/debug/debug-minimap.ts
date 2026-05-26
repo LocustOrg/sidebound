@@ -12,6 +12,10 @@ export type MinimapConfig = {
 /**
  * Renders a minimap overview of the game world inside the debug panel.
  * Shows terrain materials, sun positions, player position, and camera viewport.
+ *
+ * **Browser-only.** This component uses Canvas2D directly and is only used
+ * from the browser preview entrypoint (`demo-application.ts`). It will be
+ * deleted when the browser renderer is removed (Phase 6).
  */
 export class DebugMinimap {
     private readonly canvas: HTMLCanvasElement

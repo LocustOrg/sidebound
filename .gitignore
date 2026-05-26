@@ -8,7 +8,9 @@ lerna-debug.log*
 
 node_modules
 .vite
-dist
+dist/*
+!dist/README.md
+!dist/.gitignore
 dist-ssr
 *.local
 
