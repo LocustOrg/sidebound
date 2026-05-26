@@ -1,19 +1,13 @@
 {
     "name": "@sidebound/game",
-    "exports": "./src/main.sdl.ts",
-    "imports": {
-        "@deno/emit": "jsr:@deno/emit@0.46.0",
-        "@std/http": "jsr:@std/http@^1.1.0"
-    },
+    "exports": "./src/main.ts",
     "tasks": {
-        "dev": "deno run -A src/main.sdl.ts",
-        "dev:browser": "deno run --allow-env=PORT,DENO_DIR,HOME,DENO_AUTH_TOKENS --allow-net=0.0.0.0:5173,localhost:5173,jsr.io --allow-read --allow-write tools/serve_browser_preview.ts --watch",
-        "build:browser": "deno check src/main.ts tools/build_browser_preview.ts tools/serve_browser_preview.ts && deno run --allow-env=DENO_DIR,HOME,DENO_AUTH_TOKENS --allow-net=jsr.io --allow-read --allow-write tools/build_browser_preview.ts --minify",
-        "compile:mac": "deno compile --allow-read --allow-write --allow-env --allow-ffi --include assets --output ../../dist/sidebound src/main.sdl.ts",
-        "compile:mac-arm64": "deno compile --target aarch64-apple-darwin --allow-read --allow-write --allow-env --allow-ffi --include assets --output ../../dist/sidebound src/main.sdl.ts",
-        "compile:win": "deno compile --target x86_64-pc-windows-msvc --allow-read --allow-write --allow-env --allow-ffi --include assets --output ../../dist/sidebound.exe src/main.sdl.ts",
-        "compile:linux": "deno compile --target x86_64-unknown-linux-gnu --allow-read --allow-write --allow-env --allow-ffi --include assets --output ../../dist/sidebound src/main.sdl.ts",
-        "typecheck": "deno check src/main.ts src/main.sdl.ts tools/build_browser_preview.ts tools/serve_browser_preview.ts",
+        "dev": "deno run -A src/main.ts",
+        "compile:mac": "deno compile --allow-read --allow-write --allow-env --allow-ffi --include assets --output ../../dist/sidebound src/main.ts",
+        "compile:mac-arm64": "deno compile --target aarch64-apple-darwin --allow-read --allow-write --allow-env --allow-ffi --include assets --output ../../dist/sidebound src/main.ts",
+        "compile:win": "deno compile --target x86_64-pc-windows-msvc --allow-read --allow-write --allow-env --allow-ffi --include assets --output ../../dist/sidebound.exe src/main.ts",
+        "compile:linux": "deno compile --target x86_64-unknown-linux-gnu --allow-read --allow-write --allow-env --allow-ffi --include assets --output ../../dist/sidebound src/main.ts",
+        "typecheck": "deno check src/main.ts",
         "check": "deno task typecheck"
     }
 }

@@ -1,9 +1,22 @@
 import { type CharacterAppearance, type EquipmentLoadout, type PlayerInputFrame, type Rect, registerSpriteAnimationClips, type Renderer2D, type Vec2 } from '@sidebound/engine'
-import type { SoundCue } from '../systems/audio.ts'
-import { controls } from '../core/config.ts'
 import { CharacterRenderComponent } from './character-render-component.ts'
 import { Mob, type MobPhysics } from './mob.ts'
 import { MobState } from './mob-states.ts'
+
+export type SoundCue = {
+    frequency: number
+    durationSeconds: number
+    gain: number
+}
+
+const controls = {
+    maxSpeed: 78,
+    groundAcceleration: 780,
+    airAcceleration: 430,
+    friction: 920,
+    gravity: 420,
+    jumpVelocity: 287,
+}
 
 const PLAYER_PHYSICS: MobPhysics = {
     maxSpeed: controls.maxSpeed,

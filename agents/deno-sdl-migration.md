@@ -70,9 +70,9 @@ Reference links:
 
 ## Active Work
 
-- Phase 5 compile tasks added. Verify `deno task compile:mac` produces working
-  executable, then move to Phase 6.
-- Delete browser renderer after SDL3 parity and smoke coverage (Phase 6).
+- Phase 5 compile tasks complete.
+- Phase 6 complete: browser runtime deleted, SDL3 is the only runtime.
+- Next: Phase 7 — tests and CI.
 
 ## Reachable Cutover Plan
 

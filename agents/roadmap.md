@@ -41,12 +41,12 @@ while SDL3 reaches debug-room parity.
    layers to `Renderer2D` commands or SDL3-compatible textures.
 3. Add an SDL3 game entrypoint that runs the debug room with movement, camera,
    collision, sprites, item pickups, and collision debug.
-4. Move browser-only debug panel, minimap, and audio behind platform services or
-   drop them from the SDL3 milestone until platform replacements exist.
-5. Make SDL3 the default `dev` task and keep browser preview only as a temporary
-   migration task.
-6. Delete the browser renderer after SDL3 parity and compile/package smoke
-   coverage.
+4. ~~Move browser-only debug panel, minimap, and audio behind platform services or
+   drop them from the SDL3 milestone until platform replacements exist.~~ Done.
+5. ~~Make SDL3 the default `dev` task and keep browser preview only as a temporary
+   migration task.~~ Done — SDL3 is the sole `dev` task.
+6. ~~Delete the browser renderer after SDL3 parity and compile/package smoke
+   coverage.~~ Done — `packages/platform-browser` removed.
 
 ## Phase Rules
 

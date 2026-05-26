@@ -2,15 +2,11 @@
     "workspace": [
         "packages/engine",
         "packages/game",
-        "packages/platform-browser",
         "packages/platform-sdl"
     ],
     "compilerOptions": {
         "lib": [
             "deno.window",
-            "dom",
-            "dom.iterable",
-            "dom.asynciterable",
             "esnext"
         ],
         "strict": true,
@@ -34,7 +30,6 @@
             "deno.json",
             "packages/engine/**/*.ts",
             "packages/game/**/*.ts",
-            "packages/platform-browser/**/*.ts",
             "packages/platform-sdl/**/*.ts"
         ],
         "exclude": [
@@ -48,14 +43,12 @@
     },
     "tasks": {
         "dev": "deno task --cwd packages/game dev",
-        "dev:browser": "deno task --cwd packages/game dev:browser",
         "compile:mac": "deno task --cwd packages/game compile:mac",
         "compile:mac-arm64": "deno task --cwd packages/game compile:mac-arm64",
         "compile:win": "deno task --cwd packages/game compile:win",
         "compile:linux": "deno task --cwd packages/game compile:linux",
-        "build:browser": "deno task --cwd packages/game build:browser",
-        "typecheck": "deno check packages/engine/**/*.ts packages/platform-browser/**/*.ts packages/platform-sdl/**/*.ts packages/game/**/*.ts packages/game/tools/build_browser_preview.ts packages/game/tools/serve_browser_preview.ts",
-        "lint": "deno lint packages/engine/src packages/platform-browser/src packages/platform-sdl/src packages/game/src packages/game/tools",
+        "typecheck": "deno check packages/engine/**/*.ts packages/platform-sdl/**/*.ts packages/game/**/*.ts",
+        "lint": "deno lint packages/engine/src packages/platform-sdl/src packages/game/src",
         "check": "deno task typecheck && deno task lint",
         "format": "deno fmt"
     }
