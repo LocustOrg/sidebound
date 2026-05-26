@@ -24,7 +24,7 @@ const runtime = createSdlRuntime({
         height: viewport.height,
     },
     assets: {
-        root: new URL('../src/assets/', import.meta.url),
+        root: new URL('../', import.meta.url),
     },
     clearColor: { r: 30, g: 26, b: 46, a: 1 },
 })

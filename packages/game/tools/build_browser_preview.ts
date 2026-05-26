@@ -71,7 +71,7 @@ export async function buildPlatformBrowserPreview(options: { readonly minify?: b
     await Deno.writeTextFile(new URL('index.html', distDir), html)
 
     await Deno.copyFile(new URL('src/style.css', packageRoot), new URL('style.css', distAssetsDir))
-    await copyDirectory(new URL('src/assets/', packageRoot), distAssetsDir)
+    await copyDirectory(new URL('assets/', packageRoot), distAssetsDir)
     await bundleGame({ minify: options.minify ?? false })
 }
 

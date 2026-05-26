@@ -4,7 +4,7 @@
  */
 
 import { Surface } from '@sdl3/sdl3-deno'
-import type { RendererImageSource, ImageAssetLoader } from '@sidebound/engine'
+import type { ImageAssetLoader, RendererImageSource } from '@sidebound/engine'
 
 
 export type SdlAssetLoaderOptions = {
@@ -64,6 +64,14 @@ function imageSourceSize(surface: Surface): { readonly width: number; readonly h
     return { width: detail.w, height: detail.h }
 }
 
+function assertValidDimensions(assetPath: string, resolvedPath: string, width: number, height: number): void {
+    if (width === 0 || height === 0) {
+        throw new Error(
+            `Asset '${assetPath}' resolved to '${resolvedPath}' loaded with invalid dimensions ${width}×${height}`,
+        )
+    }
+}
+
 async function loadSdlSurfaceFromPath(path: string): Promise<Surface> {
     await Surface.enableImageLib()
 
@@ -106,32 +114,36 @@ export class SdlAssetLoader implements ImageAssetLoader {
     async loadImage(assetPath: string): Promise<RendererImageSource> {
         const resolvedPath = this.resolvePath(assetPath)
 
+        let pathError: unknown
         try {
             const surface = await loadSdlSurfaceFromPath(resolvedPath)
-            try {
-                const { width, height } = imageSourceSize(surface)
-                return { kind: 'file', path: resolvedPath, width, height, fileExtension: extensionFromPath(resolvedPath) }
-            } finally {
-                surface.destroy()
-            }
-        } catch (pathError) {
-            try {
-                const bytes = await this.loadBytes(assetPath)
-                const surface = await loadSdlSurfaceFromBytes(bytes, extensionFromPath(assetPath))
+            const { width, height } = imageSourceSize(surface)
+            surface.destroy()
 
-                try {
-                    const { width, height } = imageSourceSize(surface)
-                    return { kind: 'bytes', bytes, width, height, fileExtension: extensionFromPath(assetPath) }
-                } finally {
-                    surface.destroy()
-                }
-            } catch (bytesError) {
-                throw new Error(
-                    `Failed to load SDL image '${assetPath}' resolved to '${resolvedPath}': ${describeSdlError(bytesError)}; file path attempt: ${describeSdlError(pathError)}`,
-                    { cause: bytesError },
-                )
-            }
+            assertValidDimensions(assetPath, resolvedPath, width, height)
+            return { kind: 'file', path: resolvedPath, width, height, fileExtension: extensionFromPath(resolvedPath) }
+        } catch (error) {
+            pathError = error
         }
+
+        let bytesError: unknown
+        try {
+            const bytes = await this.loadBytes(assetPath)
+            const surface = await loadSdlSurfaceFromBytes(bytes, extensionFromPath(assetPath))
+            const { width, height } = imageSourceSize(surface)
+            surface.destroy()
+
+            assertValidDimensions(assetPath, resolvedPath, width, height)
+            return { kind: 'bytes', bytes, width, height, fileExtension: extensionFromPath(assetPath) }
+        } catch (error) {
+            bytesError = error
+        }
+
+        throw new Error(
+            `Missing asset '${assetPath}' (resolved: '${resolvedPath}'). Ensure the file exists and is a supported image format. ` +
+            `File load error: ${describeSdlError(pathError)}; Bytes load error: ${describeSdlError(bytesError)}`,
+            { cause: bytesError },
+        )
     }
 
     async loadBytes(relativePath: string): Promise<Uint8Array<ArrayBuffer>> {
