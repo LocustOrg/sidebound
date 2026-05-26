@@ -23,6 +23,9 @@ const runtime = createSdlRuntime({
         width: viewport.width,
         height: viewport.height,
     },
+    presentation: {
+        mode: 'letterbox',
+    },
     assets: {
         root: new URL('../', import.meta.url),
     },
@@ -178,12 +181,8 @@ await runtime.run({
             debugToggleCooldown = 0.3
         }
 
-        // Handle window resize — update viewport so camera sees more/less of the world
         if (input.windowResized) {
-            viewport.width = input.windowResized.width
-            viewport.height = input.windowResized.height
-            lightingLayer.resize(viewport.width, viewport.height)
-            logger.info('window', `Resized to ${viewport.width}×${viewport.height}`)
+            logger.info('window', `Resized window to ${input.windowResized.width}×${input.windowResized.height}; logical viewport remains ${viewport.width}×${viewport.height}`)
         }
 
         player.update(safeDelta, playerInput)

@@ -6,6 +6,12 @@ import { type Render, SDL, type Texture } from '@sdl3/sdl3-deno'
 import type { ColorRgba, DrawOptions, Rect, Renderer2D, RendererImageSource, RenderTargetHandle, TextureHandle, Vec2 } from '@sidebound/engine'
 import { loadSdlSurface } from './assets.ts'
 
+export type SdlLogicalPresentationMode = 'disabled' | 'stretch' | 'letterbox' | 'overscan' | 'integer-scale'
+
+export type SdlRendererOptions = {
+    readonly logicalPresentationMode?: SdlLogicalPresentationMode
+}
+
 type SdlTextureEntry = {
     readonly handle: TextureHandle
     readonly texture: Texture
@@ -15,6 +21,8 @@ type SdlRenderTargetEntry = {
     readonly handle: RenderTargetHandle
     readonly texture: Texture
 }
+
+const polygonEpsilon = 0.0001
 
 function clampByte(value: number): number {
     if (!Number.isFinite(value)) {
@@ -47,6 +55,127 @@ function toSdlRect(rect: Rect): { readonly x: number; readonly y: number; readon
     return { x: rect.x, y: rect.y, w: rect.width, h: rect.height }
 }
 
+function toSdlFColor(color: ColorRgba): { readonly r: number; readonly g: number; readonly b: number; readonly a: number } {
+    return {
+        r: clampByte(color.r) / 255,
+        g: clampByte(color.g) / 255,
+        b: clampByte(color.b) / 255,
+        a: colorAlpha(color),
+    }
+}
+
+function triangleArea2(a: Vec2, b: Vec2, c: Vec2): number {
+    return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
+}
+
+function polygonSignedArea2(points: readonly Vec2[]): number {
+    let area = 0
+
+    for (let i = 0; i < points.length; i++) {
+        const current = points[i]
+        const next = points[(i + 1) % points.length]
+        area += current.x * next.y - next.x * current.y
+    }
+
+    return area
+}
+
+function arePointsClose(a: Vec2, b: Vec2): boolean {
+    return Math.abs(a.x - b.x) <= polygonEpsilon && Math.abs(a.y - b.y) <= polygonEpsilon
+}
+
+function normalizePolygonPoints(points: readonly Vec2[]): Vec2[] {
+    const normalized: Vec2[] = []
+
+    for (const point of points) {
+        if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) continue
+
+        const previous = normalized.at(-1)
+        if (!previous || !arePointsClose(previous, point)) {
+            normalized.push(point)
+        }
+    }
+
+    if (normalized.length > 1 && arePointsClose(normalized[0], normalized[normalized.length - 1])) {
+        normalized.pop()
+    }
+
+    return normalized
+}
+
+function isPointInsideTriangle(point: Vec2, a: Vec2, b: Vec2, c: Vec2, orientation: number): boolean {
+    return (
+        orientation * triangleArea2(a, b, point) > polygonEpsilon &&
+        orientation * triangleArea2(b, c, point) > polygonEpsilon &&
+        orientation * triangleArea2(c, a, point) > polygonEpsilon
+    )
+}
+
+function triangulatePolygon(points: readonly Vec2[]): Int32Array<ArrayBuffer> | null {
+    if (points.length < 3) return null
+
+    const area = polygonSignedArea2(points)
+    if (Math.abs(area) <= polygonEpsilon) return null
+
+    const orientation = area >= 0 ? 1 : -1
+    const remaining = points.map((_point, index) => index)
+    const triangles: number[] = []
+    let guard = points.length * points.length
+
+    while (remaining.length > 3 && guard > 0) {
+        guard -= 1
+        let clipped = false
+
+        for (let i = 0; i < remaining.length; i++) {
+            const previousIndex = remaining[(i - 1 + remaining.length) % remaining.length]
+            const currentIndex = remaining[i]
+            const nextIndex = remaining[(i + 1) % remaining.length]
+            const previous = points[previousIndex]
+            const current = points[currentIndex]
+            const next = points[nextIndex]
+
+            if (orientation * triangleArea2(previous, current, next) <= polygonEpsilon) {
+                continue
+            }
+
+            let containsPoint = false
+            for (const index of remaining) {
+                if (index === previousIndex || index === currentIndex || index === nextIndex) continue
+
+                if (isPointInsideTriangle(points[index], previous, current, next, orientation)) {
+                    containsPoint = true
+                    break
+                }
+            }
+
+            if (containsPoint) continue
+
+            triangles.push(previousIndex, currentIndex, nextIndex)
+            remaining.splice(i, 1)
+            clipped = true
+            break
+        }
+
+        if (!clipped) {
+            return null
+        }
+    }
+
+    if (remaining.length === 3) {
+        triangles.push(remaining[0], remaining[1], remaining[2])
+    }
+
+    return new Int32Array(triangles)
+}
+
+const logicalPresentationModes = {
+    disabled: SDL.LOGICAL_PRESENTATION.DISABLED,
+    stretch: SDL.LOGICAL_PRESENTATION.STRETCH,
+    letterbox: SDL.LOGICAL_PRESENTATION.LETTERBOX,
+    overscan: SDL.LOGICAL_PRESENTATION.OVERSCAN,
+    'integer-scale': SDL.LOGICAL_PRESENTATION.INTEGER_SCALE,
+} satisfies Record<SdlLogicalPresentationMode, number>
+
 export class SdlRenderer implements Renderer2D {
     private readonly render: Render
     private readonly textures = new Map<string, SdlTextureEntry>()
@@ -54,8 +183,9 @@ export class SdlRenderer implements Renderer2D {
     private readonly renderTargetTextureIds = new Set<string>()
     private currentRenderTarget: RenderTargetHandle | null = null
 
-    constructor(render: Render, _width: number, _height: number) {
+    constructor(render: Render, width: number, height: number, options: SdlRendererOptions = {}) {
         this.render = render
+        this.setLogicalPresentation(width, height, options.logicalPresentationMode ?? 'letterbox')
     }
 
     beginFrame(clearColor: ColorRgba): void {
@@ -170,14 +300,48 @@ export class SdlRenderer implements Renderer2D {
     }
 
     drawPolygon(points: readonly Vec2[], color: ColorRgba): void {
+        const polygonPoints = normalizePolygonPoints(points)
+        const indices = triangulatePolygon(polygonPoints)
+        if (!indices) return
+
+        this.setDrawColor(color)
+        const vertexColor = toSdlFColor(color)
+        const vertices = polygonPoints.map((point) => ({
+            position: { x: point.x, y: point.y },
+            color: vertexColor,
+            tex_coord: { x: 0, y: 0 },
+        }))
+
+        assertSdl(this.render.geometry(null, vertices, indices), 'SDL_RenderGeometry failed while drawing polygon')
+    }
+
+    fillTriangleFan(origin: Vec2, points: readonly Vec2[], color: ColorRgba): void {
         if (points.length < 2) return
 
         this.setDrawColor(color)
+        const vertexColor = toSdlFColor(color)
+        const vertices = [
+            {
+                position: { x: origin.x, y: origin.y },
+                color: vertexColor,
+                tex_coord: { x: 0, y: 0 },
+            },
+            ...points.map((point) => ({
+                position: { x: point.x, y: point.y },
+                color: vertexColor,
+                tex_coord: { x: 0, y: 0 },
+            })),
+        ]
+        const indices = new Int32Array(points.length * 3)
 
         for (let i = 0; i < points.length; i++) {
-            const next = (i + 1) % points.length
-            assertSdl(this.render.line(points[i].x, points[i].y, points[next].x, points[next].y), 'SDL_RenderLine failed while drawing polygon')
+            const offset = i * 3
+            indices[offset] = 0
+            indices[offset + 1] = i + 1
+            indices[offset + 2] = ((i + 1) % points.length) + 1
         }
+
+        assertSdl(this.render.geometry(null, vertices, indices), 'SDL_RenderGeometry failed while drawing triangle fan')
     }
 
     dispose(): void {
@@ -211,6 +375,13 @@ export class SdlRenderer implements Renderer2D {
         assertSdl(
             this.render.setDrawColor(clampByte(color.r), clampByte(color.g), clampByte(color.b), alphaByte(colorAlpha(color))),
             'SDL_SetRenderDrawColor failed',
+        )
+    }
+
+    private setLogicalPresentation(width: number, height: number, mode: SdlLogicalPresentationMode): void {
+        assertSdl(
+            this.render.setLogicalPresentation(width, height, logicalPresentationModes[mode]),
+            `SDL_SetRenderLogicalPresentation failed for ${width}x${height} ${mode}`,
         )
     }
 

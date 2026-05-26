@@ -3,14 +3,18 @@
  * the game loop through SDL3 event polling.
  */
 
-import { Event, EventType } from '@sdl3/sdl3-deno'
+import { Event, EventType, SDL } from '@sdl3/sdl3-deno'
 import type { ColorRgba, InputEvents, Renderer2D, RenderFrame } from '@sidebound/engine'
 import { createSdlWindow, type SdlWindowConfig } from './window.ts'
-import { SdlRenderer } from './renderer.ts'
+import { type SdlLogicalPresentationMode, SdlRenderer } from './renderer.ts'
 import { SdlInputQueue } from './input.ts'
 import { SdlClock } from './clock.ts'
 import { SdlAssetLoader, type SdlAssetLoaderOptions } from './assets.ts'
 import { SdlFileStorage } from './storage.ts'
+
+export type SdlPresentationOptions = {
+    readonly mode?: SdlLogicalPresentationMode
+}
 
 export type SdlRuntimeOptions = {
     readonly appId: string
@@ -19,6 +23,7 @@ export type SdlRuntimeOptions = {
     readonly storagePath?: string
     readonly clearColor?: ColorRgba
     readonly resizable?: boolean
+    readonly presentation?: SdlPresentationOptions
 }
 
 export type SdlRuntimeLoop = {
@@ -43,11 +48,20 @@ export type SdlRuntime = {
 
 const DEFAULT_CLEAR_COLOR: ColorRgba = { r: 30, g: 26, b: 46, a: 1 }
 
+function assertSdl(ok: boolean, action: string): void {
+    if (ok) return
+
+    const details = SDL.getError()
+    throw new Error(details ? `${action}: ${details}` : action)
+}
+
 export function createSdlRuntime(options: SdlRuntimeOptions): SdlRuntime {
     const { window: windowConfig, clearColor = DEFAULT_CLEAR_COLOR, resizable = true } = options
 
     const { sdl, renderer: sdlRender } = createSdlWindow({ ...windowConfig, resizable })
-    const renderer = new SdlRenderer(sdlRender, windowConfig.width, windowConfig.height)
+    const renderer = new SdlRenderer(sdlRender, windowConfig.width, windowConfig.height, {
+        logicalPresentationMode: options.presentation?.mode,
+    })
     const inputQueue = new SdlInputQueue()
     const clock = new SdlClock()
     const assets = new SdlAssetLoader(options.assets ?? { root: new URL('./', import.meta.url) })
@@ -55,7 +69,7 @@ export function createSdlRuntime(options: SdlRuntimeOptions): SdlRuntime {
 
     const event = new Event()
 
-    // Viewport tracks the actual window size — game sees more/less of the world as window resizes
+    // Viewport is the fixed logical render size. The SDL renderer scales it to the actual window.
     const viewport: { width: number; height: number } = { width: windowConfig.width, height: windowConfig.height }
 
     return {
@@ -74,6 +88,7 @@ export function createSdlRuntime(options: SdlRuntimeOptions): SdlRuntime {
             while (running) {
                 // Poll all pending events
                 while (event.poll()) {
+                    assertSdl(sdlRender.convertEventToRenderCoordinates(event.pointer), 'SDL_ConvertEventToRenderCoordinates failed')
                     inputQueue.push(event)
 
                     if (event.common.type === EventType.QUIT) {
@@ -91,12 +106,6 @@ export function createSdlRuntime(options: SdlRuntimeOptions): SdlRuntime {
 
                 if (input.quitRequested) {
                     break
-                }
-
-                // Handle window resize — update viewport so game sees more/less of the world
-                if (input.windowResized) {
-                    viewport.width = input.windowResized.width
-                    viewport.height = input.windowResized.height
                 }
 
                 loop.update(deltaSeconds, input)

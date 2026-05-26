@@ -26,7 +26,7 @@ export type LightingLayerOptions = {
 }
 
 export class LightingLayer implements RenderLayer {
-    readonly order = 30
+    readonly order = 15
 
     private readonly lighting: RayLighting
     private viewportWidth: number
@@ -153,7 +153,7 @@ export class LightingLayer implements RenderLayer {
 
         for (const light of this.cachedLights) {
             const screenPolygon = light.polygon.map((p) => ({ x: p.x + ox, y: p.y + oy }))
-            frame.renderer.drawPolygon(screenPolygon, {
+            frame.renderer.fillTriangleFan({ x: light.origin.x + ox, y: light.origin.y + oy }, screenPolygon, {
                 r: light.color.r,
                 g: light.color.g,
                 b: light.color.b,

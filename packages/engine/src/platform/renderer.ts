@@ -65,6 +65,7 @@ export type Renderer2D = {
     strokeRect(rect: Rect, color: ColorRgba): void
     drawLine(from: Vec2, to: Vec2, color: ColorRgba): void
     drawPolygon(points: readonly Vec2[], color: ColorRgba): void
+    fillTriangleFan(origin: Vec2, points: readonly Vec2[], color: ColorRgba): void
 }
 
 export type RenderFrame = {

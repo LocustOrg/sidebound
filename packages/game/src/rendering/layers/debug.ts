@@ -81,7 +81,7 @@ export class DebugLayer implements RenderLayer {
                 renderer.drawLine(screenOrigin, { x: hit.x + ox, y: hit.y + oy }, rayColor)
             }
 
-            // Radius circle approximated as polygon
+            // Radius circle approximated with line segments
             const segments = 32
             const points: Vec2[] = []
             for (let i = 0; i < segments; i++) {
@@ -91,7 +91,10 @@ export class DebugLayer implements RenderLayer {
                     y: origin.y + Math.sin(angle) * radius + oy,
                 })
             }
-            renderer.drawPolygon(points, radiusColor)
+
+            for (let i = 0; i < points.length; i++) {
+                renderer.drawLine(points[i], points[(i + 1) % points.length], radiusColor)
+            }
         }
     }
 }
