@@ -1,6 +1,6 @@
 import type { Rect, Renderer2D, Vec2 } from '@sidebound/engine'
-import { approach, rectsIntersect } from '@sidebound/engine'
-import { Animator, type SpriteSheet } from '@sidebound/engine'
+import { approach, rectsIntersect, Animator, SpriteSheet } from '@sidebound/engine'
+
 import { MobState, resolveMobState } from './mob-states.ts'
 
 /**
