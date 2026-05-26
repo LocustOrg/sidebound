@@ -1,5 +1,4 @@
 import type { Rect, Vec2 } from '../core/mod.ts'
-import type { RenderContext } from './render-context.ts'
 
 export type ColorRgba = {
     readonly r: number
@@ -50,8 +49,4 @@ export type Renderer2D = {
 export type RenderFrame = {
     readonly renderer: Renderer2D
     readonly camera: Rect
-}
-
-export type Canvas2DPreviewRenderFrame = RenderFrame & {
-    readonly context: RenderContext
 }

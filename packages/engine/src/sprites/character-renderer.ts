@@ -1,6 +1,6 @@
 import type { CharacterDefinition, EquipmentDefinition } from '../content/mod.ts'
 import { resolveEquipmentLayerOrder } from '../content/mod.ts'
-import type { RenderContext } from '../platform/render-context.ts'
+import type { Renderer2D } from '../platform/renderer.ts'
 import type { SpriteSheet } from './sprite-sheet.ts'
 
 export type EquipmentLoadout = Partial<Record<string, string>>
@@ -22,7 +22,7 @@ export type CharacterAppearance = {
 }
 
 export type CharacterRenderOptions = {
-    readonly context: RenderContext
+    readonly renderer: Renderer2D
     readonly appearance: CharacterAppearance
     readonly equipment: EquipmentLoadout
     readonly frame: number
@@ -39,14 +39,14 @@ export class CharacterRenderer {
 
         for (const layer of layers) {
             if (layer.order >= BASE_LAYER_ORDER) continue
-            layer.spriteSheet.drawFrame(options.context, options.frame, options.x, options.y, options.flipX)
+            layer.spriteSheet.drawFrame(options.renderer, options.frame, options.x, options.y, options.flipX)
         }
 
-        options.appearance.base.drawFrame(options.context, options.frame, options.x, options.y, options.flipX)
+        options.appearance.base.drawFrame(options.renderer, options.frame, options.x, options.y, options.flipX)
 
         for (const layer of layers) {
             if (layer.order < BASE_LAYER_ORDER) continue
-            layer.spriteSheet.drawFrame(options.context, options.frame, options.x, options.y, options.flipX)
+            layer.spriteSheet.drawFrame(options.renderer, options.frame, options.x, options.y, options.flipX)
         }
     }
 

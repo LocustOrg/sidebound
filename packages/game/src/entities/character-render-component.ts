@@ -1,7 +1,7 @@
-import { type CharacterAppearance, CharacterRenderer, type EquipmentLoadout, type RenderContext } from '@sidebound/engine'
+import { type CharacterAppearance, CharacterRenderer, type EquipmentLoadout, type Renderer2D } from '@sidebound/engine'
 
 export type CharacterRenderFrame = {
-    readonly context: RenderContext
+    readonly renderer: Renderer2D
     readonly frame: number
     readonly x: number
     readonly y: number
@@ -20,7 +20,7 @@ export class CharacterRenderComponent {
 
     draw(frame: CharacterRenderFrame): void {
         this.renderer.draw({
-            context: frame.context,
+            renderer: frame.renderer,
             appearance: this.appearance,
             equipment: this.equipment,
             frame: frame.frame,

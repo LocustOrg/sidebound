@@ -24,8 +24,8 @@ Do not build top-down, three-quarter, isometric, or hybrid movement systems.
 - Fixed timestep and lifecycle controls.
 - Engine-owned entity, component, physics, collision, interaction, and combat
   systems.
-- SDL-safe sprite, lighting, diagnostics, and render-target paths that do not
-  rely on Canvas2D preview types.
+- SDL3 texture loading, source-free texture handles, render targets, and blend
+  paths for sprites, lighting, and diagnostics.
 - Platform audio, storage-backed debug settings, and non-DOM debug UI.
 - Game demo boot through SDL3, followed by browser renderer deletion.
 
@@ -182,8 +182,8 @@ To enable this:
 - Keep all game logic (physics, entities, combat, input processing) as pure
   TypeScript with zero DOM/browser dependencies.
 - Renderer is behind an interface; SDL3 is the first-class implementation.
-  Canvas-shaped `RenderContext` and `Canvas2DPreview` paths must be removed
-  during the SDL cutover.
+  Remaining browser-demo canvas drawing must move to `Renderer2D` commands or
+  platform-owned textures during the SDL cutover.
 - Input source is behind an abstraction; keyboard, gamepad, pointer, and touch
   events are normalized before systems see them.
 - Audio is behind an interface; sample playback, spatial panning, and buses do

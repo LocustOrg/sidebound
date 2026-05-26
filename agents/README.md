@@ -14,10 +14,11 @@ Read them before making engine or demo changes.
 
 ## Active Focus
 
-The next agents should focus on fixed-step lifecycle, removing
-`Canvas2DPreview` dependencies from engine-owned rendering/sprites/diagnostics,
-wiring the SDL3 runtime into the demo, and moving entity/physics/combat systems
-out of `packages/game` only when the engine API is ready.
+The next agents should focus on fixed-step lifecycle, SDL3 texture loading and
+`drawTexture`, converting the remaining browser-local demo render effects to
+`Renderer2D`, wiring the SDL3 runtime into the demo, and moving
+entity/physics/combat systems out of `packages/game` only when the engine API is
+ready.
 
 ## Runtime Policy
 

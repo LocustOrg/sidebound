@@ -1,9 +1,9 @@
 import {
     AssetStore,
-    type Canvas2DPreviewPlatform,
     type CharacterAppearance,
     type ContentRegistry,
     createLoadedEquipmentDefinition,
+    type ImageAssetLoader,
     type ItemDefinition,
     loadSpriteSheet,
     type SpriteSheet,
@@ -72,10 +72,10 @@ async function loadItemIconSheets(registry: ContentRegistry, assets: AssetStore)
     return Object.fromEntries(entries)
 }
 
-export async function loadDemoContent(platform: Canvas2DPreviewPlatform): Promise<LoadedDemoContent> {
+export async function loadDemoContent(loader: ImageAssetLoader): Promise<LoadedDemoContent> {
     demoContent.assertValid()
 
-    const assets = new AssetStore(platform)
+    const assets = new AssetStore(loader)
     assets.registerImages(demoContent.getImageAssets())
     await assets.preloadAll()
 

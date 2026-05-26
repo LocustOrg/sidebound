@@ -1,7 +1,15 @@
-import type { Canvas2DPreviewPlatform, Canvas2DPreviewSurface, ImageSource } from '@sidebound/engine'
+import type { ImageAssetLoader } from '@sidebound/engine'
+import type { ImageSource, RenderContext } from './render-context.ts'
 import { toRenderContext } from './render-context.ts'
 
-export class PlatformBrowserAdapter implements Canvas2DPreviewPlatform {
+export type BrowserPreviewSurface = {
+    readonly context: RenderContext
+    readonly image: ImageSource
+    readonly width: number
+    readonly height: number
+}
+
+export class PlatformBrowserAdapter implements ImageAssetLoader {
     loadImage(url: string): Promise<ImageSource> {
         return new Promise((resolve, reject) => {
             const image = new Image()
@@ -11,7 +19,7 @@ export class PlatformBrowserAdapter implements Canvas2DPreviewPlatform {
         })
     }
 
-    createOffscreenSurface(width: number, height: number): Canvas2DPreviewSurface {
+    createOffscreenSurface(width: number, height: number): BrowserPreviewSurface {
         const canvas = document.createElement('canvas')
         canvas.width = width
         canvas.height = height

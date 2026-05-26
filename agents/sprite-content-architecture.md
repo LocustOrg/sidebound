@@ -20,8 +20,8 @@ systems consume loaded appearances and resolved asset handles.
 
 ## Open Work
 
-- Replace `ImageSource`/`RenderContext` sprite drawing with `Renderer2D`
-  texture handles so SDL3 is the primary sprite path.
+- Replace the temporary source-backed texture handles with renderer-created SDL3
+  texture handles and cache ownership.
 - Add a declarative content assembly helper such as `defineContent` if it keeps
   registration clearer than constructing `ContentRegistry` directly.
 - Move pickup/equipment gameplay systems into engine APIs only after the entity

@@ -1,5 +1,6 @@
-import { type AnimationFrameClock, EngineLoop, type RenderContext, type Renderer2D } from '@sidebound/engine'
+import { type AnimationFrameClock, EngineLoop, type Renderer2D } from '@sidebound/engine'
 import { BrowserAnimationFrameClock } from './clock.ts'
+import type { RenderContext } from './render-context.ts'
 import { Canvas2DPreviewRenderer } from './renderer-canvas2d.ts'
 import { toRenderContext } from './render-context.ts'
 

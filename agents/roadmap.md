@@ -18,9 +18,9 @@ whose main purpose is to make the demo feel like a finished game.
 The roadmap starts from remaining engine work only:
 
 - Fixed-step lifecycle and deterministic simulation.
-- Renderer, sprite, diagnostics, and lighting paths that do not depend on
-  Canvas2D preview types.
-- SDL3 texture loading, sprite drawing, render targets, and game runtime wiring.
+- SDL3 texture loading, source-free texture handles, render targets, and blend
+  behavior.
+- SDL3 game runtime wiring and compile/package automation.
 - Engine-owned entity, component, physics, collision, interaction, and combat
   systems.
 - Runtime world travel, chunk streaming, validation depth, and persistence.
@@ -35,19 +35,17 @@ while SDL3 reaches debug-room parity.
 
 ## SDL3 Cutover Milestones
 
-1. Replace engine-owned `RenderContext` and `Canvas2DPreview*` dependencies with
-   `Renderer2D`, texture handles, and platform asset payloads.
-2. Implement SDL3 texture loading, `drawTexture`, render targets, and blend
+1. Implement SDL3 texture loading, `drawTexture`, render targets, and blend
    behavior needed for sprites, UI/debug overlays, and basic lighting.
-3. Convert game terrain, entity, debug, background, sprite, item, and lighting
+2. Convert game terrain, entity effects, debug, background, and lighting
    layers to `Renderer2D` commands or SDL3-compatible textures.
-4. Add an SDL3 game entrypoint that runs the debug room with movement, camera,
+3. Add an SDL3 game entrypoint that runs the debug room with movement, camera,
    collision, sprites, item pickups, and collision debug.
-5. Move browser-only debug panel, minimap, and audio behind platform services or
+4. Move browser-only debug panel, minimap, and audio behind platform services or
    drop them from the SDL3 milestone until platform replacements exist.
-6. Make SDL3 the default `dev` task and keep browser preview only as a temporary
+5. Make SDL3 the default `dev` task and keep browser preview only as a temporary
    migration task.
-7. Delete the browser renderer after SDL3 parity and compile/package smoke
+6. Delete the browser renderer after SDL3 parity and compile/package smoke
    coverage.
 
 ## Phase Rules

@@ -1,4 +1,4 @@
-import type { Rect, RenderContext, Vec2 } from '@sidebound/engine'
+import type { Rect, Renderer2D, Vec2 } from '@sidebound/engine'
 import { approach, rectsIntersect } from '@sidebound/engine'
 import { Animator, type SpriteSheet } from '@sidebound/engine'
 import { MobState, resolveMobState } from './mob-states.ts'
@@ -230,11 +230,11 @@ export class Mob {
     }
 
     /** Draw the mob's current sprite frame */
-    draw(context: RenderContext): void {
+    draw(renderer: Renderer2D): void {
         const drawX = Math.round(this.x + this.spriteOffsetX)
         const drawY = Math.round(this.y + this.spriteOffsetY)
         const flipX = this.facing < 0
-        this.animator.draw(context, drawX, drawY, flipX)
+        this.animator.draw(renderer, drawX, drawY, flipX)
     }
 
     protected transitionState(next: MobState): void {

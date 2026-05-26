@@ -1,5 +1,4 @@
-import type { ImageSource } from '../platform/render-context.ts'
-import type { Canvas2DPreviewPlatform } from '../platform/adapter.ts'
+import type { RendererImageSource } from '../platform/renderer.ts'
 
 export type AssetId = string
 
@@ -10,7 +9,7 @@ export type AssetHandle<TKind extends string = string> = {
 
 export type ImageAsset = {
     readonly id: AssetId
-    readonly image: ImageSource
+    readonly image: RendererImageSource
     readonly width: number
     readonly height: number
 }
@@ -20,6 +19,10 @@ export type ImageAssetDefinition = {
     readonly url: string
 }
 
+export type ImageAssetLoader = {
+    loadImage(url: string): Promise<RendererImageSource>
+}
+
 export function imageHandle(id: AssetId): AssetHandle<'image'> {
     return { id, kind: 'image' }
 }
@@ -27,10 +30,10 @@ export function imageHandle(id: AssetId): AssetHandle<'image'> {
 export class AssetStore {
     private readonly imageDefinitions = new Map<AssetId, ImageAssetDefinition>()
     private readonly images = new Map<AssetId, Promise<ImageAsset>>()
-    private readonly platform: Canvas2DPreviewPlatform
+    private readonly loader: ImageAssetLoader
 
-    constructor(platform: Canvas2DPreviewPlatform) {
-        this.platform = platform
+    constructor(loader: ImageAssetLoader) {
+        this.loader = loader
     }
 
     registerImage(definition: ImageAssetDefinition): AssetHandle<'image'> {
@@ -59,7 +62,7 @@ export class AssetStore {
 
         let image = this.images.get(id)
         if (!image) {
-            image = this.platform.loadImage(definition.url).then((loaded) => ({
+            image = this.loader.loadImage(definition.url).then((loaded) => ({
                 id: definition.id,
                 image: loaded,
                 width: loaded.width,

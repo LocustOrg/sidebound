@@ -4,7 +4,7 @@ import {
     type PlayerInputFrame,
     type Rect,
     registerSpriteAnimationClips,
-    type RenderContext,
+    type Renderer2D,
     type Vec2,
 } from '@sidebound/engine'
 import type { SoundCue } from '../systems/audio.ts'
@@ -103,13 +103,13 @@ export class PlayerMob extends Mob {
     }
 
     /** Draws optional visual equipment without changing collision or movement. */
-    override draw(context: RenderContext): void {
+    override draw(renderer: Renderer2D): void {
         const drawX = Math.round(this.x + this.spriteOffsetX)
         const drawY = Math.round(this.y + this.spriteOffsetY)
         const flipX = this.facing < 0
         const frame = this.animator.currentFrame
 
-        this.renderComponent.draw({ context, frame, x: drawX, y: drawY, flipX })
+        this.renderComponent.draw({ renderer, frame, x: drawX, y: drawY, flipX })
     }
 
     private addStepCues(cues: SoundCue[], deltaSeconds: number, horizontal: number): void {

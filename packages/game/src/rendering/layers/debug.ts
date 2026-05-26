@@ -1,8 +1,12 @@
-import type { Canvas2DPreviewRenderFrame, RenderContext, RenderFrame, RenderLayer } from '@sidebound/engine'
+import type { RenderFrame, RenderLayer } from '@sidebound/engine'
 import type { Rect, Vec2 } from '@sidebound/engine'
 import type { RayHit } from '@sidebound/engine'
+import type { RenderContext } from '@sidebound/platform-browser'
 
 type LightDebugEntry = { polygon: RayHit[]; origin: Vec2; radius: number }
+type BrowserPreviewFrame = RenderFrame & {
+    readonly context?: RenderContext
+}
 
 /**
  * Debug overlay layer: draws collision boxes, lighting rays, and radius.
@@ -36,7 +40,7 @@ export class DebugLayer implements RenderLayer {
     }
 
     render(frame: RenderFrame): void {
-        const { context } = frame as Canvas2DPreviewRenderFrame
+        const { context } = frame as BrowserPreviewFrame
         if (!context) return
 
         if (this.showCollision) {

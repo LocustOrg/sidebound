@@ -1,7 +1,5 @@
 import type { Rect, Vec2 } from '../../core/mod.ts'
-import type { RenderContext } from '../../platform/render-context.ts'
-import type { Canvas2DPreviewRenderFrame, RenderFrame } from '../../platform/renderer.ts'
-import type { Canvas2DPreviewPlatform, Canvas2DPreviewSurface } from '../../platform/adapter.ts'
+import type { ColorRgba, RenderFrame } from '../../platform/renderer.ts'
 import type { LightSource, RayHit, RayLighting } from '../../lighting/mod.ts'
 import type { RenderLayer } from '../pipeline.ts'
 
@@ -23,8 +21,7 @@ type CachedLight = LightDebugEntry & {
 }
 
 export type LightingLayerOptions = {
-    readonly platform: Canvas2DPreviewPlatform
-    readonly ambientColor?: string
+    readonly ambientColor?: ColorRgba
     readonly cullPadding?: number
 }
 
@@ -32,11 +29,9 @@ export class LightingLayer implements RenderLayer {
     readonly order = 30
 
     private readonly lighting: RayLighting
-    private readonly offscreen: Canvas2DPreviewSurface
-    private readonly offCtx: RenderContext
     private readonly viewportWidth: number
     private readonly viewportHeight: number
-    private readonly ambientColor: string
+    private readonly ambientColor: ColorRgba
     private readonly cullPadding: number
     private readonly sources: LightSource[] = []
     private cachedLights: CachedLight[] = []
@@ -54,12 +49,8 @@ export class LightingLayer implements RenderLayer {
         this.lighting = lighting
         this.viewportWidth = viewportWidth
         this.viewportHeight = viewportHeight
-        this.ambientColor = options.ambientColor ?? 'rgba(8, 6, 18, 0.82)'
+        this.ambientColor = options.ambientColor ?? { r: 8, g: 6, b: 18, a: 0.82 }
         this.cullPadding = options.cullPadding ?? 300
-
-        this.offscreen = options.platform.createOffscreenSurface(viewportWidth, viewportHeight)
-        this.offCtx = this.offscreen.context
-        this.offCtx.imageSmoothingEnabled = false
     }
 
     addLight(source: LightSource): void {
@@ -142,78 +133,24 @@ export class LightingLayer implements RenderLayer {
     }
 
     render(frame: RenderFrame): void {
-        const previewFrame = frame as Canvas2DPreviewRenderFrame
-        const context = previewFrame.context
-        if (!context) return
-
         const { camera } = frame
         this.lastCamera = camera
-        this.offCtx.clearRect(0, 0, this.viewportWidth, this.viewportHeight)
+        const viewRect = { x: camera.x, y: camera.y, width: this.viewportWidth, height: this.viewportHeight }
 
         if (this.cachedLights.length === 0) {
-            this.offCtx.fillStyle = this.ambientColor
-            this.offCtx.fillRect(0, 0, this.viewportWidth, this.viewportHeight)
-            context.save()
-            context.translate(camera.x, camera.y)
-            context.drawImage(this.offscreen.image, 0, 0)
-            context.restore()
+            frame.renderer.fillRect(viewRect, this.ambientColor)
             return
         }
 
-        this.offCtx.save()
-        this.offCtx.translate(-camera.x, -camera.y)
-        this.offCtx.fillStyle = this.ambientColor
-        this.offCtx.fillRect(camera.x, camera.y, camera.width, camera.height)
-        this.offCtx.globalCompositeOperation = 'destination-out'
+        frame.renderer.fillRect(viewRect, this.ambientColor)
 
         for (const light of this.cachedLights) {
-            const gradient = this.offCtx.createRadialGradient(light.origin.x, light.origin.y, 2, light.origin.x, light.origin.y, light.radius)
-            const alpha = light.intensity
-
-            gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`)
-            gradient.addColorStop(0.4, `rgba(255, 255, 255, ${alpha * 0.7})`)
-            gradient.addColorStop(0.7, `rgba(255, 255, 255, ${alpha * 0.3})`)
-            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)')
-            this.offCtx.fillStyle = gradient
-            this.drawLightWedges(this.offCtx, light.polygon, light.origin)
-        }
-
-        this.offCtx.restore()
-
-        context.save()
-        context.translate(camera.x, camera.y)
-        context.drawImage(this.offscreen.image, 0, 0)
-        context.restore()
-
-        context.save()
-        context.globalCompositeOperation = 'lighter'
-
-        for (const light of this.cachedLights) {
-            const { r, g, b } = light.color
-            const glow = context.createRadialGradient(light.origin.x, light.origin.y, 0, light.origin.x, light.origin.y, light.radius)
-
-            glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${light.intensity * 0.2})`)
-            glow.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, ${light.intensity * 0.06})`)
-            glow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`)
-            context.fillStyle = glow
-            this.drawLightWedges(context, light.polygon, light.origin)
-        }
-
-        context.restore()
-    }
-
-    private drawLightWedges(context: RenderContext, polygon: RayHit[], origin: Vec2): void {
-        if (polygon.length < 2) return
-
-        for (let index = 0; index < polygon.length; index += 1) {
-            const next = (index + 1) % polygon.length
-
-            context.beginPath()
-            context.moveTo(origin.x, origin.y)
-            context.lineTo(polygon[index].x, polygon[index].y)
-            context.lineTo(polygon[next].x, polygon[next].y)
-            context.closePath()
-            context.fill()
+            frame.renderer.drawPolygon(light.polygon, {
+                r: light.color.r,
+                g: light.color.g,
+                b: light.color.b,
+                a: light.intensity * 0.16,
+            })
         }
     }
 }

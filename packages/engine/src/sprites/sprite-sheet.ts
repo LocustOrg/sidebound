@@ -1,6 +1,5 @@
 import type { AssetId, AssetStore } from '../assets/asset-store.ts'
-import type { ImageSource, RenderContext } from '../platform/render-context.ts'
-import type { Canvas2DPreviewPlatform } from '../platform/adapter.ts'
+import type { Renderer2D, RendererImageSource, TextureHandle } from '../platform/renderer.ts'
 
 export type SpriteFrame = {
     readonly col: number
@@ -67,15 +66,15 @@ export class TextureAtlasLayout {
 }
 
 export type SpriteSheetOptions = TextureAtlasLayoutOptions & {
-    readonly image: ImageSource
+    readonly texture: TextureHandle
 }
 
 export class SpriteSheet {
-    readonly image: ImageSource
+    readonly texture: TextureHandle
     readonly layout: TextureAtlasLayout
 
     constructor(options: SpriteSheetOptions) {
-        this.image = options.image
+        this.texture = options.texture
         this.layout = new TextureAtlasLayout(options)
     }
 
@@ -99,25 +98,31 @@ export class SpriteSheet {
         return this.layout.frameCount
     }
 
-    drawFrame(context: RenderContext, frameIndex: number, x: number, y: number, flipX = false): void {
+    drawFrame(renderer: Renderer2D, frameIndex: number, x: number, y: number, flipX = false): void {
         const frame = this.layout.frameAt(frameIndex)
-        this.drawFrameAt(context, frame.col, frame.row, x, y, flipX)
+        this.drawFrameAt(renderer, frame.col, frame.row, x, y, flipX)
     }
 
-    drawFrameAt(context: RenderContext, col: number, row: number, x: number, y: number, flipX = false): void {
-        const sx = col * this.frameWidth
-        const sy = row * this.frameHeight
+    drawFrameAt(renderer: Renderer2D, col: number, row: number, x: number, y: number, flipX = false): void {
+        renderer.drawTexture(
+            this.texture,
+            { x: col * this.frameWidth, y: row * this.frameHeight, width: this.frameWidth, height: this.frameHeight },
+            { x, y, width: this.frameWidth, height: this.frameHeight },
+            { flipX },
+        )
+    }
+}
 
-        if (flipX) {
-            context.save()
-            context.translate(x + this.frameWidth, y)
-            context.scale(-1, 1)
-            context.drawImage(this.image, sx, sy, this.frameWidth, this.frameHeight, 0, 0, this.frameWidth, this.frameHeight)
-            context.restore()
-            return
-        }
+type SourceBackedTextureHandle = TextureHandle & {
+    readonly source: RendererImageSource
+}
 
-        context.drawImage(this.image, sx, sy, this.frameWidth, this.frameHeight, x, y, this.frameWidth, this.frameHeight)
+function textureHandleFromImage(id: AssetId, source: RendererImageSource): SourceBackedTextureHandle {
+    return {
+        id,
+        width: source.width,
+        height: source.height,
+        source,
     }
 }
 
@@ -138,65 +143,7 @@ export async function loadSpriteSheet(
         )
     }
 
-    return new SpriteSheet({ image: image.image, frameWidth, frameHeight, columns, rows })
-}
-
-export function createProceduralSheet(
-    platform: Canvas2DPreviewPlatform,
-    frameWidth: number,
-    frameHeight: number,
-    columns: number,
-    rows: number,
-    draw: (context: RenderContext, frameWidth: number, frameHeight: number) => void,
-): SpriteSheet {
-    const surface = platform.createOffscreenSurface(columns * frameWidth, rows * frameHeight)
-
-    surface.context.imageSmoothingEnabled = false
-    draw(surface.context, frameWidth, frameHeight)
-
-    return new SpriteSheet({ image: surface.image, frameWidth, frameHeight, columns, rows })
-}
-
-export function createBitmapSheet(
-    platform: Canvas2DPreviewPlatform,
-    frameWidth: number,
-    frameHeight: number,
-    columns: number,
-    rows: number,
-    palette: readonly string[],
-    frames: readonly (readonly (readonly number[])[] | null)[],
-): SpriteSheet {
-    const surface = platform.createOffscreenSurface(columns * frameWidth, rows * frameHeight)
-    const context = surface.context
-
-    context.imageSmoothingEnabled = false
-
-    for (let index = 0; index < frames.length; index += 1) {
-        const frame = frames[index]
-        if (!frame) continue
-
-        const col = index % columns
-        const row = Math.floor(index / columns)
-        const ox = col * frameWidth
-        const oy = row * frameHeight
-
-        for (let y = 0; y < frame.length; y += 1) {
-            const line = frame[y]
-
-            for (let x = 0; x < line.length; x += 1) {
-                const colorIndex = line[x]
-                if (colorIndex === 0) continue
-
-                const color = palette[colorIndex]
-                if (!color) continue
-
-                context.fillStyle = color
-                context.fillRect(ox + x, oy + y, 1, 1)
-            }
-        }
-    }
-
-    return new SpriteSheet({ image: surface.image, frameWidth, frameHeight, columns, rows })
+    return new SpriteSheet({ texture: textureHandleFromImage(assetId, image.image), frameWidth, frameHeight, columns, rows })
 }
 
 export type AnimationClip = {
@@ -334,8 +281,8 @@ export class SpriteAnimator {
         this.currentPlaybackRate = Number.isFinite(value) ? Math.max(0, value) : 1
     }
 
-    draw(context: RenderContext, x: number, y: number, flipX = false): void {
-        this.sheet.drawFrame(context, this.currentFrame, x, y, flipX)
+    draw(renderer: Renderer2D, x: number, y: number, flipX = false): void {
+        this.sheet.drawFrame(renderer, this.currentFrame, x, y, flipX)
     }
 }
 

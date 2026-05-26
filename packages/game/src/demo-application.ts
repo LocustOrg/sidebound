@@ -1,6 +1,5 @@
 import {
     AttachedLight,
-    type Canvas2DPreviewPlatform,
     createFrameDiagnostics,
     type FrameDiagnostics,
     InputManager,
@@ -8,13 +7,12 @@ import {
     LightingLayer,
     PointLight,
     RayLighting,
-    type RenderContext,
     type Renderer2D,
     RenderPipeline,
     SideViewCamera,
     updateFrameDiagnostics,
 } from '@sidebound/engine'
-import { PixelEngine, PlatformBrowserAdapter } from '@sidebound/platform-browser'
+import { PixelEngine, PlatformBrowserAdapter, type RenderContext } from '@sidebound/platform-browser'
 import { requireElement } from './core/dom.ts'
 import { DebugMinimap } from './debug/debug-minimap.ts'
 import { DebugPanel } from './debug/debug-panel.ts'
@@ -71,10 +69,10 @@ export class DemoApplication {
 
     static async create(): Promise<DemoApplication> {
         const platform = new PlatformBrowserAdapter()
-        return new DemoApplication(await loadDemoContent(platform), platform)
+        return new DemoApplication(await loadDemoContent(platform))
     }
 
-    private constructor(loadedContent: LoadedDemoContent, platform: Canvas2DPreviewPlatform) {
+    private constructor(loadedContent: LoadedDemoContent) {
         const canvas = requireElement<HTMLCanvasElement>('#game')
         const minimapCanvas = requireElement<HTMLCanvasElement>('#debug-minimap')
         const lighting = new RayLighting(world.lightOccluders)
@@ -100,7 +98,7 @@ export class DemoApplication {
             color: { r: 200, g: 220, b: 255 },
             intensity: 0.85,
         })
-        this.lightingLayer = new LightingLayer(lighting, viewport.width, viewport.height, { platform })
+        this.lightingLayer = new LightingLayer(lighting, viewport.width, viewport.height, {})
         this.debugLayer = new DebugLayer(world.solids)
         this.minimap = new DebugMinimap({
             canvas: minimapCanvas,

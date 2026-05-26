@@ -70,12 +70,11 @@ Reference links:
 
 ## Active Work
 
-- Remove `Canvas2DPreviewPlatform`, `RenderContext`, and browser-shaped image
-  handles from engine-owned sprite, character, diagnostics, asset, and lighting
-  code.
 - Implement SDL3 texture loading/drawing and render targets.
-- Convert game render layers and lighting effects from Canvas2D calls to
-  `Renderer2D` commands or platform-specific textures.
+- Replace transitional source-backed sprite texture handles with platform-created
+  SDL3 textures.
+- Convert the remaining game render layers and browser-only visual effects from
+  Canvas2D calls to `Renderer2D` commands or platform-specific textures.
 - Boot `packages/game` through SDL3 instead of the browser preview.
 - Add `deno compile` tasks and native-library packaging.
 
@@ -84,21 +83,18 @@ Reference links:
 1. **Freeze browser renderer scope.** No new browser rendering, DOM debug, Web
    Audio, or Canvas2D lighting work unless it is required to keep comparison
    parity during migration.
-2. **Create the renderer seam.** Remove engine-owned `RenderContext` and
-   `Canvas2DPreview*` dependencies from sprites, character rendering,
-   diagnostics, assets, and lighting.
-3. **Make SDL3 draw real assets.** Implement image loading, texture handles,
+2. **Make SDL3 draw real assets.** Implement image loading, texture handles,
    `drawTexture`, render targets, and the small set of blend modes needed for
    sprites and debug overlays.
-4. **Port layers one at a time.** Convert terrain first, then entities/items,
+3. **Port layers one at a time.** Convert terrain first, then entities/items,
    then debug overlays, then lighting. Each converted layer must render through
    `Renderer2D`.
-5. **Boot the debug room in SDL3.** Start without minimap, DOM debug panel, audio,
+4. **Boot the debug room in SDL3.** Start without minimap, DOM debug panel, audio,
    and full light compositing; keep movement, camera, collision, sprites, item
    pickups, and collision debug working.
-6. **Make SDL3 default.** Switch `dev` to SDL3, move browser to `dev:browser`, and
+5. **Make SDL3 default.** Switch `dev` to SDL3, move browser to `dev:browser`, and
    add compile/package tasks.
-7. **Delete the browser renderer.** Remove browser renderer code once SDL3
+6. **Delete the browser renderer.** Remove browser renderer code once SDL3
    parity and package smoke coverage are stable. Keep only test doubles and
    SDL3 as the real runtime layer.
 
@@ -260,27 +256,7 @@ export type InputEvents = {
 }
 ```
 
-## Phase 1 - Runtime Boundary Cleanup
-
-Goal: finish making engine runtime interfaces honest.
-
-- Replace `RenderContext` in engine-owned sprites, character rendering,
-  diagnostics, asset loading, and lighting with `Renderer2D`/texture-oriented
-  interfaces.
-- Move or delete `Canvas2DPreviewPlatform`, `Canvas2DPreviewSurface`, and
-  `Canvas2DPreviewRenderFrame` from engine public APIs once their users are
-  converted.
-- Keep the browser preview adapter compiling while this happens, but do not
-  improve or expand its renderer.
-
-Done when:
-
-- Engine-owned runtime code no longer exposes `Canvas2DPreview*` or
-  `RenderContext` as the normal sprite/lighting/diagnostics path.
-- `packages/game` still runs through the browser preview adapter.
-- `deno task check && deno task build` passes through the mise-managed Deno toolchain.
-
-## Phase 2 - SDL3 Renderer And Packaging Work
+## Phase 1 - SDL3 Renderer And Packaging Work
 
 1. Implement asset-backed image loading for SDL3.
 2. Implement texture creation/copy and `Renderer2D.drawTexture`.
@@ -291,7 +267,7 @@ Done when:
 5. Add SDL3 package checks to root `check` once native binding availability is
    reliable in CI.
 
-## Phase 3 - SDL3 Event Loop And Input
+## Phase 2 - SDL3 Event Loop And Input
 
 Goal: SDL3 owns runtime events; engine receives typed input frames.
 
@@ -306,11 +282,12 @@ Done when:
 - Keyboard left/right/jump input affects the player.
 - Browser preview input still works.
 
-## Phase 4 - Texture And Asset Loading
+## Phase 3 - Texture And Asset Loading
 
 Goal: load game images as SDL3 textures through the asset layer.
 
-1. Replace `ImageSource` with an engine-owned asset payload:
+1. Replace transitional renderer image sources with an engine-owned asset
+   payload:
 
 ```ts
 export type ImageAssetSource = { kind: 'file'; path: string } | { kind: 'bytes'; bytes: Uint8Array; mimeType: string }
@@ -336,8 +313,8 @@ export type ImageAssetSource = { kind: 'file'; path: string } | { kind: 'bytes';
     - Cache texture by id.
     - Free intermediate surfaces after texture creation if the binding exposes
       `free()`.
-6. Remove direct image objects from `SpriteSheet`; store `TextureHandle` plus
-   `TextureAtlasLayout`.
+6. Replace the browser preview's source-backed texture fallback with texture
+   handles created by the active renderer.
 
 Done when:
 
@@ -345,7 +322,7 @@ Done when:
 - Texture dimensions are validated against `TextureAtlasLayout`.
 - Missing asset errors include asset id and resolved path.
 
-## Phase 5 - Replace Canvas 2D Drawing With Renderer Commands
+## Phase 4 - Replace Remaining Canvas 2D Drawing With Renderer Commands
 
 Goal: make every game layer render through `Renderer2D`.
 
@@ -355,8 +332,6 @@ Layer-by-layer conversion order:
     - `fillRect` -> `renderer.fillRect`.
     - top/bottom pixel highlights -> `fillRect` with 1px height.
 2. `EntityLayer`
-    - sprite draw -> `renderer.drawTexture`.
-    - item draw -> `renderer.drawTexture`.
     - ground shadow: replace ellipse gradient with one of:
         - a prebuilt shadow texture, preferred for SDL3.
         - a simple alpha rectangle until texture support lands.
@@ -370,8 +345,7 @@ Layer-by-layer conversion order:
     - rays -> `renderer.drawLine`.
     - radius circles: approximate with a 32-segment polyline helper.
 5. `LightingLayer`, after terrain/entities/debug are working in SDL3
-    - Stop relying on `globalCompositeOperation = 'destination-out'`.
-    - Implement a CPU-generated light mask texture or a simpler first SDL3 pass:
+    - Replace the temporary polygon tint pass with a renderer-owned light mask:
         - draw dark overlay bands/rectangles.
         - draw visibility polygons as tinted transparent triangles only if SDL3
           blend mode supports it.
@@ -383,7 +357,7 @@ Done when:
 - `rg -n "createLinearGradient|createRadialGradient|globalCompositeOperation|ellipse|drawImage|CanvasRenderingContext" packages/game/src packages/engine/src` finds no required runtime code outside browser preview.
 - SDL3 renders terrain, player, items, debug collision, and basic lighting.
 
-## Phase 6 - Deno Game Entrypoint
+## Phase 5 - Deno Game Entrypoint
 
 Goal: `packages/game` runs directly with Deno + SDL3.
 
@@ -429,7 +403,7 @@ Done when:
 - `deno task --config packages/game/deno.json dev:sdl` runs the debug room, or
   `dev` does after the final cutover.
 
-## Phase 7 - Package Native Libraries
+## Phase 6 - Package Native Libraries
 
 Goal: make compiled artifacts runnable on clean machines.
 
@@ -484,7 +458,7 @@ Done when:
 - The release folder documents required native library placement.
 - CI can at least `deno check` the SDL3 entrypoint.
 
-## Phase 8 - Delete Browser Runtime
+## Phase 7 - Delete Browser Runtime
 
 Goal: SDL3 is the only real runtime layer.
 
@@ -509,7 +483,7 @@ Done when:
   path.
 - No workspace task depends on DOM, Canvas2D, Web Audio, or browser serving.
 
-## Phase 9 - Tests And CI
+## Phase 8 - Tests And CI
 
 Add checks before deleting browser fallback:
 
@@ -543,13 +517,8 @@ Use this as the remaining move list:
 | Current file/path                                | Target                                                                                           |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | `packages/engine/src/platform/{clock,input-source,renderer,storage,loop}.ts` | Rename/move to `packages/engine/src/runtime/*` as engine-owned contracts, not multi-platform promises. |
-| `packages/engine/src/platform/adapter.ts`        | Delete after assets/sprites/lighting stop depending on browser-preview types.                    |
-| `packages/engine/src/platform/render-context.ts` | Delete after engine-owned usage moves to `Renderer2D` commands.                                  |
-| `packages/engine/src/assets/asset-store.ts`      | Replace `ImageSource` loading with platform-neutral image asset payloads and texture handles.     |
-| `packages/engine/src/sprites/*`                  | Draw through `Renderer2D.drawTexture` instead of `RenderContext.drawImage`.                       |
-| `packages/engine/src/rendering/layers/lighting.ts` | Split ray casting from browser compositing; add SDL3-compatible mask/texture path.                |
-| `packages/engine/src/diagnostics/diagnostics.ts` | Convert overlay hooks to renderer commands; delete browser-only hooks.                           |
-| `packages/game/src/rendering/layers/*`           | Convert terrain/entity/debug/background drawing to `Renderer2D` commands or textures.             |
+| `packages/platform-browser/src/renderer-canvas2d.ts` | Delete after SDL3 texture rendering and game-layer parity are stable.                         |
+| `packages/game/src/rendering/layers/*`           | Convert remaining terrain/entity-effect/debug/background drawing to `Renderer2D` commands or textures. |
 | `packages/game/src/debug/debug-panel.ts`         | Replace with SDL3/platform debug overlay or delete.                                              |
 | `packages/game/src/debug/debug-minimap.ts`       | Convert to `Renderer2D` commands or SDL3 texture.                                                |
 | `packages/game/src/systems/audio.ts`             | Replace with SDL3/platform audio; delete browser copy after transition.                           |
@@ -607,10 +576,9 @@ SDL3 becomes the default when all are true:
 
 ## Recommended Order For The Next Agent
 
-1. Finish removing `Canvas2DPreview` dependencies from engine-owned sprites,
-   assets, diagnostics, and lighting.
-2. Implement SDL3 texture loading and `drawTexture`.
-3. Convert game render layers to `Renderer2D` command calls.
+1. Implement SDL3 texture loading and `drawTexture`.
+2. Replace source-backed sprite handles with renderer-created texture handles.
+3. Convert remaining game render layers to `Renderer2D` command calls.
 4. Load one player sprite sheet as an SDL3 texture.
 5. Run the existing demo room in SDL3 with lighting temporarily disabled.
 6. Add SDL3 debug collision overlay.

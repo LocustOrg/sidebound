@@ -3,16 +3,7 @@
  */
 
 import type { Render } from '@sdl3/sdl3-deno'
-import type {
-    ColorRgba,
-    DrawOptions,
-    Rect,
-    Renderer2D,
-    RendererImageSource,
-    RenderTargetHandle,
-    TextureHandle,
-    Vec2,
-} from '@sidebound/engine'
+import type { ColorRgba, DrawOptions, Rect, Renderer2D, RendererImageSource, RenderTargetHandle, TextureHandle, Vec2 } from '@sidebound/engine'
 
 export class SdlRenderer implements Renderer2D {
     private readonly render: Render

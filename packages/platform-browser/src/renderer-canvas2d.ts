@@ -1,4 +1,5 @@
-import type { ColorRgba, DrawOptions, Rect, RenderContext, Renderer2D, RendererImageSource, RenderTargetHandle, TextureHandle, Vec2 } from '@sidebound/engine'
+import type { ColorRgba, DrawOptions, Rect, Renderer2D, RendererImageSource, RenderTargetHandle, TextureHandle, Vec2 } from '@sidebound/engine'
+import type { RenderContext } from './render-context.ts'
 
 type CanvasTexture = TextureHandle & {
     readonly source: RendererImageSource
@@ -49,11 +50,7 @@ export class Canvas2DPreviewRenderer implements Renderer2D {
     }
 
     drawTexture(texture: TextureHandle, source: Rect, dest: Rect, options: DrawOptions = {}): void {
-        const loaded = this.textures.get(texture.id)
-
-        if (!loaded) {
-            throw new Error(`Texture '${texture.id}' has not been loaded`)
-        }
+        const textureSource = this.resolveTextureSource(texture)
 
         this.context.save()
         this.context.globalAlpha = options.alpha ?? 1
@@ -61,9 +58,9 @@ export class Canvas2DPreviewRenderer implements Renderer2D {
         if (options.flipX) {
             this.context.translate(dest.x + dest.width, dest.y)
             this.context.scale(-1, 1)
-            this.context.drawImage(loaded.source, source.x, source.y, source.width, source.height, 0, 0, dest.width, dest.height)
+            this.context.drawImage(textureSource, source.x, source.y, source.width, source.height, 0, 0, dest.width, dest.height)
         } else {
-            this.context.drawImage(loaded.source, source.x, source.y, source.width, source.height, dest.x, dest.y, dest.width, dest.height)
+            this.context.drawImage(textureSource, source.x, source.y, source.width, source.height, dest.x, dest.y, dest.width, dest.height)
         }
 
         this.context.restore()
@@ -110,5 +107,19 @@ export class Canvas2DPreviewRenderer implements Renderer2D {
         this.context.closePath()
         this.context.fill()
         this.context.restore()
+    }
+
+    private resolveTextureSource(texture: TextureHandle): RendererImageSource {
+        const loaded = this.textures.get(texture.id)
+        if (loaded) {
+            return loaded.source
+        }
+
+        const sourceBacked = texture as TextureHandle & { readonly source?: RendererImageSource }
+        if (sourceBacked.source) {
+            return sourceBacked.source
+        }
+
+        throw new Error(`Texture '${texture.id}' has not been loaded`)
     }
 }

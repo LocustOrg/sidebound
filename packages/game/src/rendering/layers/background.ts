@@ -1,5 +1,10 @@
-import type { Canvas2DPreviewRenderFrame, RenderFrame, RenderLayer } from '@sidebound/engine'
+import type { RenderFrame, RenderLayer } from '@sidebound/engine'
+import type { RenderContext } from '@sidebound/platform-browser'
 import type { Level } from '../../world/types.ts'
+
+type BrowserPreviewFrame = RenderFrame & {
+    readonly context?: RenderContext
+}
 
 export class BackgroundLayer implements RenderLayer {
     readonly order = 0
@@ -10,7 +15,7 @@ export class BackgroundLayer implements RenderLayer {
     }
 
     render(frame: RenderFrame): void {
-        const { context } = frame as Canvas2DPreviewRenderFrame
+        const { context } = frame as BrowserPreviewFrame
         if (!context) return
 
         const { width, height } = this.world
