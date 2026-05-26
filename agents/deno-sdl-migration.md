@@ -70,9 +70,6 @@ Reference links:
 
 ## Active Work
 
-- Implement SDL3 texture loading/drawing and render targets.
-- Replace transitional source-backed sprite texture handles with platform-created
-  SDL3 textures.
 - Convert the remaining game render layers and browser-only visual effects from
   Canvas2D calls to `Renderer2D` commands or platform-specific textures.
 - Boot `packages/game` through SDL3 instead of the browser preview.
@@ -258,14 +255,17 @@ export type InputEvents = {
 
 ## Phase 1 - SDL3 Renderer And Packaging Work
 
-1. Implement asset-backed image loading for SDL3.
-2. Implement texture creation/copy and `Renderer2D.drawTexture`.
-3. Implement render targets or an explicit fallback path for cached terrain,
-   debug overlays, and light masks.
-4. Implement only the blend/composite behavior required by the next SDL3
-   milestone.
-5. Add SDL3 package checks to root `check` once native binding availability is
-   reliable in CI.
+Status:
+
+- [x] Implement asset-backed image loading for SDL3.
+- [x] Implement texture creation/copy and `Renderer2D.drawTexture`.
+- [x] Implement SDL3 render target creation and target switching.
+- [x] Implement the blend behavior currently required for sprites and debug
+  primitives.
+- [x] Replace transitional source-backed sprite texture handles with
+  renderer-created texture handles.
+- [ ] Add SDL3 package checks to root `check` once native binding availability
+  is reliable in CI.
 
 ## Phase 2 - SDL3 Event Loop And Input
 

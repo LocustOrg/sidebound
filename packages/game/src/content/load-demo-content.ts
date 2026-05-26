@@ -6,6 +6,7 @@ import {
     type ImageAssetLoader,
     type ItemDefinition,
     loadSpriteSheet,
+    type Renderer2D,
     type SpriteSheet,
 } from '@sidebound/engine'
 import { demoContent, demoContentIds } from './mod.ts'
@@ -24,9 +25,10 @@ export type ContentLoadSummary = {
     readonly atlases: readonly string[]
 }
 
-async function loadCharacterAppearance(registry: ContentRegistry, assets: AssetStore, characterId: string): Promise<CharacterAppearance> {
+async function loadCharacterAppearance(renderer: Renderer2D, registry: ContentRegistry, assets: AssetStore, characterId: string): Promise<CharacterAppearance> {
     const definition = registry.getCharacter(characterId)
     const base = await loadSpriteSheet(
+        renderer,
         assets,
         definition.atlas,
         definition.frame.width,
@@ -41,6 +43,7 @@ async function loadCharacterAppearance(registry: ContentRegistry, assets: AssetS
                     id: layer.id,
                     order: layer.order,
                     spriteSheet: await loadSpriteSheet(
+                        renderer,
                         assets,
                         layer.atlas,
                         definition.frame.width,
@@ -62,17 +65,17 @@ async function loadCharacterAppearance(registry: ContentRegistry, assets: AssetS
     }
 }
 
-function loadItemIconSheet(assets: AssetStore, item: ItemDefinition): Promise<SpriteSheet> {
-    return loadSpriteSheet(assets, item.icon, item.pickup.size.width, item.pickup.size.height, 1, 1)
+function loadItemIconSheet(renderer: Renderer2D, assets: AssetStore, item: ItemDefinition): Promise<SpriteSheet> {
+    return loadSpriteSheet(renderer, assets, item.icon, item.pickup.size.width, item.pickup.size.height, 1, 1)
 }
 
-async function loadItemIconSheets(registry: ContentRegistry, assets: AssetStore): Promise<Record<string, SpriteSheet>> {
-    const entries = await Promise.all(registry.getItems().map(async (item) => [item.id, await loadItemIconSheet(assets, item)] as const))
+async function loadItemIconSheets(renderer: Renderer2D, registry: ContentRegistry, assets: AssetStore): Promise<Record<string, SpriteSheet>> {
+    const entries = await Promise.all(registry.getItems().map(async (item) => [item.id, await loadItemIconSheet(renderer, assets, item)] as const))
 
     return Object.fromEntries(entries)
 }
 
-export async function loadDemoContent(loader: ImageAssetLoader): Promise<LoadedDemoContent> {
+export async function loadDemoContent(loader: ImageAssetLoader, renderer: Renderer2D): Promise<LoadedDemoContent> {
     demoContent.assertValid()
 
     const assets = new AssetStore(loader)
@@ -80,8 +83,8 @@ export async function loadDemoContent(loader: ImageAssetLoader): Promise<LoadedD
     await assets.preloadAll()
 
     const playerDefinition = demoContent.getCharacter(demoContentIds.player)
-    const playerAppearance = await loadCharacterAppearance(demoContent, assets, playerDefinition.id)
-    const itemIconSheets = await loadItemIconSheets(demoContent, assets)
+    const playerAppearance = await loadCharacterAppearance(renderer, demoContent, assets, playerDefinition.id)
+    const itemIconSheets = await loadItemIconSheets(renderer, demoContent, assets)
 
     return {
         registry: demoContent,

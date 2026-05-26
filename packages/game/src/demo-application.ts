@@ -12,7 +12,7 @@ import {
     SideViewCamera,
     updateFrameDiagnostics,
 } from '@sidebound/engine'
-import { PixelEngine, PlatformBrowserAdapter, type RenderContext } from '@sidebound/platform-browser'
+import { createPixelCanvasSurface, type PixelCanvasSurface, PixelEngine, PlatformBrowserAdapter, type RenderContext } from '@sidebound/platform-browser'
 import { requireElement } from './core/dom.ts'
 import { DebugMinimap } from './debug/debug-minimap.ts'
 import { DebugPanel } from './debug/debug-panel.ts'
@@ -54,6 +54,7 @@ export class DemoApplication {
     private readonly debugLayer: DebugLayer
     private readonly minimap: DebugMinimap
     private readonly engine: PixelEngine
+    private readonly surface: PixelCanvasSurface
     private readonly loadedContent: LoadedDemoContent
     private readonly itemFactory: ItemFactory
     private readonly sunLights: PointLight[]
@@ -69,14 +70,23 @@ export class DemoApplication {
 
     static async create(): Promise<DemoApplication> {
         const platform = new PlatformBrowserAdapter()
-        return new DemoApplication(await loadDemoContent(platform))
+        const canvas = requireElement<HTMLCanvasElement>('#game')
+        const surface = createPixelCanvasSurface({
+            canvas,
+            width: viewport.width,
+            height: viewport.height,
+            scale: 'css',
+            background: '#1e1a2e',
+        })
+
+        return new DemoApplication(await loadDemoContent(platform, surface.renderer), surface)
     }
 
-    private constructor(loadedContent: LoadedDemoContent) {
-        const canvas = requireElement<HTMLCanvasElement>('#game')
+    private constructor(loadedContent: LoadedDemoContent, surface: PixelCanvasSurface) {
         const minimapCanvas = requireElement<HTMLCanvasElement>('#debug-minimap')
         const lighting = new RayLighting(world.lightOccluders)
 
+        this.surface = surface
         this.loadedContent = loadedContent
         this.debugPanel = new DebugPanel()
         this.input = new InputManager({
@@ -114,7 +124,8 @@ export class DemoApplication {
         this.camera.snapToPlayer(this.player)
 
         this.engine = new PixelEngine({
-            canvas,
+            canvas: surface.canvas,
+            surface: this.surface,
             width: viewport.width,
             height: viewport.height,
             scale: 'css',

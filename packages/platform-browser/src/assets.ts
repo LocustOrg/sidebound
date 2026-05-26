@@ -1,4 +1,4 @@
-import type { ImageAssetLoader } from '@sidebound/engine'
+import type { ImageAssetLoader, RendererImageSource } from '@sidebound/engine'
 import type { ImageSource, RenderContext } from './render-context.ts'
 import { toRenderContext } from './render-context.ts'
 
@@ -10,10 +10,10 @@ export type BrowserPreviewSurface = {
 }
 
 export class PlatformBrowserAdapter implements ImageAssetLoader {
-    loadImage(url: string): Promise<ImageSource> {
+    loadImage(url: string): Promise<RendererImageSource> {
         return new Promise((resolve, reject) => {
             const image = new Image()
-            image.onload = () => resolve(image)
+            image.onload = () => resolve({ kind: 'platform', source: image, width: image.width, height: image.height })
             image.onerror = () => reject(new Error(`Failed to load image from ${url}`))
             image.src = url
         })

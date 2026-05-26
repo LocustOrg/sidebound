@@ -62,12 +62,21 @@ export class AssetStore {
 
         let image = this.images.get(id)
         if (!image) {
-            image = this.loader.loadImage(definition.url).then((loaded) => ({
-                id: definition.id,
-                image: loaded,
-                width: loaded.width,
-                height: loaded.height,
-            }))
+            image = this.loader.loadImage(definition.url)
+                .then((loaded) => ({
+                    id: definition.id,
+                    image: loaded,
+                    width: loaded.width,
+                    height: loaded.height,
+                }))
+                .catch((error) => {
+                    throw new Error(
+                        `Failed to load image asset '${definition.id}' from '${definition.url}': ${error instanceof Error ? error.message : String(error)}`,
+                        {
+                            cause: error,
+                        },
+                    )
+                })
             this.images.set(id, image)
         }
 

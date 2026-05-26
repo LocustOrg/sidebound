@@ -7,10 +7,31 @@ export type ColorRgba = {
     readonly a: number
 }
 
-export type RendererImageSource = {
+type RendererImageSourceBase = {
     readonly width: number
     readonly height: number
 }
+
+export type RendererFileImageSource = RendererImageSourceBase & {
+    readonly kind: 'file'
+    readonly path: string
+    readonly mimeType?: string
+    readonly fileExtension?: string
+}
+
+export type RendererBytesImageSource = RendererImageSourceBase & {
+    readonly kind: 'bytes'
+    readonly bytes: Uint8Array<ArrayBuffer>
+    readonly mimeType?: string
+    readonly fileExtension?: string
+}
+
+export type RendererPlatformImageSource = RendererImageSourceBase & {
+    readonly kind: 'platform'
+    readonly source: unknown
+}
+
+export type RendererImageSource = RendererFileImageSource | RendererBytesImageSource | RendererPlatformImageSource
 
 export type TextureHandle = {
     readonly id: string

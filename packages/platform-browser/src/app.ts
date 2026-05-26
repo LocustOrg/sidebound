@@ -34,6 +34,7 @@ export type PixelCanvasSurface = {
 export type PixelEngineOptions = PixelCanvasSurfaceOptions & {
     readonly loop: PixelLoop
     readonly clock?: AnimationFrameClock
+    readonly surface?: PixelCanvasSurface
 }
 
 export function configurePixelCanvas(canvas: HTMLCanvasElement, width: number, height: number, scale: PixelScale = 4, platformScale = 1): void {
@@ -103,7 +104,7 @@ export class PixelEngine {
     private readonly loop: EngineLoop
 
     constructor(options: PixelEngineOptions) {
-        this.surface = createPixelCanvasSurface(options)
+        this.surface = options.surface ?? createPixelCanvasSurface(options)
         this.loop = new EngineLoop({
             clock: options.clock ?? new BrowserAnimationFrameClock(),
             update: ({ deltaSeconds }) => options.loop.update(deltaSeconds),

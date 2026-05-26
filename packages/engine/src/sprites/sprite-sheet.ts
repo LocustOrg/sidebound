@@ -1,5 +1,5 @@
 import type { AssetId, AssetStore } from '../assets/asset-store.ts'
-import type { Renderer2D, RendererImageSource, TextureHandle } from '../platform/renderer.ts'
+import type { Renderer2D, TextureHandle } from '../platform/renderer.ts'
 
 export type SpriteFrame = {
     readonly col: number
@@ -113,20 +113,8 @@ export class SpriteSheet {
     }
 }
 
-type SourceBackedTextureHandle = TextureHandle & {
-    readonly source: RendererImageSource
-}
-
-function textureHandleFromImage(id: AssetId, source: RendererImageSource): SourceBackedTextureHandle {
-    return {
-        id,
-        width: source.width,
-        height: source.height,
-        source,
-    }
-}
-
 export async function loadSpriteSheet(
+    renderer: Renderer2D,
     assetStore: AssetStore,
     assetId: AssetId,
     frameWidth: number,
@@ -135,15 +123,16 @@ export async function loadSpriteSheet(
     rows: number,
 ): Promise<SpriteSheet> {
     const image = await assetStore.loadImage(assetId)
+    const texture = await renderer.loadTexture(assetId, image.image)
     const layout = new TextureAtlasLayout({ frameWidth, frameHeight, columns, rows })
 
-    if (image.width !== layout.width || image.height !== layout.height) {
+    if (texture.width !== layout.width || texture.height !== layout.height) {
         throw new Error(
-            `Image asset '${assetId}' is ${image.width}x${image.height}, expected ${layout.width}x${layout.height} for ${columns}x${rows} ${frameWidth}x${frameHeight} frames`,
+            `Image asset '${assetId}' is ${texture.width}x${texture.height}, expected ${layout.width}x${layout.height} for ${columns}x${rows} ${frameWidth}x${frameHeight} frames`,
         )
     }
 
-    return new SpriteSheet({ texture: textureHandleFromImage(assetId, image.image), frameWidth, frameHeight, columns, rows })
+    return new SpriteSheet({ texture, frameWidth, frameHeight, columns, rows })
 }
 
 export type AnimationClip = {

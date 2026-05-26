@@ -1,5 +1,5 @@
 import type { ColorRgba, DrawOptions, Rect, Renderer2D, RendererImageSource, RenderTargetHandle, TextureHandle, Vec2 } from '@sidebound/engine'
-import type { RenderContext } from './render-context.ts'
+import type { ImageSource, RenderContext } from './render-context.ts'
 
 type CanvasTexture = TextureHandle & {
     readonly source: RendererImageSource
@@ -109,15 +109,14 @@ export class Canvas2DPreviewRenderer implements Renderer2D {
         this.context.restore()
     }
 
-    private resolveTextureSource(texture: TextureHandle): RendererImageSource {
+    private resolveTextureSource(texture: TextureHandle): ImageSource {
         const loaded = this.textures.get(texture.id)
         if (loaded) {
-            return loaded.source
-        }
+            if (loaded.source.kind !== 'platform') {
+                throw new Error(`Texture '${texture.id}' is not backed by a browser image source`)
+            }
 
-        const sourceBacked = texture as TextureHandle & { readonly source?: RendererImageSource }
-        if (sourceBacked.source) {
-            return sourceBacked.source
+            return loaded.source.source as ImageSource
         }
 
         throw new Error(`Texture '${texture.id}' has not been loaded`)

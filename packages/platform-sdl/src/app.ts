@@ -93,6 +93,7 @@ export function createSdlRuntime(options: SdlRuntimeOptions): SdlRuntime {
         },
 
         dispose(): void {
+            renderer.dispose()
             sdl.quit()
         },
     }
