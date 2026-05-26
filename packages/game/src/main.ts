@@ -115,7 +115,6 @@ entityLayer.setItemProvider(() => itemSystem.getItems())
 debugLayer.setPlayerRectProvider(() => player.getRect())
 debugLayer.setItemRectProvider(() => itemSystem.getDebugRects())
 debugLayer.setLightPolygonProvider(() => lightingLayer.activeSunData)
-debugLayer.showCollision = true
 
 // Debug tooling
 const logger = new DebugLogger({ level: LogLevel.Debug, prefix: '[Game]' })

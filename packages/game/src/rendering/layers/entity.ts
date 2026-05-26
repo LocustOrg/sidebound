@@ -3,11 +3,12 @@ import { clamp } from '@sidebound/engine'
 import { Mob } from '../../entities/mob.ts'
 import type { PickupItemEntity } from '../../entities/item-entity.ts'
 
-const shadowColor: ColorRgba = { r: 8, g: 6, b: 14, a: 0.25 }
+const shadowColor: ColorRgba = { r: 8, g: 6, b: 14, a: 0.35 }
+const auraInner: ColorRgba = { r: 160, g: 200, b: 255, a: 0.12 }
+const auraOuter: ColorRgba = { r: 160, g: 200, b: 255, a: 0 }
 
 /**
- * Draws all mob entities with a simple ground shadow.
- * Aura and gradient shadow are temporarily omitted for SDL3 parity.
+ * Draws all mob entities with elliptical ground shadow and soft player aura.
  */
 export class EntityLayer implements RenderLayer {
     readonly order = 20
@@ -46,22 +47,46 @@ export class EntityLayer implements RenderLayer {
     }
 
     private drawMob(renderer: Renderer2D, mob: Mob, ox: number, oy: number): void {
-        this.drawGroundShadow(renderer, mob, ox, oy)
+        this.drawEllipticalShadow(renderer, mob, ox, oy)
+        this.drawAura(renderer, mob, ox, oy)
         mob.draw(renderer, ox, oy)
     }
 
-    private drawGroundShadow(renderer: Renderer2D, mob: Mob, ox: number, oy: number): void {
+    private drawEllipticalShadow(renderer: Renderer2D, mob: Mob, ox: number, oy: number): void {
         const projection = mob.getShadowProjection()
         if (projection === null) return
 
         const heightFactor = clamp(projection.distance / 80, 0, 1)
-        const radiusX = Math.round(mob.width * 1.9 * (1 - heightFactor * 0.45))
-        const alpha = 0.28 * (1 - heightFactor * 0.72)
+        const radiusX = Math.round(mob.width * 1.6 * (1 - heightFactor * 0.4))
+        const radiusY = Math.max(2, Math.round(4 * (1 - heightFactor * 0.6)))
+        const alpha = 0.35 * (1 - heightFactor * 0.7)
         const centerX = projection.x + ox
+        const centerY = projection.y + oy
 
-        renderer.fillRect(
-            { x: Math.round(centerX - radiusX / 2), y: projection.y + oy, width: radiusX, height: 2 },
+        renderer.fillRadialGradientEllipse(
+            { x: centerX, y: centerY },
+            radiusX,
+            radiusY,
             { ...shadowColor, a: alpha },
+            { ...shadowColor, a: 0 },
+            16,
+        )
+    }
+
+    private drawAura(renderer: Renderer2D, mob: Mob, ox: number, oy: number): void {
+        // Only draw aura for the first mob (player) as a subtle glow
+        if (this.mobs.indexOf(mob) !== 0) return
+
+        const cx = Math.round(mob.x + mob.width / 2 + ox)
+        const cy = Math.round(mob.y + mob.height / 2 + oy)
+        const radius = Math.round(mob.width * 2.2)
+
+        renderer.fillRadialGradientFan(
+            { x: cx, y: cy },
+            radius,
+            auraInner,
+            auraOuter,
+            24,
         )
     }
 }

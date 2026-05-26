@@ -15,7 +15,9 @@ const radiusColor: ColorRgba = { r: 244, g: 196, b: 95, a: 0.65 }
 export class DebugLayer implements RenderLayer {
     readonly order = 100
 
+    /** Collision outlines default to OFF; toggle with F3. */
     showCollision = false
+    /** Lighting debug rays default to OFF; toggle with F4. */
     showLighting = false
 
     private readonly solids: Rect[]

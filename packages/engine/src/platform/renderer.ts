@@ -7,6 +7,8 @@ export type ColorRgba = {
     readonly a: number
 }
 
+export type RendererBlendMode = 'replace' | 'alpha' | 'add' | 'multiply'
+
 type RendererImageSourceBase = {
     readonly width: number
     readonly height: number
@@ -49,6 +51,12 @@ export type DrawOptions = {
     readonly flipX?: boolean
     readonly alpha?: number
     readonly tint?: ColorRgba
+    readonly blendMode?: RendererBlendMode
+}
+
+export type LinearGradientStop = {
+    readonly offset: number
+    readonly color: ColorRgba
 }
 
 export type Renderer2D = {
@@ -60,6 +68,21 @@ export type Renderer2D = {
 
     loadTexture(id: string, source: RendererImageSource): Promise<TextureHandle>
     drawTexture(texture: TextureHandle, source: Rect, dest: Rect, options?: DrawOptions): void
+
+    /** Clear the current render target (or screen) to a solid color. */
+    clear(color: ColorRgba): void
+
+    /** Draw a render target texture to the current target/screen with a specified blend mode. */
+    drawRenderTarget(target: RenderTargetHandle, dest: Rect, blendMode: RendererBlendMode, alpha?: number): void
+
+    /** Fill a rect with a vertical linear gradient defined by color stops. */
+    fillLinearGradientRect(rect: Rect, stops: readonly LinearGradientStop[]): void
+
+    /** Fill a radial gradient using a triangle fan from center outward. */
+    fillRadialGradientFan(center: Vec2, radius: number, innerColor: ColorRgba, outerColor: ColorRgba, segments?: number): void
+
+    /** Fill an elliptical radial gradient. */
+    fillRadialGradientEllipse(center: Vec2, radiusX: number, radiusY: number, innerColor: ColorRgba, outerColor: ColorRgba, segments?: number): void
 
     fillRect(rect: Rect, color: ColorRgba): void
     strokeRect(rect: Rect, color: ColorRgba): void

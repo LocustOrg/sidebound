@@ -3,7 +3,7 @@
  */
 
 import { type Render, SDL, type Texture } from '@sdl3/sdl3-deno'
-import type { ColorRgba, DrawOptions, Rect, Renderer2D, RendererImageSource, RenderTargetHandle, TextureHandle, Vec2 } from '@sidebound/engine'
+import type { ColorRgba, DrawOptions, LinearGradientStop, Rect, Renderer2D, RendererBlendMode, RendererImageSource, RenderTargetHandle, TextureHandle, Vec2 } from '@sidebound/engine'
 import { loadSdlSurface } from './assets.ts'
 
 export type SdlLogicalPresentationMode = 'disabled' | 'stretch' | 'letterbox' | 'overscan' | 'integer-scale'
@@ -168,6 +168,45 @@ function triangulatePolygon(points: readonly Vec2[]): Int32Array<ArrayBuffer> | 
     return new Int32Array(triangles)
 }
 
+function lerpColor(a: ColorRgba, b: ColorRgba, t: number): ColorRgba {
+    return {
+        r: a.r + (b.r - a.r) * t,
+        g: a.g + (b.g - a.g) * t,
+        b: a.b + (b.b - a.b) * t,
+        a: a.a + (b.a - a.a) * t,
+    }
+}
+
+function sampleGradient(stops: readonly LinearGradientStop[], t: number): ColorRgba {
+    if (stops.length === 0) return { r: 0, g: 0, b: 0, a: 1 }
+    if (stops.length === 1) return stops[0].color
+    if (t <= stops[0].offset) return stops[0].color
+    if (t >= stops[stops.length - 1].offset) return stops[stops.length - 1].color
+
+    for (let i = 0; i < stops.length - 1; i++) {
+        if (t >= stops[i].offset && t <= stops[i + 1].offset) {
+            const range = stops[i + 1].offset - stops[i].offset
+            const local = range > 0 ? (t - stops[i].offset) / range : 0
+            return lerpColor(stops[i].color, stops[i + 1].color, local)
+        }
+    }
+
+    return stops[stops.length - 1].color
+}
+
+function mapBlendMode(mode: RendererBlendMode): number {
+    switch (mode) {
+        case 'replace':
+            return SDL.BLENDMODE.NONE
+        case 'alpha':
+            return SDL.BLENDMODE.BLEND
+        case 'add':
+            return SDL.BLENDMODE.ADD
+        case 'multiply':
+            return SDL.BLENDMODE.MUL
+    }
+}
+
 const logicalPresentationModes = {
     disabled: SDL.LOGICAL_PRESENTATION.DISABLED,
     stretch: SDL.LOGICAL_PRESENTATION.STRETCH,
@@ -197,7 +236,6 @@ export class SdlRenderer implements Renderer2D {
         if (this.currentRenderTarget) {
             this.setRenderTarget(null)
         }
-
 
         assertSdl(this.render.present(), 'SDL_RenderPresent failed')
     }
@@ -264,6 +302,10 @@ export class SdlRenderer implements Renderer2D {
         const tint = options.tint
         const alpha = Math.max(0, Math.min(1, (options.alpha ?? 1) * (tint?.a ?? 1)))
 
+        if (options.blendMode) {
+            assertSdl(entry.texture.setBlendMode(mapBlendMode(options.blendMode)), `SDL_SetTextureBlendMode failed for texture '${texture.id}'`)
+        }
+
         assertSdl(
             entry.texture.setColorMod(clampByte(tint?.r ?? 255), clampByte(tint?.g ?? 255), clampByte(tint?.b ?? 255)),
             `SDL_SetTextureColorMod failed for texture '${texture.id}'`,
@@ -282,6 +324,117 @@ export class SdlRenderer implements Renderer2D {
             assertSdl(entry.texture.setColorMod(255, 255, 255), `SDL_SetTextureColorMod reset failed for texture '${texture.id}'`)
             assertSdl(entry.texture.setAlphaMod(255), `SDL_SetTextureAlphaMod reset failed for texture '${texture.id}'`)
         }
+
+        if (options.blendMode) {
+            assertSdl(entry.texture.setBlendMode(SDL.BLENDMODE.BLEND), `SDL_SetTextureBlendMode reset failed for texture '${texture.id}'`)
+        }
+    }
+
+    clear(color: ColorRgba): void {
+        this.setDrawColor(color)
+        assertSdl(this.render.clear(), 'SDL_RenderClear failed')
+    }
+
+    drawRenderTarget(target: RenderTargetHandle, dest: Rect, blendMode: RendererBlendMode, alpha?: number): void {
+        const entry = this.renderTargets.get(target.id)
+        if (!entry) {
+            throw new Error(`SDL render target '${target.id}' has not been created`)
+        }
+
+        assertSdl(entry.texture.setBlendMode(mapBlendMode(blendMode)), `SDL_SetTextureBlendMode failed for render target '${target.id}'`)
+        assertSdl(entry.texture.setAlphaMod(alphaByte(alpha ?? 1)), `SDL_SetTextureAlphaMod failed for render target '${target.id}'`)
+
+        const sourceRect = { x: 0, y: 0, w: target.width, h: target.height }
+        const destRect = toSdlRect(dest)
+        assertSdl(this.render.texture(entry.texture, sourceRect, destRect), `SDL_RenderTexture failed for render target '${target.id}'`)
+
+        // Reset to default blend mode
+        assertSdl(entry.texture.setBlendMode(SDL.BLENDMODE.BLEND), `SDL_SetTextureBlendMode reset failed for render target '${target.id}'`)
+        assertSdl(entry.texture.setAlphaMod(255), `SDL_SetTextureAlphaMod reset failed for render target '${target.id}'`)
+    }
+
+    fillLinearGradientRect(rect: Rect, stops: readonly LinearGradientStop[]): void {
+        if (stops.length === 0) return
+
+        // Render as horizontal bands with interpolated colors
+        const bandCount = Math.max(1, Math.min(rect.height, 64))
+        const bandHeight = rect.height / bandCount
+
+        for (let i = 0; i < bandCount; i++) {
+            const t = bandCount > 1 ? i / (bandCount - 1) : 0
+            const color = sampleGradient(stops, t)
+            const bandY = rect.y + i * bandHeight
+            const h = i === bandCount - 1 ? rect.y + rect.height - bandY : bandHeight
+
+            this.setDrawColor(color)
+            assertSdl(this.render.fillRect({ x: rect.x, y: Math.round(bandY), w: rect.width, h: Math.round(h) }), 'SDL_RenderFillRect failed (gradient)')
+        }
+    }
+
+    fillRadialGradientFan(center: Vec2, radius: number, innerColor: ColorRgba, outerColor: ColorRgba, segments?: number): void {
+        const seg = segments ?? 32
+        if (seg < 3) return
+
+        assertSdl(this.render.setDrawBlendMode(SDL.BLENDMODE.BLEND), 'SDL_SetRenderDrawBlendMode failed')
+
+        const innerFColor = toSdlFColor(innerColor)
+        const outerFColor = toSdlFColor(outerColor)
+
+        const vertices = [
+            { position: { x: center.x, y: center.y }, color: innerFColor, tex_coord: { x: 0, y: 0 } },
+        ]
+
+        for (let i = 0; i <= seg; i++) {
+            const angle = (i / seg) * Math.PI * 2
+            vertices.push({
+                position: { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius },
+                color: outerFColor,
+                tex_coord: { x: 0, y: 0 },
+            })
+        }
+
+        const indices = new Int32Array(seg * 3)
+        for (let i = 0; i < seg; i++) {
+            const offset = i * 3
+            indices[offset] = 0
+            indices[offset + 1] = i + 1
+            indices[offset + 2] = i + 2
+        }
+
+        assertSdl(this.render.geometry(null, vertices, indices), 'SDL_RenderGeometry failed (radial gradient fan)')
+    }
+
+    fillRadialGradientEllipse(center: Vec2, radiusX: number, radiusY: number, innerColor: ColorRgba, outerColor: ColorRgba, segments?: number): void {
+        const seg = segments ?? 32
+        if (seg < 3) return
+
+        assertSdl(this.render.setDrawBlendMode(SDL.BLENDMODE.BLEND), 'SDL_SetRenderDrawBlendMode failed')
+
+        const innerFColor = toSdlFColor(innerColor)
+        const outerFColor = toSdlFColor(outerColor)
+
+        const vertices = [
+            { position: { x: center.x, y: center.y }, color: innerFColor, tex_coord: { x: 0, y: 0 } },
+        ]
+
+        for (let i = 0; i <= seg; i++) {
+            const angle = (i / seg) * Math.PI * 2
+            vertices.push({
+                position: { x: center.x + Math.cos(angle) * radiusX, y: center.y + Math.sin(angle) * radiusY },
+                color: outerFColor,
+                tex_coord: { x: 0, y: 0 },
+            })
+        }
+
+        const indices = new Int32Array(seg * 3)
+        for (let i = 0; i < seg; i++) {
+            const offset = i * 3
+            indices[offset] = 0
+            indices[offset + 1] = i + 1
+            indices[offset + 2] = i + 2
+        }
+
+        assertSdl(this.render.geometry(null, vertices, indices), 'SDL_RenderGeometry failed (radial gradient ellipse)')
     }
 
     fillRect(rect: Rect, color: ColorRgba): void {
