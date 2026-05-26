@@ -12,7 +12,7 @@ import {
     SideViewCamera,
     updateFrameDiagnostics,
 } from '@sidebound/engine'
-import { createPixelCanvasSurface, type PixelCanvasSurface, PixelEngine, PlatformBrowserAdapter, type RenderContext } from '@sidebound/platform-browser'
+import { createPixelCanvasSurface, type PixelCanvasSurface, PixelEngine, PlatformBrowserAdapter } from '@sidebound/platform-browser'
 import { requireElement } from './core/dom.ts'
 import { DebugMinimap } from './debug/debug-minimap.ts'
 import { DebugPanel } from './debug/debug-panel.ts'
@@ -132,7 +132,7 @@ export class DemoApplication {
             background: '#1e1a2e',
             loop: {
                 update: (deltaSeconds) => this.update(deltaSeconds),
-                render: (context, renderer) => this.render(context, renderer),
+                render: (_context, renderer) => this.render(renderer),
             },
         })
     }
@@ -245,15 +245,12 @@ export class DemoApplication {
         this.diagnostics.updateMs = performance.now() - updateStart
     }
 
-    private render(context: RenderContext, renderer: Renderer2D): void {
+    private render(renderer: Renderer2D): void {
         const renderStart = performance.now()
         const cameraRect = this.camera.getRect()
-        const frame = { context, renderer, camera: cameraRect }
+        const frame = { renderer, camera: cameraRect }
 
-        context.save()
-        context.translate(-cameraRect.x, -cameraRect.y)
         this.pipeline.render(frame)
-        context.restore()
 
         this.diagnostics.renderMs = performance.now() - renderStart
         this.debugPanel.updateMetrics({

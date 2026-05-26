@@ -4,7 +4,8 @@
  */
 
 import { Surface } from '@sdl3/sdl3-deno'
-import type { ImageAssetLoader, RendererImageSource } from '@sidebound/engine'
+import type { RendererImageSource, ImageAssetLoader } from '@sidebound/engine'
+
 
 export type SdlAssetLoaderOptions = {
     readonly root: URL
@@ -126,9 +127,7 @@ export class SdlAssetLoader implements ImageAssetLoader {
                 }
             } catch (bytesError) {
                 throw new Error(
-                    `Failed to load SDL image '${assetPath}' resolved to '${resolvedPath}': ${describeSdlError(bytesError)}; file path attempt: ${
-                        describeSdlError(pathError)
-                    }`,
+                    `Failed to load SDL image '${assetPath}' resolved to '${resolvedPath}': ${describeSdlError(bytesError)}; file path attempt: ${describeSdlError(pathError)}`,
                     { cause: bytesError },
                 )
             }

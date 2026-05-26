@@ -1,5 +1,6 @@
 {
     "workspace": [
+        "lint-rules",
         "packages/engine",
         "packages/game",
         "packages/platform-browser",
@@ -19,6 +20,9 @@
         "noFallthroughCasesInSwitch": true
     },
     "lint": {
+        "plugins": [
+            "./lint-rules/sidebound-lint-plugin.ts"
+        ],
         "rules": {
             "tags": [
                 "recommended"
@@ -31,16 +35,17 @@
     "fmt": {
         "include": [
             "deno.json",
-            "packages/engine",
-            "packages/game",
-            "packages/platform-browser",
-            "packages/platform-sdl"
+            "lint-rules/**/*.ts",
+            "packages/engine/**/*.ts",
+            "packages/game/**/*.ts",
+            "packages/platform-browser/**/*.ts",
+            "packages/platform-sdl/**/*.ts"
         ],
         "exclude": [
             "packages/game/dist"
         ],
         "indentWidth": 4,
-        "lineWidth": 160,
+        "lineWidth": 180,
         "semiColons": false,
         "singleQuote": true
     },
@@ -48,7 +53,7 @@
         "dev": "deno task --cwd packages/game dev",
         "build": "deno task --cwd packages/game build",
         "preview": "deno task --cwd packages/game preview",
-        "typecheck": "deno check packages/engine/src/mod.ts packages/platform-browser/src/mod.ts packages/game/src/main.ts packages/game/tools/build_browser_preview.ts packages/game/tools/serve_browser_preview.ts",
+        "typecheck": "deno check packages/engine/**/*.ts packages/platform-browser/**/*.ts packages/game/**/*.ts packages/game/tools/build_browser_preview.ts packages/game/tools/serve_browser_preview.ts",
         "lint": "deno lint packages/engine/src packages/platform-browser/src packages/game/src packages/game/tools",
         "check": "deno task typecheck && deno task lint",
         "format": "deno fmt"

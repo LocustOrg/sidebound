@@ -7,9 +7,10 @@
     },
     "tasks": {
         "dev": "deno run --allow-env=PORT,DENO_DIR,HOME,DENO_AUTH_TOKENS --allow-net=0.0.0.0:5173,localhost:5173,jsr.io --allow-read --allow-write tools/serve_browser_preview.ts --watch",
+        "dev:sdl": "deno run -A src/main.sdl.ts",
         "build": "deno check src/main.ts tools/build_browser_preview.ts tools/serve_browser_preview.ts && deno run --allow-env=DENO_DIR,HOME,DENO_AUTH_TOKENS --allow-net=jsr.io --allow-read --allow-write tools/build_browser_preview.ts --minify",
         "preview": "deno task build && deno run --allow-env=PORT --allow-net --allow-read tools/serve_browser_preview.ts --skip-build --no-watch",
-        "typecheck": "deno check src/main.ts tools/build_browser_preview.ts tools/serve_browser_preview.ts",
+        "typecheck": "deno check src/main.ts src/main.sdl.ts tools/build_browser_preview.ts tools/serve_browser_preview.ts",
         "check": "deno task typecheck"
     }
 }

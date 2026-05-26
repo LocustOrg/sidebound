@@ -1,12 +1,4 @@
-import {
-    type CharacterAppearance,
-    type EquipmentLoadout,
-    type PlayerInputFrame,
-    type Rect,
-    registerSpriteAnimationClips,
-    type Renderer2D,
-    type Vec2,
-} from '@sidebound/engine'
+import { type CharacterAppearance, type EquipmentLoadout, type PlayerInputFrame, type Rect, registerSpriteAnimationClips, type Renderer2D, type Vec2 } from '@sidebound/engine'
 import type { SoundCue } from '../systems/audio.ts'
 import { controls } from '../core/config.ts'
 import { CharacterRenderComponent } from './character-render-component.ts'

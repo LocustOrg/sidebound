@@ -1,14 +1,4 @@
-import {
-    assertValidWorldDefinition,
-    chunkedTilemap,
-    defineLocation,
-    defineRegion,
-    defineWorld,
-    edgeConnection,
-    rect,
-    TileMapBuilder,
-    TileRegistry,
-} from '@sidebound/engine'
+import { assertValidWorldDefinition, chunkedTilemap, defineLocation, defineRegion, defineWorld, edgeConnection, rect, TileMapBuilder, TileRegistry } from '@sidebound/engine'
 import type { Level, TileMaterial, Viewport } from './types.ts'
 
 export const tileSize = 28

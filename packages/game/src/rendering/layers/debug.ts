@@ -1,12 +1,13 @@
-import type { RenderFrame, RenderLayer } from '@sidebound/engine'
-import type { Rect, Vec2 } from '@sidebound/engine'
-import type { RayHit } from '@sidebound/engine'
-import type { RenderContext } from '@sidebound/platform-browser'
+import type { RayHit, Rect, Renderer2D, RenderFrame, RenderLayer, Vec2, ColorRgba } from '@sidebound/engine'
+
 
 type LightDebugEntry = { polygon: RayHit[]; origin: Vec2; radius: number }
-type BrowserPreviewFrame = RenderFrame & {
-    readonly context?: RenderContext
-}
+
+const solidColor: ColorRgba = { r: 255, g: 106, b: 106, a: 0.9 }
+const playerColor: ColorRgba = { r: 115, g: 255, b: 153, a: 0.9 }
+const itemColor: ColorRgba = { r: 246, g: 211, b: 101, a: 0.9 }
+const rayColor: ColorRgba = { r: 97, g: 210, b: 255, a: 0.28 }
+const radiusColor: ColorRgba = { r: 244, g: 196, b: 95, a: 0.65 }
 
 /**
  * Debug overlay layer: draws collision boxes, lighting rays, and radius.
@@ -40,67 +41,54 @@ export class DebugLayer implements RenderLayer {
     }
 
     render(frame: RenderFrame): void {
-        const { context } = frame as BrowserPreviewFrame
-        if (!context) return
+        const { renderer } = frame
 
         if (this.showCollision) {
-            this.drawCollision(context)
+            this.drawCollision(renderer)
         }
         if (this.showLighting) {
-            this.drawLightingDebug(context)
+            this.drawLightingDebug(renderer)
         }
     }
 
-    private drawCollision(context: RenderContext): void {
-        context.save()
-        context.strokeStyle = 'rgba(255, 106, 106, 0.9)'
-        context.lineWidth = 1
-
+    private drawCollision(renderer: Renderer2D): void {
         for (const solid of this.solids) {
-            context.strokeRect(solid.x + 0.5, solid.y + 0.5, solid.width - 1, solid.height - 1)
+            renderer.strokeRect(solid, solidColor)
         }
 
         if (this.playerRectProvider) {
-            const rect = this.playerRectProvider()
-            context.strokeStyle = 'rgba(115, 255, 153, 0.9)'
-            context.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.width - 1, rect.height - 1)
+            renderer.strokeRect(this.playerRectProvider(), playerColor)
         }
 
         if (this.itemRectProvider) {
-            context.strokeStyle = 'rgba(246, 211, 101, 0.9)'
             for (const rect of this.itemRectProvider()) {
-                context.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.width - 1, rect.height - 1)
+                renderer.strokeRect(rect, itemColor)
             }
         }
-
-        context.restore()
     }
 
-    private drawLightingDebug(context: RenderContext): void {
+    private drawLightingDebug(renderer: Renderer2D): void {
         if (!this.lightPolygonProvider) return
 
         const entries = this.lightPolygonProvider()
 
-        context.save()
-        context.lineWidth = 1
-
         for (const { polygon, origin, radius } of entries) {
             // Rays
-            context.strokeStyle = 'rgba(97, 210, 255, 0.28)'
             for (const hit of polygon) {
-                context.beginPath()
-                context.moveTo(origin.x, origin.y)
-                context.lineTo(hit.x, hit.y)
-                context.stroke()
+                renderer.drawLine(origin, hit, rayColor)
             }
 
-            // Radius circle
-            context.strokeStyle = 'rgba(244, 196, 95, 0.65)'
-            context.beginPath()
-            context.arc(origin.x, origin.y, radius, 0, Math.PI * 2)
-            context.stroke()
+            // Radius circle approximated as polygon
+            const segments = 32
+            const points: Vec2[] = []
+            for (let i = 0; i < segments; i++) {
+                const angle = (i / segments) * Math.PI * 2
+                points.push({
+                    x: origin.x + Math.cos(angle) * radius,
+                    y: origin.y + Math.sin(angle) * radius,
+                })
+            }
+            renderer.drawPolygon(points, radiusColor)
         }
-
-        context.restore()
     }
 }

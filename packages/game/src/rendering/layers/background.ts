@@ -1,11 +1,15 @@
-import type { RenderFrame, RenderLayer } from '@sidebound/engine'
-import type { RenderContext } from '@sidebound/platform-browser'
+import type { ColorRgba, RenderFrame, RenderLayer } from '@sidebound/engine'
 import type { Level } from '../../world/types.ts'
 
-type BrowserPreviewFrame = RenderFrame & {
-    readonly context?: RenderContext
-}
+const bgTop: ColorRgba = { r: 42, g: 36, b: 64, a: 1 }
+const bgBottom: ColorRgba = { r: 22, g: 18, b: 40, a: 1 }
+const stripe: ColorRgba = { r: 48, g: 40, b: 72, a: 1 }
+const pillar: ColorRgba = { r: 61, g: 51, b: 88, a: 1 }
 
+/**
+ * Background layer. Uses solid color bands instead of gradients
+ * for SDL3 parity. Gradient version is omitted temporarily.
+ */
 export class BackgroundLayer implements RenderLayer {
     readonly order = 0
     private readonly world: Level
@@ -15,25 +19,22 @@ export class BackgroundLayer implements RenderLayer {
     }
 
     render(frame: RenderFrame): void {
-        const { context } = frame as BrowserPreviewFrame
-        if (!context) return
-
+        const { renderer } = frame
         const { width, height } = this.world
 
-        const gradient = context.createLinearGradient(0, 0, 0, height)
-        gradient.addColorStop(0, '#2a2440')
-        gradient.addColorStop(1, '#161228')
-        context.fillStyle = gradient
-        context.fillRect(0, 0, width, height)
+        // Two-band background approximating the old gradient
+        const halfHeight = Math.round(height / 2)
+        renderer.fillRect({ x: 0, y: 0, width, height: halfHeight }, bgTop)
+        renderer.fillRect({ x: 0, y: halfHeight, width, height: height - halfHeight }, bgBottom)
 
-        context.fillStyle = '#302848'
+        // Vertical stripes
         for (let x = 0; x < width; x += 16) {
-            context.fillRect(x, 0, 2, height)
+            renderer.fillRect({ x, y: 0, width: 2, height }, stripe)
         }
 
-        context.fillStyle = '#3d3358'
+        // Pillar accents
         for (let x = 8; x < width; x += 32) {
-            context.fillRect(x, 24, 8, 106)
+            renderer.fillRect({ x, y: 24, width: 8, height: 106 }, pillar)
         }
     }
 }
