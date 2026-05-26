@@ -19,22 +19,24 @@ export class BackgroundLayer implements RenderLayer {
     }
 
     render(frame: RenderFrame): void {
-        const { renderer } = frame
+        const { renderer, camera } = frame
         const { width, height } = this.world
+        const ox = -camera.x
+        const oy = -camera.y
 
         // Two-band background approximating the old gradient
         const halfHeight = Math.round(height / 2)
-        renderer.fillRect({ x: 0, y: 0, width, height: halfHeight }, bgTop)
-        renderer.fillRect({ x: 0, y: halfHeight, width, height: height - halfHeight }, bgBottom)
+        renderer.fillRect({ x: ox, y: oy, width, height: halfHeight }, bgTop)
+        renderer.fillRect({ x: ox, y: oy + halfHeight, width, height: height - halfHeight }, bgBottom)
 
         // Vertical stripes
         for (let x = 0; x < width; x += 16) {
-            renderer.fillRect({ x, y: 0, width: 2, height }, stripe)
+            renderer.fillRect({ x: ox + x, y: oy, width: 2, height }, stripe)
         }
 
         // Pillar accents
         for (let x = 8; x < width; x += 32) {
-            renderer.fillRect({ x, y: 24, width: 8, height: 106 }, pillar)
+            renderer.fillRect({ x: ox + x, y: oy + 24, width: 8, height: 106 }, pillar)
         }
     }
 }

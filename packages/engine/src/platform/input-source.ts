@@ -6,6 +6,11 @@ export type PointerEventFrame = {
     readonly button: number
 }
 
+export type WindowResizeEvent = {
+    readonly width: number
+    readonly height: number
+}
+
 export type InputEvents = {
     readonly quitRequested: boolean
     readonly keysDown: readonly string[]
@@ -13,6 +18,7 @@ export type InputEvents = {
     readonly keysHeld: ReadonlySet<string>
     readonly pointerDown: readonly PointerEventFrame[]
     readonly pointerUp: readonly PointerEventFrame[]
+    readonly windowResized: WindowResizeEvent | null
 }
 
 export type InputSource = {

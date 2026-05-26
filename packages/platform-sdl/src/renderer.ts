@@ -68,6 +68,7 @@ export class SdlRenderer implements Renderer2D {
             this.setRenderTarget(null)
         }
 
+
         assertSdl(this.render.present(), 'SDL_RenderPresent failed')
     }
 
@@ -180,6 +181,7 @@ export class SdlRenderer implements Renderer2D {
     }
 
     dispose(): void {
+
         for (const [id, entry] of this.textures) {
             if (!this.renderTargetTextureIds.has(id)) {
                 entry.texture.destroy()

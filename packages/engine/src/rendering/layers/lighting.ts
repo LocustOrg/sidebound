@@ -29,8 +29,8 @@ export class LightingLayer implements RenderLayer {
     readonly order = 30
 
     private readonly lighting: RayLighting
-    private readonly viewportWidth: number
-    private readonly viewportHeight: number
+    private viewportWidth: number
+    private viewportHeight: number
     private readonly ambientColor: ColorRgba
     private readonly cullPadding: number
     private readonly sources: LightSource[] = []
@@ -67,6 +67,11 @@ export class LightingLayer implements RenderLayer {
 
     setCameraProvider(provider: () => Rect): void {
         this.cameraProvider = provider
+    }
+
+    resize(width: number, height: number): void {
+        this.viewportWidth = width
+        this.viewportHeight = height
     }
 
     get activeSunCount(): number {
@@ -135,7 +140,9 @@ export class LightingLayer implements RenderLayer {
     render(frame: RenderFrame): void {
         const { camera } = frame
         this.lastCamera = camera
-        const viewRect = { x: camera.x, y: camera.y, width: this.viewportWidth, height: this.viewportHeight }
+        const ox = -camera.x
+        const oy = -camera.y
+        const viewRect = { x: 0, y: 0, width: this.viewportWidth, height: this.viewportHeight }
 
         if (this.cachedLights.length === 0) {
             frame.renderer.fillRect(viewRect, this.ambientColor)
@@ -145,7 +152,8 @@ export class LightingLayer implements RenderLayer {
         frame.renderer.fillRect(viewRect, this.ambientColor)
 
         for (const light of this.cachedLights) {
-            frame.renderer.drawPolygon(light.polygon, {
+            const screenPolygon = light.polygon.map((p) => ({ x: p.x + ox, y: p.y + oy }))
+            frame.renderer.drawPolygon(screenPolygon, {
                 r: light.color.r,
                 g: light.color.g,
                 b: light.color.b,

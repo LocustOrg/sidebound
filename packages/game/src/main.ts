@@ -6,7 +6,7 @@
  * Minimap, DOM debug panel, and audio are disabled.
  */
 
-import { AttachedLight, type InputEvents, LightingLayer, type PlayerInputFrame, PointLight, RayLighting, reduceInputFrame, RenderPipeline, SideViewCamera } from '@sidebound/engine'
+import { AttachedLight, DebugHudLayer, DebugLogger, FramePerformanceTracker, type InputEvents, LightingLayer, LogLevel, type PlayerInputFrame, PointLight, RayLighting, reduceInputFrame, RenderPipeline, SideViewCamera } from '@sidebound/engine'
 import { createSdlRuntime } from '@sidebound/platform-sdl'
 import { loadDemoContent } from './content/load-demo-content.ts'
 import { demoContentIds } from './content/mod.ts'
@@ -114,28 +114,106 @@ debugLayer.setItemRectProvider(() => itemSystem.getDebugRects())
 debugLayer.setLightPolygonProvider(() => lightingLayer.activeSunData)
 debugLayer.showCollision = true
 
+// Debug tooling
+const logger = new DebugLogger({ level: LogLevel.Debug, prefix: '[Game]' })
+const perf = new FramePerformanceTracker(0.08)
+const debugHud = new DebugHudLayer({ enabled: true, position: 'top-left' })
+debugHud.setPerformanceProvider(() => perf.snapshot())
+debugHud.addPanel({
+    id: 'player',
+    getLines() {
+        return [
+            `Pos: ${Math.round(player.x)},${Math.round(player.y)}`,
+            `Vel: ${player.vx.toFixed(0)},${player.vy.toFixed(0)}`,
+            `State: ${player.mobState}`,
+            `Grounded: ${player.grounded}`,
+        ]
+    },
+})
+
 pipeline.addLayer(backgroundLayer)
 pipeline.addLayer(terrainLayer)
 pipeline.addLayer(entityLayer)
 pipeline.addLayer(lightingLayer)
 pipeline.addLayer(debugLayer)
+pipeline.addLayer(debugHud)
 
 console.log(`[SDL] Debug room started: ${world.width}×${world.height}px, ${world.solids.length} solids, ${sunLights.length} suns`)
+logger.info('init', `World: ${world.width}×${world.height}, spawn: (${Math.round(world.spawn.x)}, ${Math.round(world.spawn.y)})`)
+logger.info('init', `Pipeline: ${pipeline.getLayers().length} layers`)
+
+let debugToggleCooldown = 0
+let diagPrintTimer = 0
+const DIAG_PRINT_INTERVAL = 3.0 // seconds
 
 await runtime.run({
     update(deltaSeconds: number, input: InputEvents): void {
+        perf.beginFrame()
+        perf.beginUpdate()
+        logger.tick()
+
         const safeDelta = Math.min(deltaSeconds, 0.05)
         const playerInput: PlayerInputFrame = reduceInputFrame(input)
+
+        // Toggle debug HUD with F3
+        debugToggleCooldown -= safeDelta
+        if (input.keysDown.some((k) => k === 'f3') && debugToggleCooldown <= 0) {
+            debugHud.enabled = !debugHud.enabled
+            debugLayer.showCollision = debugHud.enabled
+            logger.info('debug', `Debug HUD ${debugHud.enabled ? 'enabled' : 'disabled'}`)
+            debugToggleCooldown = 0.3
+        }
+
+        // Toggle lighting debug with F4
+        if (input.keysDown.some((k) => k === 'f4') && debugToggleCooldown <= 0) {
+            debugLayer.showLighting = !debugLayer.showLighting
+            logger.info('debug', `Lighting debug ${debugLayer.showLighting ? 'enabled' : 'disabled'}`)
+            debugToggleCooldown = 0.3
+        }
+
+        // Toggle noclip with F5
+        if (input.keysDown.some((k) => k === 'f5') && debugToggleCooldown <= 0) {
+            player.noClip = !player.noClip
+            logger.info('debug', `NoClip ${player.noClip ? 'enabled' : 'disabled'}`)
+            debugToggleCooldown = 0.3
+        }
+
+        // Handle window resize — update viewport so camera sees more/less of the world
+        if (input.windowResized) {
+            viewport.width = input.windowResized.width
+            viewport.height = input.windowResized.height
+            lightingLayer.resize(viewport.width, viewport.height)
+            logger.info('window', `Resized to ${viewport.width}×${viewport.height}`)
+        }
 
         player.update(safeDelta, playerInput)
         itemSystem.update()
         camera.update(safeDelta, player)
         pipeline.update(safeDelta)
+
+        perf.endUpdate()
+        perf.setFrameInfo({
+            entityCount: 1 + itemSystem.getItems().length,
+            layerCount: pipeline.getLayers().length,
+            activeLights: lightingLayer.activeSunCount,
+            lightingMs: lightingLayer.lastRayMs,
+        })
+        perf.endFrame(safeDelta)
+
+        // Periodic diagnostics console print
+        diagPrintTimer += safeDelta
+        if (diagPrintTimer >= DIAG_PRINT_INTERVAL) {
+            diagPrintTimer = 0
+            const snap = perf.snapshot()
+            logger.debug('perf', `FPS:${snap.fps} Frame:${snap.frameTotalMs.toFixed(1)}ms Update:${snap.updateMs.toFixed(1)}ms Render:${snap.renderMs.toFixed(1)}ms Lights:${snap.activeLights}/${lightingLayer.totalSunCount} Entities:${snap.entityCount}`)
+        }
     },
 
     render(frame): void {
+        perf.beginRender()
         const cameraRect = camera.getRect()
         pipeline.render({ renderer: frame.renderer, camera: cameraRect })
+        perf.endRender()
     },
 })
 

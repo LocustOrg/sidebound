@@ -21,21 +21,33 @@ export class TerrainLayer implements RenderLayer {
     }
 
     render(frame: RenderFrame): void {
-        const { renderer } = frame
+        const { renderer, camera } = frame
+        const ox = -camera.x
+        const oy = -camera.y
 
         for (const tile of this.tiles) {
+            // Cull tiles outside the viewport
+            if (
+                tile.x + tile.width < camera.x ||
+                tile.x > camera.x + camera.width ||
+                tile.y + tile.height < camera.y ||
+                tile.y > camera.y + camera.height
+            ) continue
+
+            const screenTile = { x: tile.x + ox, y: tile.y + oy, width: tile.width, height: tile.height, material: tile.material, glyph: tile.glyph }
+
             switch (tile.material) {
                 case 'wall':
-                    this.drawWall(renderer, tile)
+                    this.drawWall(renderer, screenTile)
                     break
                 case 'glass':
-                    this.drawGlass(renderer, tile)
+                    this.drawGlass(renderer, screenTile)
                     break
                 case 'decor':
-                    this.drawDecor(renderer, tile)
+                    this.drawDecor(renderer, screenTile)
                     break
                 case 'grate':
-                    this.drawGrate(renderer, tile)
+                    this.drawGrate(renderer, screenTile)
                     break
             }
         }

@@ -18,6 +18,7 @@ export type SdlRuntimeOptions = {
     readonly assets?: SdlAssetLoaderOptions
     readonly storagePath?: string
     readonly clearColor?: ColorRgba
+    readonly resizable?: boolean
 }
 
 export type SdlRuntimeLoop = {
@@ -25,11 +26,17 @@ export type SdlRuntimeLoop = {
     render(frame: RenderFrame): void
 }
 
+export type SdlViewport = {
+    readonly width: number
+    readonly height: number
+}
+
 export type SdlRuntime = {
     readonly renderer: Renderer2D
     readonly assets: SdlAssetLoader
     readonly storage: SdlFileStorage
     readonly clock: SdlClock
+    readonly viewport: SdlViewport
     run(loop: SdlRuntimeLoop): Promise<void>
     dispose(): void
 }
@@ -37,9 +44,9 @@ export type SdlRuntime = {
 const DEFAULT_CLEAR_COLOR: ColorRgba = { r: 30, g: 26, b: 46, a: 1 }
 
 export function createSdlRuntime(options: SdlRuntimeOptions): SdlRuntime {
-    const { window: windowConfig, clearColor = DEFAULT_CLEAR_COLOR } = options
+    const { window: windowConfig, clearColor = DEFAULT_CLEAR_COLOR, resizable = true } = options
 
-    const { sdl, renderer: sdlRender } = createSdlWindow(windowConfig)
+    const { sdl, renderer: sdlRender } = createSdlWindow({ ...windowConfig, resizable })
     const renderer = new SdlRenderer(sdlRender, windowConfig.width, windowConfig.height)
     const inputQueue = new SdlInputQueue()
     const clock = new SdlClock()
@@ -48,11 +55,17 @@ export function createSdlRuntime(options: SdlRuntimeOptions): SdlRuntime {
 
     const event = new Event()
 
+    // Viewport tracks the actual window size — game sees more/less of the world as window resizes
+    const viewport: { width: number; height: number } = { width: windowConfig.width, height: windowConfig.height }
+
     return {
         renderer,
         assets,
         storage,
         clock,
+        get viewport() {
+            return { width: viewport.width, height: viewport.height }
+        },
 
         async run(loop: SdlRuntimeLoop): Promise<void> {
             let lastTime = clock.now()
@@ -80,9 +93,15 @@ export function createSdlRuntime(options: SdlRuntimeOptions): SdlRuntime {
                     break
                 }
 
+                // Handle window resize — update viewport so game sees more/less of the world
+                if (input.windowResized) {
+                    viewport.width = input.windowResized.width
+                    viewport.height = input.windowResized.height
+                }
+
                 loop.update(deltaSeconds, input)
 
-                const camera = { x: 0, y: 0, width: windowConfig.width, height: windowConfig.height }
+                const camera = { x: 0, y: 0, width: viewport.width, height: viewport.height }
                 renderer.beginFrame(clearColor)
                 loop.render({ renderer, camera })
                 renderer.endFrame()

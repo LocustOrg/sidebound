@@ -230,9 +230,9 @@ export class Mob {
     }
 
     /** Draw the mob's current sprite frame */
-    draw(renderer: Renderer2D): void {
-        const drawX = Math.round(this.x + this.spriteOffsetX)
-        const drawY = Math.round(this.y + this.spriteOffsetY)
+    draw(renderer: Renderer2D, offsetX = 0, offsetY = 0): void {
+        const drawX = Math.round(this.x + this.spriteOffsetX + offsetX)
+        const drawY = Math.round(this.y + this.spriteOffsetY + offsetY)
         const flipX = this.facing < 0
         this.animator.draw(renderer, drawX, drawY, flipX)
     }

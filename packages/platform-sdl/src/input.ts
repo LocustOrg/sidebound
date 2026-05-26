@@ -3,7 +3,7 @@
  */
 
 import { type Event, EventType, SDLK } from '@sdl3/sdl3-deno'
-import type { InputEvents, PointerEventFrame } from '@sidebound/engine'
+import type { InputEvents, PointerEventFrame, WindowResizeEvent } from '@sidebound/engine'
 
 /**
  * Maps an SDL3 keycode to the engine's normalized key string.
@@ -25,6 +25,30 @@ function normalizeKey(keycode: number): string {
             return 'escape'
         case SDLK.RETURN:
             return 'enter'
+        case SDLK.F1:
+            return 'f1'
+        case SDLK.F2:
+            return 'f2'
+        case SDLK.F3:
+            return 'f3'
+        case SDLK.F4:
+            return 'f4'
+        case SDLK.F5:
+            return 'f5'
+        case SDLK.F6:
+            return 'f6'
+        case SDLK.F7:
+            return 'f7'
+        case SDLK.F8:
+            return 'f8'
+        case SDLK.F9:
+            return 'f9'
+        case SDLK.F10:
+            return 'f10'
+        case SDLK.F11:
+            return 'f11'
+        case SDLK.F12:
+            return 'f12'
         default:
             // For printable ASCII keys, SDL3 keycodes match the char code
             if (keycode >= 97 && keycode <= 122) {
@@ -37,6 +61,9 @@ function normalizeKey(keycode: number): string {
     }
 }
 
+/** SDL_EVENT_WINDOW_RESIZED */
+const SDL_EVENT_WINDOW_RESIZED = 0x806
+
 export class SdlInputQueue {
     private readonly keysHeld = new Set<string>()
     private keysDown: string[] = []
@@ -44,6 +71,7 @@ export class SdlInputQueue {
     private pointerDown: PointerEventFrame[] = []
     private pointerUp: PointerEventFrame[] = []
     private quit = false
+    private resized: WindowResizeEvent | null = null
 
     push(event: Event): void {
         const type = event.common.type
@@ -90,6 +118,15 @@ export class SdlInputQueue {
                 })
                 break
             }
+
+            default: {
+                // Window resize event (SDL3: SDL_EVENT_WINDOW_RESIZED = 0x806)
+                if (type === SDL_EVENT_WINDOW_RESIZED) {
+                    const win = event.window
+                    this.resized = { width: win.data1, height: win.data2 }
+                }
+                break
+            }
         }
     }
 
@@ -101,12 +138,14 @@ export class SdlInputQueue {
             keysHeld: new Set(this.keysHeld),
             pointerDown: this.pointerDown,
             pointerUp: this.pointerUp,
+            windowResized: this.resized,
         }
 
         this.keysDown = []
         this.keysUp = []
         this.pointerDown = []
         this.pointerUp = []
+        this.resized = null
 
         return events
     }
