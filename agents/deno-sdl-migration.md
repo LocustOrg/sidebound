@@ -70,9 +70,9 @@ Reference links:
 
 ## Active Work
 
-- Convert remaining game render layers from Canvas2D internal casts to pure
-  `Renderer2D` commands (gradients, ellipse shadows, aura effects).
-- Add `deno compile` tasks and native-library packaging.
+- Phase 5 compile tasks added. Verify `deno task compile:mac` produces working
+  executable, then move to Phase 6.
+- Delete browser renderer after SDL3 parity and smoke coverage (Phase 6).
 
 ## Reachable Cutover Plan
 
@@ -248,47 +248,6 @@ export type InputEvents = {
     readonly pointerUp: readonly PointerEventFrame[]
 }
 ```
-
-
-## Phase 4 — Replace Remaining Canvas 2D Drawing With Renderer Commands
-
-Goal: make every game layer render through `Renderer2D` without internal
-Canvas2D casts.
-
-Layer-by-layer conversion order:
-
-1. `TerrainLayer`
-    - `fillRect` → `renderer.fillRect`.
-    - top/bottom pixel highlights → `fillRect` with 1px height.
-2. `EntityLayer`
-    - ground shadow: replace ellipse gradient with one of:
-        - a prebuilt shadow texture, preferred for SDL3.
-        - a simple alpha rectangle until texture support lands.
-    - subtle aura: delete temporarily or replace with an aura texture.
-3. `BackgroundLayer`
-    - replace linear gradient with either:
-        - vertical bands of solid color, temporary.
-        - pre-rendered background texture, preferred.
-4. `DebugLayer`
-    - `strokeRect` → `renderer.strokeRect`.
-    - rays → `renderer.drawLine`.
-    - radius circles: approximate with a 32-segment polyline helper.
-5. `LightingLayer`, after terrain/entities/debug are working in SDL3
-    - Replace the temporary polygon tint pass with a renderer-owned light mask:
-        - draw dark overlay bands/rectangles.
-        - draw visibility polygons as tinted transparent triangles only if SDL3
-          blend mode supports it.
-    - Keep ray casting engine-owned; only the mask compositing is platform/render
-      specific.
-
-Done when:
-
--
-
-`rg -n "createLinearGradient|createRadialGradient|globalCompositeOperation|ellipse|drawImage|CanvasRenderingContext" packages/game/src packages/engine/src`
-finds no required runtime code outside browser preview.
-
-- SDL3 renders terrain, player, items, debug collision, and basic lighting.
 
 ## Phase 5 — Package Native Libraries
 
