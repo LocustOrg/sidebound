@@ -80,18 +80,15 @@ Reference links:
 1. **Freeze browser renderer scope.** No new browser rendering, DOM debug, Web
    Audio, or Canvas2D lighting work unless it is required to keep comparison
    parity during migration.
-2. **Make SDL3 draw real assets.** Implement image loading, texture handles,
-   `drawTexture`, render targets, and the small set of blend modes needed for
-   sprites and debug overlays.
-3. **Port layers one at a time.** Convert terrain first, then entities/items,
+2. **Port layers one at a time.** Convert terrain first, then entities/items,
    then debug overlays, then lighting. Each converted layer must render through
    `Renderer2D`.
-4. **Boot the debug room in SDL3.** Start without minimap, DOM debug panel, audio,
+3. **Boot the debug room in SDL3.** Start without minimap, DOM debug panel, audio,
    and full light compositing; keep movement, camera, collision, sprites, item
    pickups, and collision debug working.
-5. **Make SDL3 default.** Switch `dev` to SDL3, move browser to `dev:browser`, and
+4. **Make SDL3 default.** Switch `dev` to SDL3, move browser to `dev:browser`, and
    add compile/package tasks.
-6. **Delete the browser renderer.** Remove browser renderer code once SDL3
+5. **Delete the browser renderer.** Remove browser renderer code once SDL3
    parity and package smoke coverage are stable. Keep only test doubles and
    SDL3 as the real runtime layer.
 
@@ -253,20 +250,6 @@ export type InputEvents = {
 }
 ```
 
-## Phase 1 - SDL3 Renderer And Packaging Work
-
-Status:
-
-- [x] Implement asset-backed image loading for SDL3.
-- [x] Implement texture creation/copy and `Renderer2D.drawTexture`.
-- [x] Implement SDL3 render target creation and target switching.
-- [x] Implement the blend behavior currently required for sprites and debug
-  primitives.
-- [x] Replace transitional source-backed sprite texture handles with
-  renderer-created texture handles.
-- [ ] Add SDL3 package checks to root `check` once native binding availability
-  is reliable in CI.
-
 ## Phase 2 - SDL3 Event Loop And Input
 
 Goal: SDL3 owns runtime events; engine receives typed input frames.
@@ -286,35 +269,23 @@ Done when:
 
 Goal: load game images as SDL3 textures through the asset layer.
 
-1. Replace transitional renderer image sources with an engine-owned asset
-   payload:
+1. Update content asset definitions to use stable asset ids and relative paths:
 
 ```ts
-export type ImageAssetSource = { kind: 'file'; path: string } | { kind: 'bytes'; bytes: Uint8Array; mimeType: string }
+{
+    id: 'characters/player/base', path
+:
+    'assets/sprites/player-base.png'
+}
 ```
 
-2. Update content asset definitions to use stable asset ids and relative paths:
-
-```ts
-{ id: 'characters/player/base', path: 'assets/sprites/player-base.png' }
-```
-
-3. For development, keep using `SdlAssetLoader.loadBytes()` and
-   `resolvePath()` to read files from `packages/game/assets/...`.
-4. For compiled executables, support both:
+2. Move runtime assets out of browser-preview source folders and into
+   `packages/game/assets/...`.
+3. For compiled executables, support both:
     - `deno compile --include packages/game/assets`.
     - generated asset modules if SDL3 image loading requires real byte buffers.
-5. Implement `SdlRenderer.loadTexture(id, source)`:
-    - If `source.kind === 'file'`, prefer `Surface.fromFile(path)` if supported.
-    - If `source.kind === 'bytes'`, use the image/surface path exposed by
-      `@sdl3/sdl3-deno`, or generate raw image modules if the binding requires
-      real byte buffers.
-    - Convert the decoded surface/image data to an SDL3 texture.
-    - Cache texture by id.
-    - Free intermediate surfaces after texture creation if the binding exposes
-      `free()`.
-6. Replace the browser preview's source-backed texture fallback with texture
-   handles created by the active renderer.
+4. Load all demo sprite sheets through the SDL3 debug-room entrypoint, not only
+   through browser preview.
 
 Done when:
 
@@ -354,7 +325,9 @@ Layer-by-layer conversion order:
 
 Done when:
 
-- `rg -n "createLinearGradient|createRadialGradient|globalCompositeOperation|ellipse|drawImage|CanvasRenderingContext" packages/game/src packages/engine/src` finds no required runtime code outside browser preview.
+-
+`rg -n "createLinearGradient|createRadialGradient|globalCompositeOperation|ellipse|drawImage|CanvasRenderingContext" packages/game/src packages/engine/src`
+finds no required runtime code outside browser preview.
 - SDL3 renders terrain, player, items, debug collision, and basic lighting.
 
 ## Phase 5 - Deno Game Entrypoint
@@ -514,16 +487,16 @@ Add checks before deleting browser fallback:
 
 Use this as the remaining move list:
 
-| Current file/path                                | Target                                                                                           |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Current file/path                                                            | Target                                                                                                 |
+|------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
 | `packages/engine/src/platform/{clock,input-source,renderer,storage,loop}.ts` | Rename/move to `packages/engine/src/runtime/*` as engine-owned contracts, not multi-platform promises. |
-| `packages/platform-browser/src/renderer-canvas2d.ts` | Delete after SDL3 texture rendering and game-layer parity are stable.                         |
-| `packages/game/src/rendering/layers/*`           | Convert remaining terrain/entity-effect/debug/background drawing to `Renderer2D` commands or textures. |
-| `packages/game/src/debug/debug-panel.ts`         | Replace with SDL3/platform debug overlay or delete.                                              |
-| `packages/game/src/debug/debug-minimap.ts`       | Convert to `Renderer2D` commands or SDL3 texture.                                                |
-| `packages/game/src/systems/audio.ts`             | Replace with SDL3/platform audio; delete browser copy after transition.                           |
-| `packages/game/src/main.ts`                      | Deno SDL3 entrypoint after parity.                                                               |
-| `packages/game/index.html`                       | Delete after SDL3 is default.                                                                    |
+| `packages/platform-browser/src/renderer-canvas2d.ts`                         | Delete after SDL3 texture rendering and game-layer parity are stable.                                  |
+| `packages/game/src/rendering/layers/*`                                       | Convert remaining terrain/entity-effect/debug/background drawing to `Renderer2D` commands or textures. |
+| `packages/game/src/debug/debug-panel.ts`                                     | Replace with SDL3/platform debug overlay or delete.                                                    |
+| `packages/game/src/debug/debug-minimap.ts`                                   | Convert to `Renderer2D` commands or SDL3 texture.                                                      |
+| `packages/game/src/systems/audio.ts`                                         | Replace with SDL3/platform audio; delete browser copy after transition.                                |
+| `packages/game/src/main.ts`                                                  | Deno SDL3 entrypoint after parity.                                                                     |
+| `packages/game/index.html`                                                   | Delete after SDL3 is default.                                                                          |
 
 ## Next SDL3 Milestone Scope
 
@@ -573,14 +546,3 @@ SDL3 becomes the default when all are true:
 - Cross-compilation creates the executable, not the native dependency bundle.
 - Current lighting relies on canvas compositing. It needs a renderer-owned light
   mask path before parity is realistic.
-
-## Recommended Order For The Next Agent
-
-1. Implement SDL3 texture loading and `drawTexture`.
-2. Replace source-backed sprite handles with renderer-created texture handles.
-3. Convert remaining game render layers to `Renderer2D` command calls.
-4. Load one player sprite sheet as an SDL3 texture.
-5. Run the existing demo room in SDL3 with lighting temporarily disabled.
-6. Add SDL3 debug collision overlay.
-7. Rebuild lighting as an SDL3-compatible mask or texture path.
-8. Make `deno compile` work on macOS.
