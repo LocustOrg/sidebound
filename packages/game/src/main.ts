@@ -6,7 +6,22 @@
  * Minimap, DOM debug panel, and audio are disabled.
  */
 
-import { AttachedLight, DebugHudLayer, DebugLogger, FramePerformanceTracker, type InputEvents, LightingLayer, LogLevel, type PlayerInputFrame, PointLight, RayLighting, reduceInputFrame, RenderPipeline, SideViewCamera } from '@sidebound/engine'
+import {
+    AttachedLight,
+    DebugHudLayer,
+    DebugLogger,
+    FramePerformanceTracker,
+    type InputEvents,
+    LightingLayer,
+    LogLevel,
+    type PlayerInputFrame,
+    PointLight,
+    RayLighting,
+    reduceInputFrame,
+    RenderPipeline,
+    SideViewCamera,
+    type Vec2,
+} from '@sidebound/engine'
 import { createSdlRuntime } from '@sidebound/platform-sdl'
 import { loadDemoContent } from './content/load-demo-content.ts'
 import { demoContentIds } from './content/mod.ts'
@@ -14,17 +29,20 @@ import { ItemFactory } from './content/item-factory.ts'
 import { PlayerMob } from './entities/player-mob.ts'
 import { BackgroundLayer, DebugLayer, EntityLayer, TerrainLayer } from './rendering/layers/mod.ts'
 import { ItemSystem } from './systems/item-system.ts'
-import { tileSize, viewport, world } from './world/demo-map.ts'
+import { initialSunPlacements, tileSize, viewport, world } from './world/demo-map.ts'
+
+const pixelScale = 4
 
 const runtime = createSdlRuntime({
     appId: 'sidebound.debug-room',
     window: {
         title: 'Sidebound Debug Room',
-        width: viewport.width,
-        height: viewport.height,
+        width: viewport.width * pixelScale,
+        height: viewport.height * pixelScale,
     },
     presentation: {
         mode: 'letterbox',
+        logicalSize: viewport,
     },
     assets: {
         root: new URL('../', import.meta.url),
@@ -66,34 +84,51 @@ camera.snapToPlayer(player)
 // Lighting
 const lighting = new RayLighting(world.lightOccluders)
 
-const sunSpacingX = tileSize * 12
-const sunSpacingY = tileSize * 14
 const sunRadius = tileSize * 10
-const sunLights: PointLight[] = []
+const sunColor = { r: 255, g: 240, b: 180 }
+const sunIntensity = 0.9
+const primaryPointerButton = 1
 
-for (let y = tileSize * 2; y < world.height - tileSize * 4; y += sunSpacingY) {
-    for (let x = sunSpacingX; x < world.width - sunSpacingX / 2; x += sunSpacingX) {
-        const insideSolid = world.solids.some(
-            (solid) => x >= solid.x && x <= solid.x + solid.width && y >= solid.y && y <= solid.y + solid.height,
-        )
-        if (insideSolid) continue
+function pointInsideWorld(point: Vec2): boolean {
+    return point.x >= 0 && point.x <= world.width && point.y >= 0 && point.y <= world.height
+}
 
-        sunLights.push(
-            new PointLight({
-                position: { x, y },
-                radius: sunRadius,
-                color: { r: 255, g: 240, b: 180 },
-                intensity: 0.9,
-            }),
-        )
+function pointInsideSolid(point: Vec2): boolean {
+    return world.solids.some((solid) =>
+        point.x >= solid.x &&
+        point.x <= solid.x + solid.width &&
+        point.y >= solid.y &&
+        point.y <= solid.y + solid.height
+    )
+}
+
+function clampToWorld(point: Vec2): Vec2 {
+    return {
+        x: Math.max(0, Math.min(world.width, point.x)),
+        y: Math.max(0, Math.min(world.height, point.y)),
     }
 }
 
+function createSunLight(position: Vec2): PointLight {
+    return new PointLight({
+        position,
+        radius: sunRadius,
+        color: sunColor,
+        intensity: sunIntensity,
+    })
+}
+
+const sunLights = initialSunPlacements
+    .map((placement) => ({ x: (placement.column + 0.5) * tileSize, y: (placement.row + 0.5) * tileSize }))
+    .filter((position) => pointInsideWorld(position) && !pointInsideSolid(position))
+    .map((position) => createSunLight(position))
+const manualSunLights: PointLight[] = []
+
 const playerLight = new AttachedLight({
     positionProvider: () => ({ x: player.x + player.width / 2, y: player.y + player.height / 2 }),
-    radius: 120,
-    color: { r: 200, g: 220, b: 255 },
-    intensity: 0.85,
+    radius: 48,
+    color: { r: 168, g: 226, b: 255 },
+    intensity: 0.6,
 })
 
 const lightingLayer = new LightingLayer(lighting, viewport.width, viewport.height, {})
@@ -119,7 +154,7 @@ debugLayer.setLightPolygonProvider(() => lightingLayer.activeSunData)
 // Debug tooling
 const logger = new DebugLogger({ level: LogLevel.Debug, prefix: '[Game]' })
 const perf = new FramePerformanceTracker(0.08)
-const debugHud = new DebugHudLayer({ enabled: true, position: 'top-left' })
+const debugHud = new DebugHudLayer({ enabled: false, position: 'top-left' })
 debugHud.setPerformanceProvider(() => perf.snapshot())
 debugHud.addPanel({
     id: 'player',
@@ -133,6 +168,34 @@ debugHud.addPanel({
     },
 })
 
+function addManualSun(position: Vec2): void {
+    const worldPosition = clampToWorld(position)
+
+    if (pointInsideSolid(worldPosition)) {
+        logger.info('debug', `Ignored sun inside solid at (${Math.round(worldPosition.x)}, ${Math.round(worldPosition.y)})`)
+        return
+    }
+
+    const sun = createSunLight(worldPosition)
+    sunLights.push(sun)
+    manualSunLights.push(sun)
+    lightingLayer.addLight(sun)
+    logger.info('debug', `Added sun ${sunLights.length} at (${Math.round(worldPosition.x)}, ${Math.round(worldPosition.y)})`)
+}
+
+function clearManualSuns(): void {
+    for (const sun of manualSunLights) {
+        lightingLayer.removeLight(sun)
+        const index = sunLights.indexOf(sun)
+        if (index !== -1) {
+            sunLights.splice(index, 1)
+        }
+    }
+
+    logger.info('debug', `Cleared ${manualSunLights.length} manual suns`)
+    manualSunLights.length = 0
+}
+
 pipeline.addLayer(backgroundLayer)
 pipeline.addLayer(terrainLayer)
 pipeline.addLayer(entityLayer)
@@ -140,7 +203,7 @@ pipeline.addLayer(lightingLayer)
 pipeline.addLayer(debugLayer)
 pipeline.addLayer(debugHud)
 
-console.log(`[SDL] Debug room started: ${world.width}×${world.height}px, ${world.solids.length} solids, ${sunLights.length} suns`)
+console.log(`[SDL] Debug room started: ${world.width}×${world.height}px, ${world.solids.length} solids, ${sunLights.length} suns; left click adds a sun`)
 logger.info('init', `World: ${world.width}×${world.height}, spawn: (${Math.round(world.spawn.x)}, ${Math.round(world.spawn.y)})`)
 logger.info('init', `Pipeline: ${pipeline.getLayers().length} layers`)
 
@@ -157,12 +220,11 @@ await runtime.run({
         const safeDelta = Math.min(deltaSeconds, 0.05)
         const playerInput: PlayerInputFrame = reduceInputFrame(input)
 
-        // Toggle debug HUD with F3
+        // Toggle collision outlines with F3
         debugToggleCooldown -= safeDelta
         if (input.keysDown.some((k) => k === 'f3') && debugToggleCooldown <= 0) {
-            debugHud.enabled = !debugHud.enabled
-            debugLayer.showCollision = debugHud.enabled
-            logger.info('debug', `Debug HUD ${debugHud.enabled ? 'enabled' : 'disabled'}`)
+            debugLayer.showCollision = !debugLayer.showCollision
+            logger.info('debug', `Collision debug ${debugLayer.showCollision ? 'enabled' : 'disabled'}`)
             debugToggleCooldown = 0.3
         }
 
@@ -178,6 +240,24 @@ await runtime.run({
             player.noClip = !player.noClip
             logger.info('debug', `NoClip ${player.noClip ? 'enabled' : 'disabled'}`)
             debugToggleCooldown = 0.3
+        }
+
+        // Toggle SDL HUD with F6
+        if (input.keysDown.some((k) => k === 'f6') && debugToggleCooldown <= 0) {
+            debugHud.enabled = !debugHud.enabled
+            logger.info('debug', `Debug HUD ${debugHud.enabled ? 'enabled' : 'disabled'}`)
+            debugToggleCooldown = 0.3
+        }
+
+        // Clear manually placed suns with F7
+        if (input.keysDown.some((k) => k === 'f7') && debugToggleCooldown <= 0) {
+            clearManualSuns()
+            debugToggleCooldown = 0.3
+        }
+
+        for (const pointer of input.pointerDown) {
+            if (pointer.button !== primaryPointerButton) continue
+            addManualSun(camera.viewportToWorld(pointer.position))
         }
 
         if (input.windowResized) {
@@ -203,7 +283,12 @@ await runtime.run({
         if (diagPrintTimer >= DIAG_PRINT_INTERVAL) {
             diagPrintTimer = 0
             const snap = perf.snapshot()
-            logger.debug('perf', `FPS:${snap.fps} Frame:${snap.frameTotalMs.toFixed(1)}ms Update:${snap.updateMs.toFixed(1)}ms Render:${snap.renderMs.toFixed(1)}ms Lights:${snap.activeLights}/${lightingLayer.totalSunCount} Entities:${snap.entityCount}`)
+            logger.debug(
+                'perf',
+                `FPS:${snap.fps} Frame:${snap.frameTotalMs.toFixed(1)}ms Update:${snap.updateMs.toFixed(1)}ms Render:${
+                    snap.renderMs.toFixed(1)
+                }ms Lights:${snap.activeLights}/${lightingLayer.totalSunCount} Entities:${snap.entityCount}`,
+            )
         }
     },
 

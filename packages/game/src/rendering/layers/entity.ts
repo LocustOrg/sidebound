@@ -3,9 +3,9 @@ import { clamp } from '@sidebound/engine'
 import { Mob } from '../../entities/mob.ts'
 import type { PickupItemEntity } from '../../entities/item-entity.ts'
 
-const shadowColor: ColorRgba = { r: 8, g: 6, b: 14, a: 0.35 }
-const auraInner: ColorRgba = { r: 160, g: 200, b: 255, a: 0.12 }
-const auraOuter: ColorRgba = { r: 160, g: 200, b: 255, a: 0 }
+const shadowColor: ColorRgba = { r: 8, g: 6, b: 14, a: 0.28 }
+const auraInner: ColorRgba = { r: 168, g: 226, b: 255, a: 0.12 }
+const auraOuter: ColorRgba = { r: 168, g: 226, b: 255, a: 0 }
 
 /**
  * Draws all mob entities with elliptical ground shadow and soft player aura.
@@ -48,8 +48,8 @@ export class EntityLayer implements RenderLayer {
 
     private drawMob(renderer: Renderer2D, mob: Mob, ox: number, oy: number): void {
         this.drawEllipticalShadow(renderer, mob, ox, oy)
-        this.drawAura(renderer, mob, ox, oy)
         mob.draw(renderer, ox, oy)
+        this.drawAura(renderer, mob, ox, oy)
     }
 
     private drawEllipticalShadow(renderer: Renderer2D, mob: Mob, ox: number, oy: number): void {
@@ -57,11 +57,11 @@ export class EntityLayer implements RenderLayer {
         if (projection === null) return
 
         const heightFactor = clamp(projection.distance / 80, 0, 1)
-        const radiusX = Math.round(mob.width * 1.6 * (1 - heightFactor * 0.4))
-        const radiusY = Math.max(2, Math.round(4 * (1 - heightFactor * 0.6)))
-        const alpha = 0.35 * (1 - heightFactor * 0.7)
+        const radiusX = Math.round(mob.width * 1.9 * (1 - heightFactor * 0.45))
+        const radiusY = Math.max(3, Math.round(5 * (1 - heightFactor * 0.6)))
+        const alpha = shadowColor.a * (1 - heightFactor * 0.72)
         const centerX = projection.x + ox
-        const centerY = projection.y + oy
+        const centerY = projection.y + oy + 1
 
         renderer.fillRadialGradientEllipse(
             { x: centerX, y: centerY },
@@ -78,8 +78,8 @@ export class EntityLayer implements RenderLayer {
         if (this.mobs.indexOf(mob) !== 0) return
 
         const cx = Math.round(mob.x + mob.width / 2 + ox)
-        const cy = Math.round(mob.y + mob.height / 2 + oy)
-        const radius = Math.round(mob.width * 2.2)
+        const cy = Math.round(mob.y + mob.height * 0.35 + oy)
+        const radius = 12
 
         renderer.fillRadialGradientFan(
             { x: cx, y: cy },

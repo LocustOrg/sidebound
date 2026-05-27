@@ -3,7 +3,19 @@
  */
 
 import { type Render, SDL, type Texture } from '@sdl3/sdl3-deno'
-import type { ColorRgba, DrawOptions, LinearGradientStop, Rect, Renderer2D, RendererBlendMode, RendererImageSource, RenderTargetHandle, TextureHandle, Vec2 } from '@sidebound/engine'
+import type {
+    ColorRgba,
+    DrawOptions,
+    LinearGradientDirection,
+    LinearGradientStop,
+    Rect,
+    Renderer2D,
+    RendererBlendMode,
+    RendererImageSource,
+    RenderTargetHandle,
+    TextureHandle,
+    Vec2,
+} from '@sidebound/engine'
 import { loadSdlSurface } from './assets.ts'
 
 export type SdlLogicalPresentationMode = 'disabled' | 'stretch' | 'letterbox' | 'overscan' | 'integer-scale'
@@ -194,6 +206,29 @@ function sampleGradient(stops: readonly LinearGradientStop[], t: number): ColorR
     return stops[stops.length - 1].color
 }
 
+function normalizeGradientStops(stops: readonly LinearGradientStop[]): LinearGradientStop[] {
+    if (stops.length === 0) return []
+
+    const ordered = stops
+        .map((stop) => ({ offset: Math.max(0, Math.min(1, stop.offset)), color: stop.color }))
+        .sort((left, right) => left.offset - right.offset)
+    const normalized: LinearGradientStop[] = []
+    const first = ordered[0]
+    const last = ordered[ordered.length - 1]
+
+    if (first.offset > 0) {
+        normalized.push({ offset: 0, color: first.color })
+    }
+
+    normalized.push(...ordered)
+
+    if (last.offset < 1) {
+        normalized.push({ offset: 1, color: last.color })
+    }
+
+    return normalized
+}
+
 function mapBlendMode(mode: RendererBlendMode): number {
     switch (mode) {
         case 'replace':
@@ -217,17 +252,23 @@ const logicalPresentationModes = {
 
 export class SdlRenderer implements Renderer2D {
     private readonly render: Render
+    private readonly screenTarget: SdlRenderTargetEntry
     private readonly textures = new Map<string, SdlTextureEntry>()
     private readonly renderTargets = new Map<string, SdlRenderTargetEntry>()
     private readonly renderTargetTextureIds = new Set<string>()
     private currentRenderTarget: RenderTargetHandle | null = null
+    private frameClearColor: ColorRgba = { r: 0, g: 0, b: 0, a: 1 }
 
     constructor(render: Render, width: number, height: number, options: SdlRendererOptions = {}) {
         this.render = render
         this.setLogicalPresentation(width, height, options.logicalPresentationMode ?? 'letterbox')
+        this.screenTarget = this.createTargetTexture('__sdl_screen_backbuffer', width, height, SDL.BLENDMODE.NONE)
     }
 
     beginFrame(clearColor: ColorRgba): void {
+        this.frameClearColor = clearColor
+        assertSdl(this.render.setTarget(this.screenTarget.texture), 'SDL_SetRenderTarget failed for screen backbuffer')
+        this.currentRenderTarget = null
         this.setDrawColor(clearColor)
         assertSdl(this.render.clear(), 'SDL_RenderClear failed')
     }
@@ -237,6 +278,21 @@ export class SdlRenderer implements Renderer2D {
             this.setRenderTarget(null)
         }
 
+        assertSdl(this.render.setTarget(null), 'SDL_SetRenderTarget failed for window')
+        this.setDrawColor(this.frameClearColor)
+        assertSdl(this.render.clear(), 'SDL_RenderClear failed')
+
+        assertSdl(this.screenTarget.texture.setBlendMode(SDL.BLENDMODE.NONE), 'SDL_SetTextureBlendMode failed for screen backbuffer')
+        assertSdl(this.screenTarget.texture.setAlphaMod(255), 'SDL_SetTextureAlphaMod failed for screen backbuffer')
+
+        assertSdl(
+            this.render.texture(
+                this.screenTarget.texture,
+                { x: 0, y: 0, w: this.screenTarget.handle.width, h: this.screenTarget.handle.height },
+                { x: 0, y: 0, w: this.screenTarget.handle.width, h: this.screenTarget.handle.height },
+            ),
+            'SDL_RenderTexture failed for screen backbuffer',
+        )
         assertSdl(this.render.present(), 'SDL_RenderPresent failed')
     }
 
@@ -246,15 +302,11 @@ export class SdlRenderer implements Renderer2D {
             return existing.handle
         }
 
-        const texture = this.render.createTexture(SDL.PIXELFORMAT.RGBA8888, SDL.TEXTUREACCESS.TARGET, width, height)
-        assertSdl(texture.setBlendMode(SDL.BLENDMODE.BLEND), `SDL_SetTextureBlendMode failed for render target '${id}'`)
-        assertSdl(texture.setScaleMode(SDL.SCALEMODE.NEAREST), `SDL_SetTextureScaleMode failed for render target '${id}'`)
-
-        const handle = { id, width, height }
-        this.renderTargets.set(id, { handle, texture })
-        this.textures.set(id, { handle, texture })
+        const entry = this.createTargetTexture(id, width, height, SDL.BLENDMODE.BLEND)
+        this.renderTargets.set(id, entry)
+        this.textures.set(id, entry)
         this.renderTargetTextureIds.add(id)
-        return handle
+        return entry.handle
     }
 
     setRenderTarget(target: RenderTargetHandle | null): void {
@@ -265,8 +317,8 @@ export class SdlRenderer implements Renderer2D {
         }
 
         assertSdl(
-            this.render.setTarget(entry?.texture ?? null),
-            target ? `SDL_SetRenderTarget failed for '${target.id}'` : 'SDL_SetRenderTarget failed for window',
+            this.render.setTarget(entry?.texture ?? this.screenTarget.texture),
+            target ? `SDL_SetRenderTarget failed for '${target.id}'` : 'SDL_SetRenderTarget failed for screen backbuffer',
         )
         this.currentRenderTarget = target
     }
@@ -353,21 +405,31 @@ export class SdlRenderer implements Renderer2D {
         assertSdl(entry.texture.setAlphaMod(255), `SDL_SetTextureAlphaMod reset failed for render target '${target.id}'`)
     }
 
-    fillLinearGradientRect(rect: Rect, stops: readonly LinearGradientStop[]): void {
+    fillLinearGradientRect(rect: Rect, stops: readonly LinearGradientStop[], direction: LinearGradientDirection = 'vertical'): void {
         if (stops.length === 0) return
 
-        // Render as horizontal bands with interpolated colors
-        const bandCount = Math.max(1, Math.min(rect.height, 64))
-        const bandHeight = rect.height / bandCount
+        if (stops.length === 1) {
+            this.fillRect(rect, stops[0].color)
+            return
+        }
 
-        for (let i = 0; i < bandCount; i++) {
-            const t = bandCount > 1 ? i / (bandCount - 1) : 0
-            const color = sampleGradient(stops, t)
-            const bandY = rect.y + i * bandHeight
-            const h = i === bandCount - 1 ? rect.y + rect.height - bandY : bandHeight
+        if (direction === 'diagonal-down') {
+            const topLeft = sampleGradient(stops, 0)
+            const middle = sampleGradient(stops, 0.5)
+            const bottomRight = sampleGradient(stops, 1)
+            this.fillGradientQuad(rect, topLeft, middle, bottomRight, middle)
+            return
+        }
 
-            this.setDrawColor(color)
-            assertSdl(this.render.fillRect({ x: rect.x, y: Math.round(bandY), w: rect.width, h: Math.round(h) }), 'SDL_RenderFillRect failed (gradient)')
+        const normalizedStops = normalizeGradientStops(stops)
+        for (let i = 0; i < normalizedStops.length - 1; i++) {
+            const top = normalizedStops[i]
+            const bottom = normalizedStops[i + 1]
+            if (bottom.offset <= top.offset) continue
+
+            const y = rect.y + rect.height * top.offset
+            const height = rect.height * (bottom.offset - top.offset)
+            this.fillGradientQuad({ x: rect.x, y, width: rect.width, height }, top.color, top.color, bottom.color, bottom.color)
         }
     }
 
@@ -498,6 +560,8 @@ export class SdlRenderer implements Renderer2D {
     }
 
     dispose(): void {
+        assertSdl(this.render.setTarget(null), 'SDL_SetRenderTarget failed for window')
+        this.screenTarget.texture.destroy()
 
         for (const [id, entry] of this.textures) {
             if (!this.renderTargetTextureIds.has(id)) {
@@ -512,6 +576,31 @@ export class SdlRenderer implements Renderer2D {
             this.renderTargets.delete(id)
             this.renderTargetTextureIds.delete(id)
         }
+    }
+
+    private createTargetTexture(id: string, width: number, height: number, blendMode: number): SdlRenderTargetEntry {
+        const texture = this.render.createTexture(SDL.PIXELFORMAT.RGBA8888, SDL.TEXTUREACCESS.TARGET, width, height)
+        assertSdl(texture.setBlendMode(blendMode), `SDL_SetTextureBlendMode failed for render target '${id}'`)
+        assertSdl(texture.setScaleMode(SDL.SCALEMODE.NEAREST), `SDL_SetTextureScaleMode failed for render target '${id}'`)
+
+        return {
+            handle: { id, width, height },
+            texture,
+        }
+    }
+
+    private fillGradientQuad(rect: Rect, topLeft: ColorRgba, topRight: ColorRgba, bottomRight: ColorRgba, bottomLeft: ColorRgba): void {
+        assertSdl(this.render.setDrawBlendMode(SDL.BLENDMODE.BLEND), 'SDL_SetRenderDrawBlendMode failed')
+
+        const vertices = [
+            { position: { x: rect.x, y: rect.y }, color: toSdlFColor(topLeft), tex_coord: { x: 0, y: 0 } },
+            { position: { x: rect.x + rect.width, y: rect.y }, color: toSdlFColor(topRight), tex_coord: { x: 0, y: 0 } },
+            { position: { x: rect.x + rect.width, y: rect.y + rect.height }, color: toSdlFColor(bottomRight), tex_coord: { x: 0, y: 0 } },
+            { position: { x: rect.x, y: rect.y + rect.height }, color: toSdlFColor(bottomLeft), tex_coord: { x: 0, y: 0 } },
+        ]
+        const indices = new Int32Array([0, 1, 2, 0, 2, 3])
+
+        assertSdl(this.render.geometry(null, vertices, indices), 'SDL_RenderGeometry failed (linear gradient)')
     }
 
     private resolveTexture(texture: TextureHandle): SdlTextureEntry {

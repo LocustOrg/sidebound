@@ -2,7 +2,7 @@
     "name": "@sidebound/game",
     "exports": "./src/main.ts",
     "tasks": {
-        "dev": "deno run -A --watch=src,assets,../engine/src,../platform-sdl/src --watch-exclude=dist src/main.ts",
+        "dev": "deno run -A src/main.ts",
         "compile:mac": "deno compile --allow-read --allow-write --allow-env --allow-ffi --include assets --output ../../dist/sidebound src/main.ts",
         "compile:mac-arm64": "deno compile --target aarch64-apple-darwin --allow-read --allow-write --allow-env --allow-ffi --include assets --output ../../dist/sidebound src/main.ts",
         "compile:win": "deno compile --target x86_64-pc-windows-msvc --allow-read --allow-write --allow-env --allow-ffi --include assets --output ../../dist/sidebound.exe src/main.ts",

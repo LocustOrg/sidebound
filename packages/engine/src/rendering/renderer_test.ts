@@ -67,6 +67,21 @@ Deno.test('FakeRenderer - fillLinearGradientRect records stops', () => {
     assertEquals(commands.length, 1)
     assertEquals(commands[0].rect.x, 10)
     assertEquals(commands[0].stops.length, 2)
+    assertEquals(commands[0].direction, 'vertical')
+})
+
+Deno.test('FakeRenderer - fillLinearGradientRect records diagonal direction', () => {
+    const renderer = new FakeRenderer()
+    const stops = [
+        { offset: 0, color: { r: 0, g: 0, b: 0, a: 1 } as ColorRgba },
+        { offset: 1, color: { r: 255, g: 255, b: 255, a: 1 } as ColorRgba },
+    ]
+
+    renderer.fillLinearGradientRect({ x: 0, y: 0, width: 28, height: 28 }, stops, 'diagonal-down')
+
+    const commands = renderer.getCommandsByType('fillLinearGradientRect')
+    assertEquals(commands.length, 1)
+    assertEquals(commands[0].direction, 'diagonal-down')
 })
 
 Deno.test('FakeRenderer - fillRadialGradientFan records parameters', () => {
@@ -127,4 +142,3 @@ Deno.test('FakeRenderer - drawTexture records blend mode in options', () => {
     assertEquals(commands[0].options?.blendMode, 'add')
     assertEquals(commands[0].options?.alpha, 0.5)
 })
-

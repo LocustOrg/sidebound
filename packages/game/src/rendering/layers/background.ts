@@ -2,14 +2,12 @@ import type { ColorRgba, LinearGradientStop, RenderFrame, RenderLayer } from '@s
 import type { Level } from '../../world/types.ts'
 
 const gradientStops: readonly LinearGradientStop[] = [
-    { offset: 0.0, color: { r: 52, g: 44, b: 78, a: 1 } },
-    { offset: 0.35, color: { r: 38, g: 32, b: 62, a: 1 } },
-    { offset: 0.7, color: { r: 28, g: 22, b: 48, a: 1 } },
-    { offset: 1.0, color: { r: 18, g: 14, b: 34, a: 1 } },
+    { offset: 0, color: { r: 42, g: 36, b: 64, a: 1 } },
+    { offset: 1, color: { r: 22, g: 18, b: 40, a: 1 } },
 ]
 
-const pillar: ColorRgba = { r: 56, g: 48, b: 80, a: 0.4 }
-const panelEdge: ColorRgba = { r: 64, g: 56, b: 92, a: 0.3 }
+const stripe: ColorRgba = { r: 48, g: 40, b: 72, a: 1 }
+const pillar: ColorRgba = { r: 61, g: 51, b: 88, a: 1 }
 
 /**
  * Background layer. Renders a vertical gradient with subtle panel accents
@@ -29,19 +27,17 @@ export class BackgroundLayer implements RenderLayer {
         const ox = -camera.x
         const oy = -camera.y
 
-        // Full-world vertical gradient background
         renderer.fillLinearGradientRect(
             { x: ox, y: oy, width, height },
             gradientStops,
         )
 
-        // Subtle pillar accents for depth
-        for (let x = 8; x < width; x += 32) {
-            renderer.fillRect({ x: ox + x, y: oy + 24, width: 6, height: height - 48 }, pillar)
+        for (let x = 0; x < width; x += 16) {
+            renderer.fillRect({ x: ox + x, y: oy, width: 2, height }, stripe)
         }
 
-        // Panel edge highlights on the top
-        renderer.fillRect({ x: ox, y: oy, width, height: 2 }, panelEdge)
-        renderer.fillRect({ x: ox, y: oy + height - 2, width, height: 2 }, panelEdge)
+        for (let x = 8; x < width; x += 32) {
+            renderer.fillRect({ x: ox + x, y: oy + 24, width: 8, height: 106 }, pillar)
+        }
     }
 }

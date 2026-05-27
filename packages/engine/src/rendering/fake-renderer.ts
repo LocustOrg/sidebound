@@ -3,7 +3,17 @@
  * without SDL3 or any native dependencies.
  */
 
-import type { ColorRgba, DrawOptions, LinearGradientStop, Renderer2D, RendererBlendMode, RendererImageSource, RenderTargetHandle, TextureHandle } from '../platform/renderer.ts'
+import type {
+    ColorRgba,
+    DrawOptions,
+    LinearGradientDirection,
+    LinearGradientStop,
+    Renderer2D,
+    RendererBlendMode,
+    RendererImageSource,
+    RenderTargetHandle,
+    TextureHandle,
+} from '../platform/renderer.ts'
 import type { Rect, Vec2 } from '../core/geometry.ts'
 
 export type RenderCommand =
@@ -15,7 +25,7 @@ export type RenderCommand =
     | { type: 'drawTexture'; textureId: string; source: Rect; dest: Rect; options?: DrawOptions }
     | { type: 'clear'; color: ColorRgba }
     | { type: 'drawRenderTarget'; targetId: string; dest: Rect; blendMode: RendererBlendMode; alpha?: number }
-    | { type: 'fillLinearGradientRect'; rect: Rect; stops: readonly LinearGradientStop[] }
+    | { type: 'fillLinearGradientRect'; rect: Rect; stops: readonly LinearGradientStop[]; direction: LinearGradientDirection }
     | { type: 'fillRadialGradientFan'; center: Vec2; radius: number; innerColor: ColorRgba; outerColor: ColorRgba; segments?: number }
     | { type: 'fillRadialGradientEllipse'; center: Vec2; radiusX: number; radiusY: number; innerColor: ColorRgba; outerColor: ColorRgba; segments?: number }
     | { type: 'fillRect'; rect: Rect; color: ColorRgba }
@@ -75,8 +85,8 @@ export class FakeRenderer implements Renderer2D {
         this.commands.push({ type: 'drawRenderTarget', targetId: target.id, dest, blendMode, alpha })
     }
 
-    fillLinearGradientRect(rect: Rect, stops: readonly LinearGradientStop[]): void {
-        this.commands.push({ type: 'fillLinearGradientRect', rect, stops })
+    fillLinearGradientRect(rect: Rect, stops: readonly LinearGradientStop[], direction: LinearGradientDirection = 'vertical'): void {
+        this.commands.push({ type: 'fillLinearGradientRect', rect, stops, direction })
     }
 
     fillRadialGradientFan(center: Vec2, radius: number, innerColor: ColorRgba, outerColor: ColorRgba, segments?: number): void {
@@ -107,6 +117,3 @@ export class FakeRenderer implements Renderer2D {
         this.commands.push({ type: 'fillTriangleFan', origin, points, color })
     }
 }
-
-
-

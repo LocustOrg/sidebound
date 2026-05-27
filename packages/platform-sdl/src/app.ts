@@ -14,6 +14,7 @@ import { SdlFileStorage } from './storage.ts'
 
 export type SdlPresentationOptions = {
     readonly mode?: SdlLogicalPresentationMode
+    readonly logicalSize?: SdlViewport
 }
 
 export type SdlRuntimeOptions = {
@@ -57,9 +58,10 @@ function assertSdl(ok: boolean, action: string): void {
 
 export function createSdlRuntime(options: SdlRuntimeOptions): SdlRuntime {
     const { window: windowConfig, clearColor = DEFAULT_CLEAR_COLOR, resizable = true } = options
+    const logicalSize = options.presentation?.logicalSize ?? { width: windowConfig.width, height: windowConfig.height }
 
     const { sdl, renderer: sdlRender } = createSdlWindow({ ...windowConfig, resizable })
-    const renderer = new SdlRenderer(sdlRender, windowConfig.width, windowConfig.height, {
+    const renderer = new SdlRenderer(sdlRender, logicalSize.width, logicalSize.height, {
         logicalPresentationMode: options.presentation?.mode,
     })
     const inputQueue = new SdlInputQueue()
@@ -70,7 +72,7 @@ export function createSdlRuntime(options: SdlRuntimeOptions): SdlRuntime {
     const event = new Event()
 
     // Viewport is the fixed logical render size. The SDL renderer scales it to the actual window.
-    const viewport: { width: number; height: number } = { width: windowConfig.width, height: windowConfig.height }
+    const viewport: { width: number; height: number } = { ...logicalSize }
 
     return {
         renderer,

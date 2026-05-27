@@ -1,11 +1,15 @@
-import type { ColorRgba, Renderer2D, RenderFrame, RenderLayer } from '@sidebound/engine'
+import type { ColorRgba, LinearGradientStop, Renderer2D, RenderFrame, RenderLayer } from '@sidebound/engine'
 import type { Level, PlacedTile } from '../../world/types.ts'
 
 const wallColor: ColorRgba = { r: 78, g: 70, b: 104, a: 1 }
 const wallHighlight: ColorRgba = { r: 110, g: 100, b: 136, a: 1 }
 const wallShadow: ColorRgba = { r: 54, g: 47, b: 72, a: 1 }
-const glassColor: ColorRgba = { r: 136, g: 204, b: 255, a: 0.55 }
-const glassHighlight: ColorRgba = { r: 215, g: 246, b: 255, a: 0.85 }
+const glassHighlight: ColorRgba = { r: 215, g: 246, b: 255, a: 0.95 }
+const glassStops: readonly LinearGradientStop[] = [
+    { offset: 0, color: { r: 136, g: 204, b: 255, a: 0.72 } },
+    { offset: 0.5, color: { r: 170, g: 238, b: 255, a: 0.72 } },
+    { offset: 1, color: { r: 102, g: 153, b: 221, a: 0.72 } },
+]
 const decorColor: ColorRgba = { r: 123, g: 208, b: 177, a: 1 }
 const decorBright: ColorRgba = { r: 181, g: 246, b: 217, a: 1 }
 const grateBackground: ColorRgba = { r: 40, g: 34, b: 47, a: 1 }
@@ -60,7 +64,7 @@ export class TerrainLayer implements RenderLayer {
     }
 
     private drawGlass(renderer: Renderer2D, tile: PlacedTile): void {
-        renderer.fillRect({ x: tile.x, y: tile.y, width: tile.width, height: tile.height }, glassColor)
+        renderer.fillLinearGradientRect({ x: tile.x, y: tile.y, width: tile.width, height: tile.height }, glassStops, 'diagonal-down')
         renderer.fillRect({ x: tile.x + 4, y: tile.y + 4, width: tile.width - 8, height: 2 }, glassHighlight)
         renderer.fillRect({ x: tile.x + 4, y: tile.y + 4, width: 2, height: tile.height - 8 }, glassHighlight)
     }

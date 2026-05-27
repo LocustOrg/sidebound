@@ -5,18 +5,18 @@
 
 import { assert, assertEquals } from 'https://deno.land/std@0.224.0/assert/mod.ts'
 import { FakeRenderer } from './fake-renderer.ts'
-import { LightingLayer } from './layers/lighting.ts'
+import { LightingLayer, type LightingLayerOptions } from './layers/lighting.ts'
 import { PointLight, RayLighting } from '../lighting/ray-lighting.ts'
 import type { Rect } from '../core/geometry.ts'
 
-function createTestSetup(solids: Rect[] = []) {
+function createTestSetup(solids: Rect[] = [], options: LightingLayerOptions = {}) {
     const lighting = new RayLighting(solids)
-    const layer = new LightingLayer(lighting, 320, 240, {})
+    const layer = new LightingLayer(lighting, 320, 240, options)
     const renderer = new FakeRenderer()
     return { lighting, layer, renderer }
 }
 
-Deno.test('LightingLayer - renders ambient fill when no lights', () => {
+Deno.test('LightingLayer - renders ambient veil when no lights', () => {
     const { layer, renderer } = createTestSetup()
     const camera: Rect = { x: 0, y: 0, width: 320, height: 240 }
 
@@ -26,16 +26,17 @@ Deno.test('LightingLayer - renders ambient fill when no lights', () => {
     const commands = renderer.getCommands()
     const types = commands.map((c) => c.type)
 
-    assertEquals(types.includes('createRenderTarget'), true)
-    assertEquals(types.includes('setRenderTarget'), true)
-    assertEquals(types.includes('clear'), true)
-    assertEquals(types.includes('drawRenderTarget'), true)
+    assertEquals(types.includes('fillRect'), true)
+    assertEquals(types.includes('fillTriangleFan'), false)
+    assertEquals(types.includes('drawRenderTarget'), false)
 })
 
-Deno.test('LightingLayer - pass order: target → clear → lights → composite', () => {
+Deno.test('LightingLayer - pass order: ambient veil -> light polygon -> local glow', () => {
     const { layer, renderer } = createTestSetup()
-    const light = new PointLight({ position: { x: 160, y: 120 }, radius: 100 })
-    layer.addLight(light)
+    const sun = new PointLight({ position: { x: 160, y: 120 }, radius: 220 })
+    const local = new PointLight({ position: { x: 180, y: 130 }, radius: 90 })
+    layer.addLight(sun)
+    layer.addLight(local)
 
     const camera: Rect = { x: 0, y: 0, width: 320, height: 240 }
     layer.update(0.016)
@@ -44,28 +45,42 @@ Deno.test('LightingLayer - pass order: target → clear → lights → composite
     const commands = renderer.getCommands()
     const types = commands.map((c) => c.type)
 
-    const setTargetIdx = types.indexOf('setRenderTarget')
-    const clearIdx = types.indexOf('clear')
+    const ambientIdx = types.indexOf('fillRect')
+    const polygonIdx = types.indexOf('fillTriangleFan')
     const gradientFanIdx = types.indexOf('fillRadialGradientFan')
-    const drawRTIdx = types.indexOf('drawRenderTarget')
 
-    assert(clearIdx > setTargetIdx, 'clear should come after setRenderTarget')
-    assert(gradientFanIdx > clearIdx, 'light drawing should come after clear')
-    assert(drawRTIdx > gradientFanIdx, 'composite should come after light drawing')
+    assert(polygonIdx > ambientIdx, 'light polygon should come after ambient veil')
+    assert(gradientFanIdx > polygonIdx, 'local glow should come after light polygon')
 })
 
-Deno.test('LightingLayer - composites with multiply blend mode', () => {
+Deno.test('LightingLayer - draws light shafts as alpha polygons', () => {
     const { layer, renderer } = createTestSetup()
-    const light = new PointLight({ position: { x: 160, y: 120 }, radius: 100 })
+    const light = new PointLight({ position: { x: 160, y: 120 }, radius: 220 })
     layer.addLight(light)
 
     const camera: Rect = { x: 0, y: 0, width: 320, height: 240 }
     layer.update(0.016)
     layer.render({ renderer, camera })
 
-    const drawRT = renderer.getCommandsByType('drawRenderTarget')
-    assertEquals(drawRT.length, 1)
-    assertEquals(drawRT[0].blendMode, 'multiply')
+    const polygons = renderer.getCommandsByType('fillTriangleFan')
+    assertEquals(polygons.length, 1)
+    assertEquals(polygons[0].color.r, 255)
+    assertEquals(polygons[0].color.g, 240)
+    assertEquals(polygons[0].color.b, 180)
+    assert(Math.abs(polygons[0].color.a - 0.198) < 0.000001)
+})
+
+Deno.test('LightingLayer - local glow lights do not draw shaft polygons by default', () => {
+    const { layer, renderer } = createTestSetup()
+    const light = new PointLight({ position: { x: 160, y: 120 }, radius: 90 })
+    layer.addLight(light)
+
+    const camera: Rect = { x: 0, y: 0, width: 320, height: 240 }
+    layer.update(0.016)
+    layer.render({ renderer, camera })
+
+    assertEquals(renderer.getCommandsByType('fillTriangleFan').length, 0)
+    assertEquals(renderer.getCommandsByType('fillRadialGradientFan').length, 1)
 })
 
 Deno.test('LightingLayer - camera offset is applied to light positions', () => {
@@ -79,7 +94,7 @@ Deno.test('LightingLayer - camera offset is applied to light positions', () => {
 
     const fans = renderer.getCommandsByType('fillRadialGradientFan')
     assert(fans.length > 0, 'should have at least one radial gradient fan')
-    // Light at (200,150), camera at (50,30) → screen position (150, 120)
+    // Light at (200,150), camera at (50,30) -> screen position (150, 120)
     assertEquals(fans[0].center.x, 150)
     assertEquals(fans[0].center.y, 120)
 })
@@ -94,7 +109,9 @@ Deno.test('LightingLayer - culls off-screen lights', () => {
     layer.render({ renderer, camera })
 
     const fans = renderer.getCommandsByType('fillRadialGradientFan')
+    const polygons = renderer.getCommandsByType('fillTriangleFan')
     assertEquals(fans.length, 0)
+    assertEquals(polygons.length, 0)
     assertEquals(layer.activeSunCount, 0)
 })
 
@@ -125,4 +142,3 @@ Deno.test('LightingLayer - inactive lights are skipped', () => {
     assertEquals(layer.activeSunCount, 0)
     assertEquals(layer.totalSunCount, 1)
 })
-

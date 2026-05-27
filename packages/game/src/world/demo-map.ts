@@ -21,35 +21,49 @@ const registry = new TileRegistry<TileMaterial>()
     .register({ glyph: 'G', material: 'grate', collision: 'solid', light: 'vertical-bar' })
     .register({ glyph: '@', spawn: true })
 
+export type SunPlacement = {
+    readonly column: number
+    readonly row: number
+}
+
 const MAP_ROWS = [
     wallRow(),
+    row('          C          .        C          GGGG'),
+    row('                    ####       G  G'),
+    row('      GGGG                      G  G     C'),
+    row('      G  G       ######       GGGG'),
+    row('      GGGG'),
+    row('             C           .'),
+    row('   #######             ####        GGGGGG'),
+    row('                       #  #        G    G'),
+    row('    .        C         #  #     C  GGGGGG'),
+    row('             #####     ####'),
     row(),
-    row('       C             .          C'),
-    row(),
-    row('     ######        GGGGGG        ######'),
-    row('                    G  G'),
-    row('          C         G  G       .'),
-    row('                    GGGG'),
-    row(),
-    row('        .       C             ####'),
-    row('                         ####'),
-    row('   ####      ####      GGGG'),
-    row(),
-    row('       C            .       C'),
-    row('                 ####'),
-    row('        GGGGGG'),
-    row('        G    G           ####'),
-    row('        GGGGGG'),
-    row(),
-    row('   C       .        C          ####'),
-    row('        ####       GGGG'),
-    row('  .   C            G  G       .'),
-    row('  @  . C       GGGGGG       C'),
-    row('###########GGGGGG#######     ########'),
-    row('          #      #       .'),
+    row('        GGGG                 C       ####'),
+    row('        G  G      .                  #'),
+    row('     C  G  G           ####          #   .'),
+    row('        GGGG                 GGGGGG  ######'),
+    row('                             G    G'),
+    row('       ######        C       GGGGGG'),
+    row('  .'),
+    row('                 #######'),
+    row('   @    C                 .       C'),
+    row('                        GGGG'),
+    row('############      #######GGGG       ########'),
+    row('          #          #        .'),
+    row('   GGGG   #       C  #              GGGG'),
+    row('   G  G          ######              G  G'),
+    row('   GGGG                              GGGG'),
     wallRow(),
-    wallRow(),
-    wallRow(),
+]
+
+export const initialSunPlacements: readonly SunPlacement[] = [
+    { column: 8, row: 14 },
+    { column: 17, row: 11 },
+    { column: 27, row: 5 },
+    { column: 37, row: 4 },
+    { column: 43, row: 13 },
+    { column: 21, row: 20 },
 ]
 
 export const world: Level = TileMapBuilder.from<TileMaterial>(MAP_ROWS).withTileSize(tileSize).build(registry)

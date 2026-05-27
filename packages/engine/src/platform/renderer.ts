@@ -8,6 +8,7 @@ export type ColorRgba = {
 }
 
 export type RendererBlendMode = 'replace' | 'alpha' | 'add' | 'multiply'
+export type LinearGradientDirection = 'vertical' | 'diagonal-down'
 
 type RendererImageSourceBase = {
     readonly width: number
@@ -75,8 +76,8 @@ export type Renderer2D = {
     /** Draw a render target texture to the current target/screen with a specified blend mode. */
     drawRenderTarget(target: RenderTargetHandle, dest: Rect, blendMode: RendererBlendMode, alpha?: number): void
 
-    /** Fill a rect with a vertical linear gradient defined by color stops. */
-    fillLinearGradientRect(rect: Rect, stops: readonly LinearGradientStop[]): void
+    /** Fill a rect with a linear gradient defined by color stops. */
+    fillLinearGradientRect(rect: Rect, stops: readonly LinearGradientStop[], direction?: LinearGradientDirection): void
 
     /** Fill a radial gradient using a triangle fan from center outward. */
     fillRadialGradientFan(center: Vec2, radius: number, innerColor: ColorRgba, outerColor: ColorRgba, segments?: number): void
