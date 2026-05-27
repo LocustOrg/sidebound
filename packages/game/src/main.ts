@@ -87,7 +87,6 @@ const lighting = new RayLighting(world.lightOccluders)
 const sunRadius = tileSize * 10
 const sunColor = { r: 255, g: 240, b: 180 }
 const sunIntensity = 0.9
-const primaryPointerButton = 1
 
 function pointInsideWorld(point: Vec2): boolean {
     return point.x >= 0 && point.x <= world.width && point.y >= 0 && point.y <= world.height
@@ -100,13 +99,6 @@ function pointInsideSolid(point: Vec2): boolean {
         point.y >= solid.y &&
         point.y <= solid.y + solid.height
     )
-}
-
-function clampToWorld(point: Vec2): Vec2 {
-    return {
-        x: Math.max(0, Math.min(world.width, point.x)),
-        y: Math.max(0, Math.min(world.height, point.y)),
-    }
 }
 
 function createSunLight(position: Vec2): PointLight {
@@ -122,7 +114,6 @@ const sunLights = initialSunPlacements
     .map((placement) => ({ x: (placement.column + 0.5) * tileSize, y: (placement.row + 0.5) * tileSize }))
     .filter((position) => pointInsideWorld(position) && !pointInsideSolid(position))
     .map((position) => createSunLight(position))
-const manualSunLights: PointLight[] = []
 
 const playerLight = new AttachedLight({
     positionProvider: () => ({ x: player.x + player.width / 2, y: player.y + player.height / 2 }),
@@ -168,34 +159,6 @@ debugHud.addPanel({
     },
 })
 
-function addManualSun(position: Vec2): void {
-    const worldPosition = clampToWorld(position)
-
-    if (pointInsideSolid(worldPosition)) {
-        logger.info('debug', `Ignored sun inside solid at (${Math.round(worldPosition.x)}, ${Math.round(worldPosition.y)})`)
-        return
-    }
-
-    const sun = createSunLight(worldPosition)
-    sunLights.push(sun)
-    manualSunLights.push(sun)
-    lightingLayer.addLight(sun)
-    logger.info('debug', `Added sun ${sunLights.length} at (${Math.round(worldPosition.x)}, ${Math.round(worldPosition.y)})`)
-}
-
-function clearManualSuns(): void {
-    for (const sun of manualSunLights) {
-        lightingLayer.removeLight(sun)
-        const index = sunLights.indexOf(sun)
-        if (index !== -1) {
-            sunLights.splice(index, 1)
-        }
-    }
-
-    logger.info('debug', `Cleared ${manualSunLights.length} manual suns`)
-    manualSunLights.length = 0
-}
-
 pipeline.addLayer(backgroundLayer)
 pipeline.addLayer(terrainLayer)
 pipeline.addLayer(entityLayer)
@@ -203,7 +166,7 @@ pipeline.addLayer(lightingLayer)
 pipeline.addLayer(debugLayer)
 pipeline.addLayer(debugHud)
 
-console.log(`[SDL] Debug room started: ${world.width}×${world.height}px, ${world.solids.length} solids, ${sunLights.length} suns; left click adds a sun`)
+console.log(`[SDL] Debug room started: ${world.width}×${world.height}px, ${world.solids.length} solids, ${sunLights.length} suns`)
 logger.info('init', `World: ${world.width}×${world.height}, spawn: (${Math.round(world.spawn.x)}, ${Math.round(world.spawn.y)})`)
 logger.info('init', `Pipeline: ${pipeline.getLayers().length} layers`)
 
@@ -247,17 +210,6 @@ await runtime.run({
             debugHud.enabled = !debugHud.enabled
             logger.info('debug', `Debug HUD ${debugHud.enabled ? 'enabled' : 'disabled'}`)
             debugToggleCooldown = 0.3
-        }
-
-        // Clear manually placed suns with F7
-        if (input.keysDown.some((k) => k === 'f7') && debugToggleCooldown <= 0) {
-            clearManualSuns()
-            debugToggleCooldown = 0.3
-        }
-
-        for (const pointer of input.pointerDown) {
-            if (pointer.button !== primaryPointerButton) continue
-            addManualSun(camera.viewportToWorld(pointer.position))
         }
 
         if (input.windowResized) {
